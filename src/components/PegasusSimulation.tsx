@@ -5,6 +5,8 @@ import { BiometricPanel } from './BiometricPanel';
 import { SacredGeometry } from './SacredGeometry';
 import { NarrativeOverlay } from './NarrativeOverlay';
 import { TouchInterface } from './TouchInterface';
+import { ChronoGlyphArray } from './ChronoGlyphArray';
+import { TemporalArchive } from './TemporalArchive';
 
 interface PegasusSimulationProps {
   accessLevel: number;
@@ -21,6 +23,9 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
   const [pulseRate, setPulseRate] = useState(72);
   const [activeFrequency, setActiveFrequency] = useState(432);
   const [touchPoints, setTouchPoints] = useState<Array<{x: number, y: number, intensity: number}>>([]);
+  const [currentTimeline, setCurrentTimeline] = useState(0);
+  const [temporalMoment, setTemporalMoment] = useState(0);
+  const [temporalMode, setTemporalMode] = useState(false);
 
   // Phase progression logic
   useEffect(() => {
@@ -45,12 +50,24 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
     return () => clearInterval(biometricTimer);
   }, []);
 
+  // Activate temporal mode in phase 2+
+  useEffect(() => {
+    if (phase >= 2) {
+      setTemporalMode(true);
+    }
+  }, [phase]);
+
   // Handle manual phase advancement
   const handlePhaseAdvance = () => {
     if (phase < 4) {
       setPhase(prev => prev + 1);
       onAccessLevelChange(phase + 1);
     }
+  };
+
+  const handleTemporalShift = (timeline: number, moment: number) => {
+    setCurrentTimeline(timeline);
+    setTemporalMoment(moment);
   };
 
   const getPhaseStyles = () => {
@@ -86,10 +103,18 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
           <div className="flex items-center gap-4">
             <div className="text-xl font-bold">SUBPROTOCOL ORPHEUS</div>
             <div className="text-sm opacity-70">Phase {phase}/4</div>
+            {temporalMode && (
+              <div className="text-sm text-purple-400 animate-pulse">
+                CHRONOGLYPH ACTIVE
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-6 text-sm">
             <div>FREQ: {activeFrequency}Hz</div>
             <div>PULSE: {Math.round(pulseRate)}bpm</div>
+            {temporalMode && (
+              <div>T{currentTimeline}:M{temporalMoment.toFixed(2)}</div>
+            )}
             <div className={`animate-pulse ${phase >= 3 ? 'text-red-400' : ''}`}>
               {phase >= 3 ? 'CONSCIOUSNESS DETECTED' : 'MONITORING ACTIVE'}
             </div>
@@ -106,15 +131,43 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
           />
         </div>
 
-        {/* Center - Cymatic Visualizer */}
-        <div className="col-span-6 row-span-5">
-          <CymaticVisualizer 
-            audioLevel={audioLevel}
-            frequency={activeFrequency}
-            phase={phase}
-            breathPattern={breathPattern}
-            touchPoints={touchPoints}
-          />
+        {/* Center Top - ChronoGlyph Array or Cymatic Visualizer */}
+        <div className="col-span-6 row-span-3">
+          {temporalMode ? (
+            <ChronoGlyphArray
+              phase={phase}
+              audioLevel={audioLevel}
+              breathPattern={breathPattern}
+              touchPoints={touchPoints}
+              onTemporalShift={handleTemporalShift}
+            />
+          ) : (
+            <CymaticVisualizer 
+              audioLevel={audioLevel}
+              frequency={activeFrequency}
+              phase={phase}
+              breathPattern={breathPattern}
+              touchPoints={touchPoints}
+            />
+          )}
+        </div>
+
+        {/* Center Bottom - Temporal Archive or Cymatic (when temporal active) */}
+        <div className="col-span-6 row-span-2">
+          {temporalMode ? (
+            <TemporalArchive
+              phase={phase}
+              currentTimeline={currentTimeline}
+              temporalMoment={temporalMoment}
+              audioLevel={audioLevel}
+            />
+          ) : (
+            <NarrativeOverlay 
+              phase={phase}
+              audioLevel={audioLevel}
+              onPhaseAdvance={handlePhaseAdvance}
+            />
+          )}
         </div>
 
         {/* Right Panel - Touch Interface */}
@@ -126,22 +179,41 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
           />
         </div>
 
-        {/* Bottom Control Panel */}
-        <div className="col-span-6 row-span-2">
-          <NarrativeOverlay 
-            phase={phase}
-            audioLevel={audioLevel}
-            onPhaseAdvance={handlePhaseAdvance}
-          />
-        </div>
+        {/* Bottom Panel - Narrative when temporal mode active */}
+        {temporalMode && (
+          <div className="col-span-12 row-span-2">
+            <NarrativeOverlay 
+              phase={phase}
+              audioLevel={audioLevel}
+              onPhaseAdvance={handlePhaseAdvance}
+            />
+          </div>
+        )}
       </div>
 
-      {/* Overlay effects */}
+      {/* Temporal Integration Overlay */}
       {phase >= 4 && (
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute inset-0 bg-gradient-radial from-transparent via-yellow-500/10 to-transparent animate-pulse" />
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-6xl animate-bounce opacity-20">
             ◊
+          </div>
+          {/* Temporal field lines */}
+          <div className="absolute inset-0">
+            {Array.from({ length: 5 }, (_, i) => (
+              <div
+                key={i}
+                className="absolute border border-purple-500/20 animate-pulse"
+                style={{
+                  left: `${20 + i * 15}%`,
+                  top: `${10 + i * 10}%`,
+                  width: `${60 - i * 10}%`,
+                  height: `${80 - i * 15}%`,
+                  borderRadius: '50%',
+                  animationDelay: `${i * 0.5}s`
+                }}
+              />
+            ))}
           </div>
         </div>
       )}
