@@ -33,7 +33,7 @@ export const AccessTerminal: React.FC<AccessTerminalProps> = ({ onAccess }) => {
     }, 800);
 
     return () => clearInterval(timer);
-  }, [currentLine]);
+  }, [currentLine, terminalSequence]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,6 +53,7 @@ export const AccessTerminal: React.FC<AccessTerminalProps> = ({ onAccess }) => {
           <div className="mb-6 text-center">
             <div className="text-2xl mb-2 animate-pulse">◊ PEGASUS TERMINAL ◊</div>
             <div className="text-xs opacity-60">Temporal Research Division - Consciousness Modulation Lab</div>
+            <div className="text-xs opacity-40 mt-1">The Orpheus Continuum by Vers3Dynamics</div>
           </div>
           
           <div className="space-y-2 mb-6 h-96 overflow-y-auto">

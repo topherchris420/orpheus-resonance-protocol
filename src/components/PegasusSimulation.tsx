@@ -45,6 +45,14 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
     return () => clearInterval(biometricTimer);
   }, []);
 
+  // Handle manual phase advancement
+  const handlePhaseAdvance = () => {
+    if (phase < 4) {
+      setPhase(prev => prev + 1);
+      onAccessLevelChange(phase + 1);
+    }
+  };
+
   const getPhaseStyles = () => {
     switch (phase) {
       case 1:
@@ -52,9 +60,9 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
       case 2:
         return "bg-gradient-to-br from-purple-900 to-black text-cyan-400";
       case 3:
-        return "bg-gradient-to-br from-indigo-900 via-purple-900 to-black text-gold-400";
+        return "bg-gradient-to-br from-indigo-900 via-purple-900 to-black text-yellow-400";
       case 4:
-        return "bg-gradient-to-br from-gold-900 via-orange-900 to-black text-white";
+        return "bg-gradient-to-br from-yellow-900 via-orange-900 to-black text-white";
       default:
         return "bg-black text-green-400";
     }
@@ -123,7 +131,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
           <NarrativeOverlay 
             phase={phase}
             audioLevel={audioLevel}
-            onPhaseAdvance={() => setPhase(prev => Math.min(4, prev + 1))}
+            onPhaseAdvance={handlePhaseAdvance}
           />
         </div>
       </div>
@@ -131,7 +139,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
       {/* Overlay effects */}
       {phase >= 4 && (
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute inset-0 bg-gradient-radial from-transparent via-gold-500/10 to-transparent animate-pulse" />
+          <div className="absolute inset-0 bg-gradient-radial from-transparent via-yellow-500/10 to-transparent animate-pulse" />
           <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-6xl animate-bounce opacity-20">
             ◊
           </div>
