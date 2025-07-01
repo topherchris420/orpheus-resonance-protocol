@@ -1,4 +1,4 @@
-# Welcome to my experimental project
+# my experimental project
 
  
 **Use GitHub Codespaces**
