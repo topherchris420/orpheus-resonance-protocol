@@ -6,6 +6,8 @@ import { NarrativeOverlay } from './NarrativeOverlay';
 import { TouchInterface } from './TouchInterface';
 import { ChronoGlyphArray } from './ChronoGlyphArray';
 import { TemporalArchive } from './TemporalArchive';
+import { QuantumResonance } from './QuantumResonance';
+import { ConsciousnessMemory } from './ConsciousnessMemory';
 
 interface PegasusSimulationProps {
   accessLevel: number;
@@ -28,6 +30,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
   const [isMobile, setIsMobile] = useState(false);
   const [microphoneConnected, setMicrophoneConnected] = useState(false);
   const [audioError, setAudioError] = useState<string | null>(null);
+  const [coherenceLevel, setCoherenceLevel] = useState(0);
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
@@ -308,10 +311,16 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
                   🎤 LIVE
                 </div>
               )}
+              {coherenceLevel > 0.8 && (
+                <div className="text-sm text-cyan-400 animate-pulse">
+                  CONSCIOUSNESS RESONANT
+                </div>
+              )}
             </div>
             <div className="flex items-center gap-6 text-sm">
               <div>FREQ: {activeFrequency}Hz</div>
               <div>PULSE: {Math.round(pulseRate)}bpm</div>
+              <div>COHERENCE: {(coherenceLevel * 100).toFixed(0)}%</div>
               {temporalMode && (
                 <div>T{currentTimeline}:M{temporalMoment.toFixed(2)}</div>
               )}
@@ -322,12 +331,24 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
           </div>
 
           {/* Left Panel - Biometrics */}
-          <div className="col-span-3 row-span-7">
+          <div className="col-span-3 row-span-4">
             <BiometricPanel 
               phase={phase}
               breathPattern={breathPattern}
               pulseRate={pulseRate}
               audioLevel={audioLevel}
+            />
+          </div>
+
+          {/* Left Panel Bottom - Quantum Resonance */}
+          <div className="col-span-3 row-span-3">
+            <QuantumResonance
+              audioLevel={audioLevel}
+              breathPattern={breathPattern}
+              pulseRate={pulseRate}
+              phase={phase}
+              touchPoints={touchPoints}
+              onCoherenceChange={setCoherenceLevel}
             />
           </div>
 
@@ -370,12 +391,25 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
             )}
           </div>
 
-          {/* Right Panel - Touch Interface */}
-          <div className="col-span-3 row-span-7">
+          {/* Right Panel Top - Touch Interface */}
+          <div className="col-span-3 row-span-4">
             <TouchInterface 
               phase={phase}
               onTouch={(point) => setTouchPoints(prev => [...prev.slice(-4), point])}
               onFrequencyChange={setActiveFrequency}
+            />
+          </div>
+
+          {/* Right Panel Bottom - Consciousness Memory */}
+          <div className="col-span-3 row-span-3">
+            <ConsciousnessMemory
+              phase={phase}
+              coherenceLevel={coherenceLevel}
+              audioLevel={audioLevel}
+              breathPattern={breathPattern}
+              pulseRate={pulseRate}
+              currentTimeline={currentTimeline}
+              temporalMoment={temporalMoment}
             />
           </div>
 
@@ -399,6 +433,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
             <div className="flex justify-between items-center text-xs mt-2">
               <div>Phase {phase}/4</div>
               <div>PULSE: {Math.round(pulseRate)}bpm</div>
+              <div>COH: {(coherenceLevel * 100).toFixed(0)}%</div>
               <div className={`animate-pulse ${phase >= 3 ? 'text-red-400' : ''}`}>
                 {phase >= 3 ? 'CONSCIOUS' : 'ACTIVE'}
               </div>
@@ -411,6 +446,11 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
             {microphoneConnected && (
               <div className="text-center text-green-400 text-xs mt-1">
                 🎤 LIVE ANALYSIS
+              </div>
+            )}
+            {coherenceLevel > 0.8 && (
+              <div className="text-center text-cyan-400 animate-pulse text-xs mt-1">
+                CONSCIOUSNESS RESONANT
               </div>
             )}
           </div>
@@ -444,10 +484,31 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
               pulseRate={pulseRate}
               audioLevel={audioLevel}
             />
+            <QuantumResonance
+              audioLevel={audioLevel}
+              breathPattern={breathPattern}
+              pulseRate={pulseRate}
+              phase={phase}
+              touchPoints={touchPoints}
+              onCoherenceChange={setCoherenceLevel}
+            />
+          </div>
+
+          {/* Mobile Secondary Grid */}
+          <div className="grid grid-cols-2 gap-2 h-64">
             <TouchInterface 
               phase={phase}
               onTouch={(point) => setTouchPoints(prev => [...prev.slice(-4), point])}
               onFrequencyChange={setActiveFrequency}
+            />
+            <ConsciousnessMemory
+              phase={phase}
+              coherenceLevel={coherenceLevel}
+              audioLevel={audioLevel}
+              breathPattern={breathPattern}
+              pulseRate={pulseRate}
+              currentTimeline={currentTimeline}
+              temporalMoment={temporalMoment}
             />
           </div>
 
@@ -496,6 +557,16 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
                 }}
               />
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Quantum Coherence Overlay */}
+      {coherenceLevel > 0.9 && (
+        <div className="absolute inset-0 pointer-events-none z-40">
+          <div className="absolute inset-0 bg-gradient-conic from-cyan-500/5 via-purple-500/5 to-yellow-500/5 animate-spin-slow" />
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-8xl text-cyan-400/20 animate-pulse">
+            ∞
           </div>
         </div>
       )}
