@@ -34,7 +34,7 @@ The Orpheus Continuum is an advanced consciousness interface system that uses re
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/orpheus-continuum.git
+git clone https://github.com/topherchris420/orpheus-continuum.git
 cd orpheus-continuum
 
 # Install dependencies
