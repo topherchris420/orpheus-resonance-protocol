@@ -21,7 +21,7 @@ export const AccessTerminal: React.FC<AccessTerminalProps> = ({ onAccess }) => {
     "Biometric signature detected...",
     "Access granted to SUBPROTOCOL ORPHEUS",
     "",
-    "Enter activation phrase: 'Resonance Protocol'"
+    "Enter activation phrase: '1912'"
   ];
 
   useEffect(() => {
@@ -37,7 +37,7 @@ export const AccessTerminal: React.FC<AccessTerminalProps> = ({ onAccess }) => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (input.toLowerCase().includes('resonance protocol')) {
+    if (input.toLowerCase().includes('1912')) {
       setLines(prev => [...prev, `> ${input}`, "Access granted. Initializing Subprotocol Orpheus..."]);
       setTimeout(onAccess, 2000);
     } else {
