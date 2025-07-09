@@ -1,4 +1,3 @@
-
 # The Orpheus Continuum
 ## Consciousness Modulation Experience by Vers3Dynamics
 
