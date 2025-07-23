@@ -14,7 +14,7 @@ export const AccessTerminal: React.FC<AccessTerminalProps> = ({ onAccess }) => {
 
   const terminalSequence = [
     "CLASSIFIED SYSTEM ACCESS",
-    "PROJECT PEGASUS - TEMPORAL RESEARCH DIVISION",
+    "VERS3D+S - R.A.I.N. RESEARCH DIVISION",
     "WARNING: AUTHORIZED PERSONNEL ONLY",
     "",
     "Scanning for clearance level...",
@@ -41,7 +41,7 @@ export const AccessTerminal: React.FC<AccessTerminalProps> = ({ onAccess }) => {
       setLines(prev => [...prev, `> ${input}`, "Access granted. Initializing Subprotocol Orpheus..."]);
       setTimeout(onAccess, 2000);
     } else {
-      setLines(prev => [...prev, `> ${input}`, "Access denied. Try again."]);
+      setLines(prev => [...prev, `> ${input}`, "Access denied."]);
       setInput('');
     }
   };
@@ -51,8 +51,8 @@ export const AccessTerminal: React.FC<AccessTerminalProps> = ({ onAccess }) => {
       <div className="max-w-4xl mx-auto">
         <div className="border border-green-400 p-6 bg-black/50 backdrop-blur-sm">
           <div className="mb-6 text-center">
-            <div className="text-2xl mb-2 animate-pulse">◊ PEGASUS TERMINAL ◊</div>
-            <div className="text-xs opacity-60">Temporal Research Division - Consciousness Modulation Lab</div>
+            <div className="text-2xl mb-2 animate-pulse">◊ VERS3DYNAMICS TERMINAL ◊</div>
+            <div className="text-xs opacity-60">R.A.I.N Research Division - Vers3Dynamics Lab</div>
             <div className="text-xs opacity-40 mt-1">The Orpheus Continuum by Vers3Dynamics</div>
           </div>
           
