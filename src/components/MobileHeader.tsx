@@ -22,7 +22,7 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
 }) => {
   return (
     <div className="border border-current/30 bg-black/40 backdrop-blur-sm p-3">
-      <div className="text-lg font-bold text-center">SUBPROTOCOL ORPHEUS</div>
+      <div className="text-lg font-bold text-center">EXPERIMENTAL</div>
       <div className="flex justify-between items-center text-xs mt-2">
         <div>Phase {phase}/4</div>
         <div>PULSE: {Math.round(pulseRate)}bpm</div>
