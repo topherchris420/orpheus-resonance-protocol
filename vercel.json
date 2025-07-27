@@ -1,36 +1,9 @@
 {
-  "version": 2,
-  "framework": null,
-  "buildCommand": "vite build --config vite.config.ts",
+  "buildCommand": "chmod +x build.sh && ./build.sh",
   "outputDirectory": "dist/public",
   "installCommand": "npm install",
-  "functions": {
-    "api/health.js": {
-      "runtime": "nodejs20.x"
-    }
-  },
-  "routes": [
-    {
-      "src": "/api/health",
-      "dest": "/api/health.js"
-    },
-    {
-      "src": "/assets/(.*)",
-      "dest": "/assets/$1"
-    },
-    {
-      "src": "/(favicon\\.ico|robots\\.txt|placeholder\\.svg)",
-      "dest": "/$1"
-    },
-    {
-      "src": "/lovable-uploads/(.*)",
-      "dest": "/lovable-uploads/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/index.html"
-    }
-  ],
+  "cleanUrls": true,
+  "trailingSlash": false,
   "headers": [
     {
       "source": "/assets/(.*)",
@@ -49,7 +22,7 @@
           "value": "credentialless"
         },
         {
-          "key": "Cross-Origin-Opener-Policy",
+          "key": "Cross-Origin-Opener-Policy", 
           "value": "same-origin"
         }
       ]

@@ -24,13 +24,13 @@ Ensure your repository has these files:
 1. Go to https://vercel.com/dashboard
 2. Click "New Project"
 3. Import your Git repository
-4. **IMPORTANT**: Override the auto-detected settings with these:
-   - **Framework Preset**: Other
-   - **Build Command**: `vite build --config vite.config.ts`
+4. **IMPORTANT**: In the Vercel dashboard, set these build settings:
+   - **Framework Preset**: Other (not Node.js!)
+   - **Build Command**: `chmod +x build.sh && ./build.sh`
    - **Output Directory**: `dist/public`
    - **Install Command**: `npm install`
    
-   Or let Vercel use the `vercel.json` configuration automatically.
+   The `vercel.json` file should automatically configure these settings.
 
 ### 3. Deploy via CLI
 
@@ -93,10 +93,11 @@ The app runs entirely on the frontend with microphone access, so no special envi
 - Check Vercel build logs
 
 ### Wrong Content Served (seeing server code)
-- Ensure Framework Preset is "Other", not "Node.js"
+- **Critical**: Change Framework Preset from "Node.js" to "Other"
+- Delete the deployment and redeploy to reset framework detection
 - Check that `outputDirectory` in vercel.json is `dist/public`
 - Verify the build command creates files in `dist/public/`
-- Redeploy after fixing configuration
+- If still serving server code, contact Vercel support for framework detection override
 
 ### API Issues
 - The app works without API calls
