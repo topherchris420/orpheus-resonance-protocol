@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'eact';
+import { useState, useEffect, useRef } from 'react';
 
 interface AudioAnalysisResult {
   audioLevel: number;
