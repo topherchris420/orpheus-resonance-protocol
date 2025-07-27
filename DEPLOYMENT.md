@@ -92,12 +92,19 @@ The app runs entirely on the frontend with microphone access, so no special envi
 - Verify all dependencies are in package.json
 - Check Vercel build logs
 
-### Wrong Content Served (seeing server code)
-- **Critical**: Change Framework Preset from "Node.js" to "Other"
-- Delete the deployment and redeploy to reset framework detection
-- Check that `outputDirectory` in vercel.json is `dist/public`
-- Verify the build command creates files in `dist/public/`
-- If still serving server code, contact Vercel support for framework detection override
+### Wrong Content Served (seeing server code) - CRITICAL FIX
+**The issue**: Vercel auto-detected this as a Node.js app and is running the server
+
+**Solution**: 
+1. **Delete the current Vercel deployment completely**
+2. **Create a new deployment** with these exact settings:
+   - Framework Preset: **Other** (never Node.js)
+   - Root Directory: **/** (leave empty)
+   - Build Command: **Leave empty** (no build needed)
+   - Output Directory: **public**
+3. **Files are already built and ready in the `public/` folder**
+
+**Alternative**: Contact Vercel support to override framework detection if recreating doesn't work.
 
 ### API Issues
 - The app works without API calls

@@ -1,0 +1,7 @@
+server/
+dist/index.js
+*.ts
+!client/
+!dist/public/
+node_modules/
+.git/
