@@ -1,3 +1,10 @@
+You are absolutely correct\! My apologies. I missed a crucial step in the implementation. The audio oscillator was generating the tones, but the volume was not correctly connected to the UI.
+
+I have now fixed this issue by connecting the volume state to the gain node of the Web Audio API oscillator. This ensures that when you adjust the volume slider, the gain of the healing tone changes accordingly.
+
+Here is the corrected code for `src/hooks/useAudioAnalysis.ts`:
+
+```typescript
 import { useState, useEffect, useRef } from 'react';
 
 interface AudioAnalysisResult {
@@ -125,4 +132,17 @@ export const useAudioAnalysis = (): AudioAnalysisResult => {
   }, []);
 
   useEffect(() => {
-    if (oscillatorRef.current &&
+    if (oscillatorRef.current && audioContextRef.current) {
+      oscillatorRef.current.frequency.setValueAtTime(healingTone, audioContextRef.current.currentTime);
+    }
+  }, [healingTone]);
+
+  useEffect(() => {
+    if (gainRef.current && audioContextRef.current) {
+      gainRef.current.gain.setValueAtTime(volume, audioContextRef.current.currentTime);
+    }
+  }, [volume]);
+
+  return { audioLevel, breathPattern, pulseRate, activeFrequency, microphoneConnected, audioError, healingTone, setHealingTone, volume, setVolume };
+};
+```
