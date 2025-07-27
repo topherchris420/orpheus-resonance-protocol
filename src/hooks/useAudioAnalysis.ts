@@ -9,6 +9,8 @@ interface AudioAnalysisResult {
   audioError: string | null;
   healingTone: number;
   setHealingTone: (tone: number) => void;
+  volume: number;
+  setVolume: (volume: number) => void;
 }
 
 export const useAudioAnalysis = (): AudioAnalysisResult => {
@@ -19,21 +21,36 @@ export const useAudioAnalysis = (): AudioAnalysisResult => {
   const [microphoneConnected, setMicrophoneConnected] = useState(false);
   const [audioError, setAudioError] = useState<string | null>(null);
   const [healingTone, setHealingTone] = useState(417);
+  const [volume, setVolume] = useState(0.5);
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  const oscillatorRef = useRef<OscillatorNode | null>(null);
+  const gainRef = useRef<GainNode | null>(null);
 
   useEffect(() => {
     const initializeAudio = async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         streamRef.current = stream;
-        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-        analyserRef.current = audioContextRef.current.createAnalyser();
-        const source = audioContextRef.current.createMediaStreamSource(stream);
+        const context = new (window.AudioContext || (window as any).webkitAudioContext)();
+        audioContextRef.current = context;
+
+        analyserRef.current = context.createAnalyser();
+        const source = context.createMediaStreamSource(stream);
         source.connect(analyserRef.current);
+
+        const oscillator = context.createOscillator();
+        oscillatorRef.current = oscillator;
+        const gain = context.createGain();
+        gainRef.current = gain;
+
+        oscillator.connect(gain);
+        gain.connect(context.destination);
+        oscillator.start();
+
         setMicrophoneConnected(true);
         startAnalysis();
       } catch (error) {
@@ -49,7 +66,7 @@ export const useAudioAnalysis = (): AudioAnalysisResult => {
       const analyze = () => {
         analyser.getByteFrequencyData(dataArray);
 
-        // Breath Analysis (simplified)
+        // ... (rest of the analysis logic remains the same)
         const breathFrequencyRange = [0, 100]; // Hz
         const breathEnergy = dataArray.slice(0, Math.round(breathFrequencyRange[1] / (audioContextRef.current.sampleRate / analyser.fftSize))).reduce((sum, value) => sum + value, 0);
         const breathState = breathEnergy / (breathFrequencyRange[1] * 2); // Normalized
@@ -79,6 +96,7 @@ export const useAudioAnalysis = (): AudioAnalysisResult => {
             setHealingTone(417); // Neutral
         }
 
+
         setAudioLevel(dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length / 255);
         setBreathPattern(breathState);
         setPulseRate(60 + (valenceState * 40));
@@ -97,11 +115,26 @@ export const useAudioAnalysis = (): AudioAnalysisResult => {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
       }
+      if (oscillatorRef.current) {
+        oscillatorRef.current.stop();
+      }
       if (audioContextRef.current) {
         audioContextRef.current.close();
       }
     };
   }, []);
 
-  return { audioLevel, breathPattern, pulseRate, activeFrequency, microphoneConnected, audioError, healingTone, setHealingTone };
+  useEffect(() => {
+    if (oscillatorRef.current) {
+      oscillatorRef.current.frequency.setValueAtTime(healingTone, audioContextRef.current.currentTime);
+    }
+  }, [healingTone]);
+
+  useEffect(() => {
+    if (gainRef.current) {
+      gainRef.current.gain.setValueAtTime(volume, audioContextRef.current.currentTime);
+    }
+  }, [volume]);
+
+  return { audioLevel, breathPattern, pulseRate, activeFrequency, microphoneConnected, audioError, healingTone, setHealingTone, volume, setVolume };
 };
