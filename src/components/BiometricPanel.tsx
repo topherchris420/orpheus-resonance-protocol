@@ -1,4 +1,4 @@
-import React, { useState } from 'eact';
+import React, { useState } from 'react';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 
