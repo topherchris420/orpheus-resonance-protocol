@@ -1,14 +1,12 @@
-
 import React, { useState, useEffect } from 'react';
-import { CymaticVisualizer } from './CymaticVisualizer';
-import { BiometricPanel } from './BiometricPanel';
-import { SacredGeometry } from './SacredGeometry';
-import { NarrativeOverlay } from './NarrativeOverlay';
+import { TacticalDataDisplay } from './TacticalDataDisplay';
+import { OperatorVitalsCognitiveLoadMonitor } from './OperatorVitalsCognitiveLoadMonitor';
+import { SitRepIntelFeed } from './SitRepIntelFeed';
 import { TouchInterface } from './TouchInterface';
-import { ChronoGlyphArray } from './ChronoGlyphArray';
+import { DecisionMatrixSimulator } from './DecisionMatrixSimulator';
 import { TemporalArchive } from './TemporalArchive';
-import { QuantumResonance } from './QuantumResonance';
-import { ConsciousnessMemory } from './ConsciousnessMemory';
+import { SquadCohesionIndex } from './SquadCohesionIndex';
+import { MissionCriticalEventRecorder } from './MissionCriticalEventRecorder';
 import { StatusIndicators } from './StatusIndicators';
 import { HeaderStatusBar } from './HeaderStatusBar';
 import { MobileHeader } from './MobileHeader';
@@ -16,6 +14,8 @@ import { VisualOverlays } from './VisualOverlays';
 import { useAudioAnalysis } from '../hooks/useAudioAnalysis';
 import { usePhaseProgression } from '../hooks/usePhaseProgression';
 import { useInteractionState } from '../hooks/useInteractionState';
+import { useRedTeamSimulation } from '../hooks/useRedTeamSimulation';
+import { Button } from './ui/button';
 
 interface PegasusSimulationProps {
   accessLevel: number;
@@ -38,24 +38,31 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
     audioError
   } = useAudioAnalysis();
 
-  const { phase, temporalMode, handlePhaseAdvance } = usePhaseProgression(onAccessLevelChange);
+  const { acclimatizationLevel, simulationMode, handleAcclimatizationAdvance } = usePhaseProgression(onAccessLevelChange);
 
   const {
-    touchPoints,
+    interactionEvents,
     currentTimeline,
     temporalMoment,
-    coherenceLevel,
-    activeFrequency,
-    addTouchPoint,
+    cohesionScore,
+    bioResonanceFrequency,
+    addInteractionEvent,
     handleTemporalShift,
-    setCoherenceLevel,
-    setActiveFrequency
+    setCohesionScore,
+    setBioResonanceFrequency
   } = useInteractionState();
+
+  const {
+    isRedTeamModeActive,
+    redTeamIntensity,
+    conflictingIntel,
+    toggleRedTeamMode,
+  } = useRedTeamSimulation(simulationMode);
 
   // Set initial frequency from audio analysis
   useEffect(() => {
-    setActiveFrequency(audioFrequency);
-  }, [audioFrequency, setActiveFrequency]);
+    setBioResonanceFrequency(audioFrequency);
+  }, [audioFrequency, setBioResonanceFrequency]);
 
   // Check if mobile
   useEffect(() => {
@@ -68,30 +75,39 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  const getPhaseStyles = () => {
-    switch (phase) {
+  const getAcclimatizationStyles = () => {
+    if (isRedTeamModeActive) {
+      return "bg-gradient-to-br from-red-900 via-black to-black text-red-400";
+    }
+    switch (acclimatizationLevel) {
       case 1:
         return "bg-gradient-to-br from-slate-900 to-black text-green-400";
       case 2:
-        return "bg-gradient-to-br from-purple-900 to-black text-cyan-400";
+        return "bg-gradient-to-br from-blue-900 to-black text-cyan-400";
       case 3:
-        return "bg-gradient-to-br from-indigo-900 via-purple-900 to-black text-yellow-400";
+        return "bg-gradient-to-br from-gray-800 via-slate-900 to-black text-yellow-400";
       case 4:
-        return "bg-gradient-to-br from-yellow-900 via-orange-900 to-black text-white";
+        return "bg-gradient-to-br from-orange-900 via-gray-900 to-black text-white";
       default:
         return "bg-black text-green-400";
     }
   };
 
+  const cognitiveStressIndex = 0.3 + redTeamIntensity * 0.5;
+  const communicationEfficiency = 0.9 - redTeamIntensity * 0.4;
+
   return (
-    <div className={`min-h-screen ${getPhaseStyles()} transition-all duration-2000 relative overflow-hidden`}>
-      {/* Background Sacred Geometry */}
-      <SacredGeometry 
-        phase={phase} 
-        frequency={activeFrequency}
-        breathPattern={breathPattern}
-        pulseRate={pulseRate}
-      />
+    <div className={`min-h-screen ${getAcclimatizationStyles()} transition-all duration-1000 relative overflow-hidden`}>
+      {/* Red Team Mode Toggle */}
+      {simulationMode && (
+        <Button
+          onClick={toggleRedTeamMode}
+          className="absolute top-4 right-4 z-20"
+          variant={isRedTeamModeActive ? "destructive" : "default"}
+        >
+          {isRedTeamModeActive ? "Deactivate Red Team" : "Activate Red Team"}
+        </Button>
+      )}
 
       {/* Status Indicators */}
       <StatusIndicators 
@@ -104,73 +120,67 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
         <div className="relative z-10 h-screen grid grid-cols-12 grid-rows-8 gap-2 p-4">
           {/* Header Status Bar */}
           <HeaderStatusBar
-            phase={phase}
-            temporalMode={temporalMode}
+            phase={acclimatizationLevel}
+            temporalMode={simulationMode}
             microphoneConnected={microphoneConnected}
-            coherenceLevel={coherenceLevel}
-            activeFrequency={activeFrequency}
+            coherenceLevel={cohesionScore}
+            activeFrequency={bioResonanceFrequency}
             pulseRate={pulseRate}
             currentTimeline={currentTimeline}
             temporalMoment={temporalMoment}
           />
 
-          {/* Left Panel - Biometrics */}
+          {/* Left Panel - Operator Vitals */}
           <div className="col-span-3 row-span-4">
-            <BiometricPanel 
-              phase={phase}
-              breathPattern={breathPattern}
-              pulseRate={pulseRate}
-              audioLevel={audioLevel}
+            <OperatorVitalsCognitiveLoadMonitor
+              hrv={78 - redTeamIntensity * 20}
+              respiratoryRate={16.2 + redTeamIntensity * 5}
+              cognitiveStressIndex={cognitiveStressIndex}
+              bioResonanceSupportFrequency={bioResonanceFrequency}
+              setBioResonanceSupportFrequency={setBioResonanceFrequency}
+              volume={audioLevel}
+              setVolume={() => {}}
             />
           </div>
 
-          {/* Left Panel Bottom - Quantum Resonance */}
+          {/* Left Panel Bottom - Squad Cohesion */}
           <div className="col-span-3 row-span-3">
-            <QuantumResonance
-              audioLevel={audioLevel}
-              breathPattern={breathPattern}
-              pulseRate={pulseRate}
-              phase={phase}
-              touchPoints={touchPoints}
-              onCoherenceChange={setCoherenceLevel}
+            <SquadCohesionIndex
+              squadVitals={[{ hrv: 78, respiratoryRate: 16.2, cognitiveStressIndex }]}
+              communicationEfficiency={communicationEfficiency}
+              onCohesionChange={setCohesionScore}
             />
           </div>
 
-          {/* Center Top - ChronoGlyph Array or Cymatic Visualizer */}
+          {/* Center Top - Decision Matrix Simulator or Tactical Data Display */}
           <div className="col-span-6 row-span-3">
-            {temporalMode ? (
-              <ChronoGlyphArray
-                phase={phase}
-                audioLevel={audioLevel}
-                breathPattern={breathPattern}
-                touchPoints={touchPoints}
-                onTemporalShift={handleTemporalShift}
+            {simulationMode ? (
+              <DecisionMatrixSimulator
+                decisionPoints={[]}
+                onOutcomeSelect={() => {}}
               />
             ) : (
-              <CymaticVisualizer 
-                audioLevel={audioLevel}
-                frequency={activeFrequency}
-                phase={phase}
-                breathPattern={breathPattern}
-                touchPoints={touchPoints}
+              <TacticalDataDisplay
+                threatIndicators={conflictingIntel ? [{ id: 'red-team-threat', position: { x: 200, y: 200 }, type: 'hostile' }] : []}
+                optimalPathing={[]}
+                squadPositions={[]}
               />
             )}
           </div>
 
-          {/* Center Bottom - Temporal Archive or Cymatic */}
+          {/* Center Bottom - Temporal Archive or SitRep/Intel Feed */}
           <div className="col-span-6 row-span-2">
-            {temporalMode ? (
+            {simulationMode ? (
               <TemporalArchive
-                phase={phase}
+                phase={acclimatizationLevel}
                 currentTimeline={currentTimeline}
                 temporalMoment={temporalMoment}
                 audioLevel={audioLevel}
               />
             ) : (
-              <NarrativeOverlay 
-                phase={phase}
-                audioLevel={audioLevel}
-                onPhaseAdvance={handlePhaseAdvance}
+              <SitRepIntelFeed
+                intelFeed={conflictingIntel ? [{ id: 'red-team-intel', timestamp: Date.now(), message: conflictingIntel, clearanceLevel: 1 }] : []}
+                currentClearance={acclimatizationLevel}
               />
             )}
           </div>
@@ -178,32 +188,26 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
           {/* Right Panel Top - Touch Interface */}
           <div className="col-span-3 row-span-4">
             <TouchInterface 
-              phase={phase}
-              onTouch={addTouchPoint}
-              onFrequencyChange={setActiveFrequency}
+              phase={acclimatizationLevel}
+              onTouch={addInteractionEvent}
+              onFrequencyChange={setBioResonanceFrequency}
             />
           </div>
 
-          {/* Right Panel Bottom - Consciousness Memory */}
+          {/* Right Panel Bottom - Mission Critical Event Recorder */}
           <div className="col-span-3 row-span-3">
-            <ConsciousnessMemory
-              phase={phase}
-              coherenceLevel={coherenceLevel}
-              audioLevel={audioLevel}
-              breathPattern={breathPattern}
-              pulseRate={pulseRate}
-              currentTimeline={currentTimeline}
-              temporalMoment={temporalMoment}
+            <MissionCriticalEventRecorder
+              snapshots={[]}
+              onSnapshotSelect={() => {}}
             />
           </div>
 
-          {/* Bottom Panel - Narrative when temporal mode active */}
-          {temporalMode && (
+          {/* Bottom Panel - SitRep/Intel Feed when simulation mode active */}
+          {simulationMode && (
             <div className="col-span-12 row-span-2">
-              <NarrativeOverlay 
-                phase={phase}
-                audioLevel={audioLevel}
-                onPhaseAdvance={handlePhaseAdvance}
+              <SitRepIntelFeed
+                intelFeed={conflictingIntel ? [{ id: 'red-team-intel', timestamp: Date.now(), message: conflictingIntel, clearanceLevel: 1 }] : []}
+                currentClearance={acclimatizationLevel}
               />
             </div>
           )}
@@ -213,10 +217,10 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
         <div className="relative z-10 min-h-screen flex flex-col gap-2 p-2">
           {/* Mobile Header */}
           <MobileHeader
-            phase={phase}
-            temporalMode={temporalMode}
+            phase={acclimatizationLevel}
+            temporalMode={simulationMode}
             microphoneConnected={microphoneConnected}
-            coherenceLevel={coherenceLevel}
+            coherenceLevel={cohesionScore}
             pulseRate={pulseRate}
             currentTimeline={currentTimeline}
             temporalMoment={temporalMoment}
@@ -224,66 +228,56 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
 
           {/* Mobile Main Visualizer */}
           <div className="flex-1 min-h-[40vh]">
-            {temporalMode ? (
-              <ChronoGlyphArray
-                phase={phase}
-                audioLevel={audioLevel}
-                breathPattern={breathPattern}
-                touchPoints={touchPoints}
-                onTemporalShift={handleTemporalShift}
+            {simulationMode ? (
+              <DecisionMatrixSimulator
+                decisionPoints={[]}
+                onOutcomeSelect={() => {}}
               />
             ) : (
-              <CymaticVisualizer 
-                audioLevel={audioLevel}
-                frequency={activeFrequency}
-                phase={phase}
-                breathPattern={breathPattern}
-                touchPoints={touchPoints}
+              <TacticalDataDisplay
+                threatIndicators={conflictingIntel ? [{ id: 'red-team-threat', position: { x: 200, y: 200 }, type: 'hostile' }] : []}
+                optimalPathing={[]}
+                squadPositions={[]}
               />
             )}
           </div>
 
           {/* Mobile Grid for Secondary Panels */}
           <div className="grid grid-cols-2 gap-2 h-64">
-            <BiometricPanel 
-              phase={phase}
-              breathPattern={breathPattern}
-              pulseRate={pulseRate}
-              audioLevel={audioLevel}
+            <OperatorVitalsCognitiveLoadMonitor
+              hrv={78 - redTeamIntensity * 20}
+              respiratoryRate={16.2 + redTeamIntensity * 5}
+              cognitiveStressIndex={cognitiveStressIndex}
+              bioResonanceSupportFrequency={bioResonanceFrequency}
+              setBioResonanceSupportFrequency={setBioResonanceFrequency}
+              volume={audioLevel}
+              setVolume={() => {}}
             />
-            <QuantumResonance
-              audioLevel={audioLevel}
-              breathPattern={breathPattern}
-              pulseRate={pulseRate}
-              phase={phase}
-              touchPoints={touchPoints}
-              onCoherenceChange={setCoherenceLevel}
+            <SquadCohesionIndex
+              squadVitals={[{ hrv: 78, respiratoryRate: 16.2, cognitiveStressIndex }]}
+              communicationEfficiency={communicationEfficiency}
+              onCohesionChange={setCohesionScore}
             />
           </div>
 
           {/* Mobile Secondary Grid */}
           <div className="grid grid-cols-2 gap-2 h-64">
             <TouchInterface 
-              phase={phase}
-              onTouch={addTouchPoint}
-              onFrequencyChange={setActiveFrequency}
+              phase={acclimatizationLevel}
+              onTouch={addInteractionEvent}
+              onFrequencyChange={setBioResonanceFrequency}
             />
-            <ConsciousnessMemory
-              phase={phase}
-              coherenceLevel={coherenceLevel}
-              audioLevel={audioLevel}
-              breathPattern={breathPattern}
-              pulseRate={pulseRate}
-              currentTimeline={currentTimeline}
-              temporalMoment={temporalMoment}
+            <MissionCriticalEventRecorder
+              snapshots={[]}
+              onSnapshotSelect={() => {}}
             />
           </div>
 
           {/* Mobile Temporal Archive */}
-          {temporalMode && (
+          {simulationMode && (
             <div className="h-32">
               <TemporalArchive
-                phase={phase}
+                phase={acclimatizationLevel}
                 currentTimeline={currentTimeline}
                 temporalMoment={temporalMoment}
                 audioLevel={audioLevel}
@@ -291,19 +285,18 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
             </div>
           )}
 
-          {/* Mobile Narrative */}
+          {/* Mobile SitRep/Intel Feed */}
           <div className="h-48">
-            <NarrativeOverlay 
-              phase={phase}
-              audioLevel={audioLevel}
-              onPhaseAdvance={handlePhaseAdvance}
+            <SitRepIntelFeed
+              intelFeed={conflictingIntel ? [{ id: 'red-team-intel', timestamp: Date.now(), message: conflictingIntel, clearanceLevel: 1 }] : []}
+              currentClearance={acclimatizationLevel}
             />
           </div>
         </div>
       )}
 
       {/* Visual Overlays */}
-      <VisualOverlays phase={phase} coherenceLevel={coherenceLevel} />
+      <VisualOverlays phase={acclimatizationLevel} coherenceLevel={cohesionScore} redTeamIntensity={redTeamIntensity} />
     </div>
   );
 };

@@ -1,45 +1,44 @@
-
 import { useState, useEffect } from 'react';
 
-interface PhaseProgressionResult {
-  phase: number;
-  temporalMode: boolean;
-  handlePhaseAdvance: () => void;
+interface AcclimatizationProgressionResult {
+  acclimatizationLevel: number;
+  simulationMode: boolean;
+  handleAcclimatizationAdvance: () => void;
 }
 
-export const usePhaseProgression = (onAccessLevelChange: (level: number) => void): PhaseProgressionResult => {
-  const [phase, setPhase] = useState(1);
-  const [temporalMode, setTemporalMode] = useState(false);
+export const usePhaseProgression = (onAccessLevelChange: (level: number) => void): AcclimatizationProgressionResult => {
+  const [acclimatizationLevel, setAcclimatizationLevel] = useState(1);
+  const [simulationMode, setSimulationMode] = useState(false);
 
-  // Phase progression logic
+  // Acclimatization progression logic
   useEffect(() => {
-    const phaseTimer = setInterval(() => {
-      if (phase < 4) {
-        setPhase(prev => prev + 1);
-        onAccessLevelChange(phase + 1);
+    const acclimatizationTimer = setInterval(() => {
+      if (acclimatizationLevel < 4) {
+        setAcclimatizationLevel(prev => prev + 1);
+        onAccessLevelChange(acclimatizationLevel + 1);
       }
     }, 30000);
 
-    return () => clearInterval(phaseTimer);
-  }, [phase, onAccessLevelChange]);
+    return () => clearInterval(acclimatizationTimer);
+  }, [acclimatizationLevel, onAccessLevelChange]);
 
-  // Activate temporal mode in phase 2+
+  // Activate simulation mode in acclimatization level 2+
   useEffect(() => {
-    if (phase >= 2) {
-      setTemporalMode(true);
+    if (acclimatizationLevel >= 2) {
+      setSimulationMode(true);
     }
-  }, [phase]);
+  }, [acclimatizationLevel]);
 
-  const handlePhaseAdvance = () => {
-    if (phase < 4) {
-      setPhase(prev => prev + 1);
-      onAccessLevelChange(phase + 1);
+  const handleAcclimatizationAdvance = () => {
+    if (acclimatizationLevel < 4) {
+      setAcclimatizationLevel(prev => prev + 1);
+      onAccessLevelChange(acclimatizationLevel + 1);
     }
   };
 
   return {
-    phase,
-    temporalMode,
-    handlePhaseAdvance
+    acclimatizationLevel,
+    simulationMode,
+    handleAcclimatizationAdvance
   };
 };
