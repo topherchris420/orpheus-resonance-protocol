@@ -4,8 +4,11 @@ import { useState, useEffect, useRef } from 'react';
 interface AudioAnalysisResult {
   audioLevel: number;
   breathPattern: number;
+  breathRate: number;
+  breathPhase: 'inhale' | 'exhale' | 'hold';
   pulseRate: number;
   activeFrequency: number;
+  recommendedFrequency: number;
   microphoneConnected: boolean;
   audioError: string | null;
 }
@@ -13,8 +16,11 @@ interface AudioAnalysisResult {
 export const useAudioAnalysis = (): AudioAnalysisResult => {
   const [audioLevel, setAudioLevel] = useState(0);
   const [breathPattern, setBreathPattern] = useState(0);
+  const [breathRate, setBreathRate] = useState(0.5);
+  const [breathPhase, setBreathPhase] = useState<'inhale' | 'exhale' | 'hold'>('inhale');
   const [pulseRate, setPulseRate] = useState(72);
   const [activeFrequency, setActiveFrequency] = useState(432);
+  const [recommendedFrequency, setRecommendedFrequency] = useState(432);
   const [microphoneConnected, setMicrophoneConnected] = useState(false);
   const [audioError, setAudioError] = useState<string | null>(null);
 
@@ -25,6 +31,9 @@ export const useAudioAnalysis = (): AudioAnalysisResult => {
   const animationFrameRef = useRef<number | null>(null);
   const dataArrayRef = useRef<Uint8Array | null>(null);
   const smoothingFactorRef = useRef(0.8);
+  const breathHistoryRef = useRef<number[]>([]);
+  const lastBreathPhaseRef = useRef<'inhale' | 'exhale' | 'hold'>('inhale');
+  const breathChangeTimeRef = useRef(Date.now());
 
   useEffect(() => {
     let retryCount = 0;
@@ -108,9 +117,59 @@ export const useAudioAnalysis = (): AudioAnalysisResult => {
             lowFreqSum += dataArrayRef.current[i];
           }
           const lowFreqAvg = lowFreqSum / lowFreqBins;
-          const breathBase = Math.sin(Date.now() / 4000) * 0.3 + 0.5;
-          const breathModulation = (lowFreqAvg / 255) * 0.4;
-          setBreathPattern(Math.max(0, Math.min(1, breathBase + breathModulation)));
+          
+          // Enhanced breathing detection
+          const currentBreathSignal = (lowFreqAvg / 255) + (normalizedLevel * 0.3);
+          breathHistoryRef.current.push(currentBreathSignal);
+          
+          // Keep only last 100 samples (about 3-4 seconds at 30fps)
+          if (breathHistoryRef.current.length > 100) {
+            breathHistoryRef.current.shift();
+          }
+          
+          // Calculate breathing pattern and rate
+          if (breathHistoryRef.current.length >= 20) {
+            const recentHistory = breathHistoryRef.current.slice(-20);
+            const avgRecent = recentHistory.reduce((a, b) => a + b, 0) / recentHistory.length;
+            const variance = recentHistory.reduce((acc, val) => acc + Math.pow(val - avgRecent, 2), 0) / recentHistory.length;
+            const breathIntensity = Math.sqrt(variance) * 2;
+            
+            setBreathPattern(Math.max(0, Math.min(1, avgRecent)));
+            setBreathRate(Math.max(0, Math.min(1, breathIntensity)));
+            
+            // Determine breath phase
+            const trend = recentHistory.slice(-5).reduce((acc, val, i, arr) => {
+              if (i === 0) return 0;
+              return acc + (val - arr[i-1]);
+            }, 0);
+            
+            let currentPhase: 'inhale' | 'exhale' | 'hold' = 'hold';
+            if (Math.abs(trend) > 0.02) {
+              currentPhase = trend > 0 ? 'inhale' : 'exhale';
+            }
+            
+            if (currentPhase !== lastBreathPhaseRef.current) {
+              breathChangeTimeRef.current = Date.now();
+              lastBreathPhaseRef.current = currentPhase;
+            }
+            
+            setBreathPhase(currentPhase);
+            
+            // Calculate recommended frequency based on breathing pattern
+            let recFreq = 432; // Default healing frequency
+            if (breathIntensity < 0.3) {
+              // Slow, deep breathing - use calming frequencies
+              recFreq = 256 + (avgRecent * 176); // 256-432 Hz range
+            } else if (breathIntensity > 0.7) {
+              // Fast, shallow breathing - use grounding frequencies
+              recFreq = 396 + (avgRecent * 132); // 396-528 Hz range
+            } else {
+              // Normal breathing - use healing frequencies
+              recFreq = 432 + (avgRecent * 96); // 432-528 Hz range
+            }
+            
+            setRecommendedFrequency(Math.round(recFreq));
+          }
           
           const midFreqStart = lowFreqBins;
           const midFreqEnd = Math.floor(200 * dataArrayRef.current.length / (audioContextRef.current?.sampleRate || 44100));
@@ -148,10 +207,28 @@ export const useAudioAnalysis = (): AudioAnalysisResult => {
       console.log('Starting simulated audio data');
       const simulatedTimer = setInterval(() => {
         const time = Date.now();
-        setBreathPattern(Math.sin(time / 3000) * 0.4 + 0.5);
+        const breathCycle = (time / 4000) % (2 * Math.PI);
+        const breathValue = Math.sin(breathCycle) * 0.4 + 0.5;
+        const breathSpeed = Math.abs(Math.cos(breathCycle)) * 0.8;
+        
+        setBreathPattern(breathValue);
+        setBreathRate(breathSpeed);
+        
+        // Determine simulated breath phase
+        const cyclePosition = breathCycle % (2 * Math.PI);
+        let phase: 'inhale' | 'exhale' | 'hold' = 'hold';
+        if (cyclePosition < Math.PI * 0.45 || cyclePosition > Math.PI * 1.55) {
+          phase = cyclePosition < Math.PI ? 'inhale' : 'exhale';
+        }
+        setBreathPhase(phase);
+        
         setPulseRate(72 + Math.sin(time / 1000) * 8 + Math.random() * 4);
         setAudioLevel(Math.sin(time / 500) * 0.3 + 0.4 + Math.random() * 0.2);
         setActiveFrequency(432 + Math.sin(time / 2000) * 50);
+        
+        // Simulate recommended frequency
+        const recFreq = breathSpeed < 0.3 ? 256 + (breathValue * 176) : 432 + (breathValue * 96);
+        setRecommendedFrequency(Math.round(recFreq));
       }, 100);
       
       return () => clearInterval(simulatedTimer);
@@ -184,8 +261,11 @@ export const useAudioAnalysis = (): AudioAnalysisResult => {
   return {
     audioLevel,
     breathPattern,
+    breathRate,
+    breathPhase,
     pulseRate,
     activeFrequency,
+    recommendedFrequency,
     microphoneConnected,
     audioError
   };

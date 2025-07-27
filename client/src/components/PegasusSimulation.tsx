@@ -13,6 +13,7 @@ import { StatusIndicators } from './StatusIndicators';
 import { HeaderStatusBar } from './HeaderStatusBar';
 import { MobileHeader } from './MobileHeader';
 import { VisualOverlays } from './VisualOverlays';
+import { BreathingGuidance } from './BreathingGuidance';
 import { useAudioAnalysis } from '../hooks/useAudioAnalysis';
 import { usePhaseProgression } from '../hooks/usePhaseProgression';
 import { useInteractionState } from '../hooks/useInteractionState';
@@ -32,8 +33,11 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
   const {
     audioLevel,
     breathPattern,
+    breathRate,
+    breathPhase,
     pulseRate,
     activeFrequency: audioFrequency,
+    recommendedFrequency,
     microphoneConnected,
     audioError
   } = useAudioAnalysis();
@@ -176,11 +180,23 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
           </div>
 
           {/* Right Panel Top - Touch Interface */}
-          <div className="col-span-3 row-span-4">
+          <div className="col-span-3 row-span-2">
             <TouchInterface 
               phase={phase}
               onTouch={addTouchPoint}
               onFrequencyChange={setActiveFrequency}
+            />
+          </div>
+
+          {/* Right Panel Middle - Breathing Guidance */}
+          <div className="col-span-3 row-span-2">
+            <BreathingGuidance
+              breathPattern={breathPattern}
+              breathRate={breathRate}
+              breathPhase={breathPhase}
+              recommendedFrequency={recommendedFrequency}
+              microphoneConnected={microphoneConnected}
+              audioError={audioError}
             />
           </div>
 
@@ -276,6 +292,18 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
               pulseRate={pulseRate}
               currentTimeline={currentTimeline}
               temporalMoment={temporalMoment}
+            />
+          </div>
+
+          {/* Mobile Breathing Guidance */}
+          <div className="h-64">
+            <BreathingGuidance
+              breathPattern={breathPattern}
+              breathRate={breathRate}
+              breathPhase={breathPhase}
+              recommendedFrequency={recommendedFrequency}
+              microphoneConnected={microphoneConnected}
+              audioError={audioError}
             />
           </div>
 
