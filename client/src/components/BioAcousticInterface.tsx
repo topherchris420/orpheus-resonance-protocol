@@ -140,7 +140,7 @@ export const BioAcousticInterface: React.FC = () => {
             className="h-2 bg-gray-700"
           />
           <div className="text-xs text-green-400">
-            {Math.round(confidence * 100)}% accurate
+            {confidence > 0.7 ? 'High' : confidence > 0.4 ? 'Good' : confidence > 0.2 ? 'Fair' : 'Low'} Quality
           </div>
         </div>
       </div>

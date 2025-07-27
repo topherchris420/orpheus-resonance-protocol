@@ -72,128 +72,245 @@ export const useBioAcousticAnalysis = (): BioAcousticResult => {
     breathHistoryRef.current.push(audioLevel);
     breathTimestampsRef.current.push(timestamp);
     
-    // Keep last 10 seconds of data
-    const cutoffTime = timestamp - 10000;
+    // Keep last 15 seconds of data for accurate analysis
+    const cutoffTime = timestamp - 15000;
     while (breathTimestampsRef.current.length > 0 && breathTimestampsRef.current[0] < cutoffTime) {
       breathHistoryRef.current.shift();
       breathTimestampsRef.current.shift();
     }
     
-    if (breathHistoryRef.current.length < 30) return;
+    if (breathHistoryRef.current.length < 50) return; // Need more data for accurate analysis
     
-    // Detect breathing peaks and calculate rate
-    const recentData = breathHistoryRef.current.slice(-30);
-    const recentTimes = breathTimestampsRef.current.slice(-30);
-    const threshold = Math.max(...recentData) * 0.6;
+    // Advanced peak detection using moving average and thresholds
+    const windowSize = 5;
+    const smoothedData: number[] = [];
+    const smoothedTimes: number[] = [];
     
-    // Find peaks
-    let peaks: number[] = [];
-    for (let i = 1; i < recentData.length - 1; i++) {
-      if (recentData[i] > recentData[i-1] && 
-          recentData[i] > recentData[i+1] && 
-          recentData[i] > threshold) {
-        peaks.push(recentTimes[i]);
+    for (let i = windowSize; i < breathHistoryRef.current.length - windowSize; i++) {
+      let sum = 0;
+      for (let j = i - windowSize; j <= i + windowSize; j++) {
+        sum += breathHistoryRef.current[j];
       }
+      smoothedData.push(sum / (windowSize * 2 + 1));
+      smoothedTimes.push(breathTimestampsRef.current[i]);
     }
     
-    // Calculate breathing rate (breaths per minute)
-    if (peaks.length >= 2) {
-      const intervals = [];
-      for (let i = 1; i < peaks.length; i++) {
-        intervals.push(peaks[i] - peaks[i-1]);
-      }
-      const avgInterval = intervals.reduce((a, b) => a + b, 0) / intervals.length;
-      const breathsPerMinute = 60000 / avgInterval;
-      
-      // Calculate depth (amplitude variation)
-      const maxLevel = Math.max(...recentData);
-      const minLevel = Math.min(...recentData);
-      const depth = maxLevel - minLevel;
-      
-      // Calculate regularity (consistency of intervals)
-      const intervalVariance = intervals.reduce((acc, val) => {
-        const diff = val - avgInterval;
-        return acc + diff * diff;
-      }, 0) / intervals.length;
-      const regularity = Math.max(0, 1 - (Math.sqrt(intervalVariance) / avgInterval));
-      
-      // Calculate coherence (smoothness of signal)
-      let coherence = 0;
-      for (let i = 1; i < recentData.length; i++) {
-        coherence += Math.abs(recentData[i] - recentData[i-1]);
-      }
-      coherence = Math.max(0, 1 - (coherence / recentData.length / maxLevel));
-      
-      // Calculate stress level based on multiple factors
-      let stressLevel = 0;
-      
-      // Fast breathing increases stress
-      if (breathsPerMinute > 20) stressLevel += 0.3;
-      else if (breathsPerMinute > 16) stressLevel += 0.1;
-      
-      // Shallow breathing increases stress
-      if (depth < 0.1) stressLevel += 0.3;
-      else if (depth < 0.2) stressLevel += 0.1;
-      
-      // Irregular breathing increases stress
-      if (regularity < 0.3) stressLevel += 0.3;
-      else if (regularity < 0.6) stressLevel += 0.1;
-      
-      // Low coherence increases stress
-      if (coherence < 0.3) stressLevel += 0.2;
-      
-      stressLevel = Math.min(1, stressLevel);
-      
-      setMetrics({
-        rate: Math.round(breathsPerMinute),
-        depth: Math.min(1, depth * 2), // Amplify for visibility
-        regularity,
-        coherence,
-        stressLevel
-      });
-      
-      setConfidence(Math.min(1, peaks.length / 5)); // Confidence based on data quality
-    }
-  }, []);
-
-  const selectTherapeuticFrequency = useCallback((stressLevel: number, metrics: BreathingMetrics) => {
-    // Find the best frequency for current stress level
-    let bestFreq = 432;
-    let bestMatch = Infinity;
+    // Adaptive threshold based on signal characteristics
+    const mean = smoothedData.reduce((a, b) => a + b, 0) / smoothedData.length;
+    const variance = smoothedData.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / smoothedData.length;
+    const stdDev = Math.sqrt(variance);
+    const threshold = mean + stdDev * 0.5; // Dynamic threshold
     
-    for (const [freq, info] of Object.entries(THERAPEUTIC_FREQUENCIES)) {
-      const frequency = parseInt(freq);
-      const [minStress, maxStress] = info.stress;
-      
-      if (stressLevel >= minStress && stressLevel <= maxStress) {
-        const centerStress = (minStress + maxStress) / 2;
-        const distance = Math.abs(stressLevel - centerStress);
+    // Find authentic breathing peaks with minimum distance
+    const peaks: number[] = [];
+    const minPeakDistance = 1500; // Minimum 1.5 seconds between breaths
+    
+    for (let i = 2; i < smoothedData.length - 2; i++) {
+      if (smoothedData[i] > smoothedData[i-1] && 
+          smoothedData[i] > smoothedData[i+1] && 
+          smoothedData[i] > threshold &&
+          smoothedData[i] > smoothedData[i-2] &&
+          smoothedData[i] > smoothedData[i+2]) {
         
-        if (distance < bestMatch) {
-          bestMatch = distance;
-          bestFreq = frequency;
+        // Check minimum distance from last peak
+        if (peaks.length === 0 || smoothedTimes[i] - peaks[peaks.length - 1] > minPeakDistance) {
+          peaks.push(smoothedTimes[i]);
         }
       }
     }
     
-    const freqInfo = THERAPEUTIC_FREQUENCIES[bestFreq as keyof typeof THERAPEUTIC_FREQUENCIES];
+    // Calculate authentic breathing metrics
+    if (peaks.length >= 3) {
+      // Breathing rate calculation with outlier removal
+      const intervals = [];
+      for (let i = 1; i < peaks.length; i++) {
+        intervals.push(peaks[i] - peaks[i-1]);
+      }
+      
+      // Remove outliers (intervals too short or too long)
+      const validIntervals = intervals.filter(interval => interval >= 2000 && interval <= 10000);
+      
+      if (validIntervals.length >= 2) {
+        const avgInterval = validIntervals.reduce((a, b) => a + b, 0) / validIntervals.length;
+        const breathsPerMinute = Math.min(30, Math.max(6, 60000 / avgInterval)); // Realistic range
+        
+        // Depth calculation using percentile analysis
+        const sortedData = [...smoothedData].sort((a, b) => a - b);
+        const p90 = sortedData[Math.floor(sortedData.length * 0.9)];
+        const p10 = sortedData[Math.floor(sortedData.length * 0.1)];
+        const depth = Math.min(1, (p90 - p10) * 3); // Authentic depth measure
+        
+        // Regularity based on coefficient of variation
+        const intervalMean = validIntervals.reduce((a, b) => a + b, 0) / validIntervals.length;
+        const intervalVariance = validIntervals.reduce((acc, val) => acc + Math.pow(val - intervalMean, 2), 0) / validIntervals.length;
+        const coefficientOfVariation = Math.sqrt(intervalVariance) / intervalMean;
+        const regularity = Math.max(0, 1 - coefficientOfVariation * 2);
+        
+        // Heart Rate Variability-inspired coherence
+        let hrv = 0;
+        for (let i = 1; i < validIntervals.length; i++) {
+          hrv += Math.pow(validIntervals[i] - validIntervals[i-1], 2);
+        }
+        hrv = Math.sqrt(hrv / Math.max(1, validIntervals.length - 1));
+        const coherence = Math.max(0, 1 - (hrv / 2000)); // Normalize HRV-like measure
+        
+        // Physiological stress assessment
+        let stressLevel = 0;
+        
+        // Respiratory rate stress indicators (clinical ranges)
+        if (breathsPerMinute > 24) stressLevel += 0.4; // Tachypnea
+        else if (breathsPerMinute > 20) stressLevel += 0.25;
+        else if (breathsPerMinute > 16) stressLevel += 0.1;
+        else if (breathsPerMinute < 8) stressLevel += 0.15; // Bradypnea can indicate stress
+        
+        // Depth-related stress (shallow breathing)
+        if (depth < 0.15) stressLevel += 0.35; // Very shallow
+        else if (depth < 0.3) stressLevel += 0.2;
+        else if (depth < 0.5) stressLevel += 0.05;
+        
+        // Irregularity stress indicators
+        if (regularity < 0.4) stressLevel += 0.3; // Highly irregular
+        else if (regularity < 0.6) stressLevel += 0.15;
+        
+        // Coherence stress indicators
+        if (coherence < 0.3) stressLevel += 0.25; // Poor coherence
+        else if (coherence < 0.5) stressLevel += 0.1;
+        
+        stressLevel = Math.min(1, stressLevel);
+        
+        setMetrics({
+          rate: Math.round(breathsPerMinute),
+          depth,
+          regularity,
+          coherence,
+          stressLevel
+        });
+        
+        // Higher confidence with more peaks and consistent intervals
+        const confidenceScore = Math.min(1, (peaks.length - 2) / 8 * (regularity * 0.5 + 0.5));
+        setConfidence(confidenceScore);
+        
+        // Store breath cycles for additional analysis
+        breathCyclesRef.current = validIntervals;
+        
+        // Debug authentic analysis
+        if (Math.random() < 0.05) {
+          console.log('Authentic Bio-Acoustic Analysis:', {
+            peaks: peaks.length,
+            breathsPerMinute: breathsPerMinute.toFixed(1),
+            depth: depth.toFixed(3),
+            regularity: regularity.toFixed(3),
+            coherence: coherence.toFixed(3),
+            stressLevel: stressLevel.toFixed(3),
+            confidence: confidenceScore.toFixed(3)
+          });
+        }
+      }
+    }
+  }, []);
+
+  const selectTherapeuticFrequency = useCallback((stressLevel: number, metrics: BreathingMetrics) => {
+    // Advanced frequency selection based on physiological state
+    let selectedFreq = 432;
+    let therapyReason = "baseline";
     
-    // Calculate duration based on stress level (higher stress = longer exposure)
-    const baseDuration = 3000;
-    const stressDuration = stressLevel * 4000;
-    const duration = baseDuration + stressDuration;
+    // Multi-factor frequency selection algorithm
+    const breathingRate = metrics.rate;
+    const breathingDepth = metrics.depth;
+    const coherenceLevel = metrics.coherence;
+    const regularityLevel = metrics.regularity;
     
-    // Calculate intensity based on breathing depth and regularity
-    const baseIntensity = 0.2;
-    const adaptiveIntensity = Math.min(0.5, baseIntensity + (1 - metrics.depth) * 0.3);
+    // Primary selection based on stress level and breathing patterns
+    if (stressLevel > 0.8 || breathingRate > 22) {
+      // High stress: Pain relief and deep calming
+      selectedFreq = 174;
+      therapyReason = "acute stress and rapid breathing detected";
+    } else if (stressLevel > 0.6 || (breathingRate > 18 && breathingDepth < 0.3)) {
+      // Moderate-high stress: Fear and anxiety release
+      selectedFreq = 396;
+      therapyReason = "anxiety patterns and shallow breathing";
+    } else if (stressLevel > 0.4 || regularityLevel < 0.4) {
+      // Moderate stress: Facilitating positive change
+      selectedFreq = 417;
+      therapyReason = "irregular breathing patterns indicating tension";
+    } else if (coherenceLevel < 0.5 || (breathingRate > 14 && breathingDepth < 0.5)) {
+      // Mild stress: Heart coherence and nervous system calming
+      selectedFreq = 528;
+      therapyReason = "low coherence requiring nervous system regulation";
+    } else if (stressLevel > 0.2 || breathingRate < 10) {
+      // Low stress: Emotional healing and connection
+      selectedFreq = 639;
+      therapyReason = "emotional regulation and heart-centered healing";
+    } else if (coherenceLevel > 0.7 && regularityLevel > 0.7) {
+      // Optimal state: Higher consciousness and intuition
+      selectedFreq = 852;
+      therapyReason = "high coherence supporting spiritual awareness";
+    } else {
+      // Balanced state: Natural harmony
+      selectedFreq = 432;
+      therapyReason = "balanced state maintaining natural harmony";
+    }
+    
+    // Fine-tune frequency based on breathing cycle analysis
+    if (breathCyclesRef.current.length >= 3) {
+      const avgCycle = breathCyclesRef.current.reduce((a, b) => a + b, 0) / breathCyclesRef.current.length;
+      const cycleHz = 1000 / avgCycle; // Convert to Hz
+      
+      // Entrainment frequency adjustment (resonance with breathing)
+      const entrainmentMultiplier = Math.round(selectedFreq / cycleHz / 10) * 10;
+      if (entrainmentMultiplier > 0 && Math.abs(entrainmentMultiplier * cycleHz - selectedFreq) < 50) {
+        selectedFreq = Math.round(entrainmentMultiplier * cycleHz);
+        therapyReason += " (entrained to breathing rhythm)";
+      }
+    }
+    
+    const freqInfo = THERAPEUTIC_FREQUENCIES[selectedFreq as keyof typeof THERAPEUTIC_FREQUENCIES] || 
+                     THERAPEUTIC_FREQUENCIES[432];
+    
+    // Adaptive duration based on physiological needs
+    let duration = 4000; // Base duration
+    
+    // Longer duration for higher stress
+    duration += stressLevel * 6000;
+    
+    // Adjust for breathing patterns
+    if (breathingRate > 20) duration += 2000; // Fast breathing needs longer calming
+    if (breathingDepth < 0.3) duration += 1500; // Shallow breathing needs more time
+    if (regularityLevel < 0.5) duration += 1000; // Irregular breathing needs stabilization
+    
+    // Adaptive intensity based on receptivity
+    let intensity = 0.25; // Base intensity
+    
+    // Higher intensity for lower coherence (less receptive state)
+    intensity += (1 - coherenceLevel) * 0.15;
+    
+    // Lower intensity for higher stress (gentler approach)
+    intensity -= stressLevel * 0.1;
+    
+    // Adjust for breathing depth (deeper breathing = higher receptivity)
+    intensity += breathingDepth * 0.1;
+    
+    intensity = Math.max(0.15, Math.min(0.5, intensity));
     
     setRecommendation({
-      frequency: bestFreq,
+      frequency: selectedFreq,
       name: freqInfo.name,
-      purpose: freqInfo.purpose,
+      purpose: `${freqInfo.purpose} - ${therapyReason}`,
       duration: Math.round(duration),
-      intensity: adaptiveIntensity
+      intensity
     });
+    
+    // Log therapeutic decision
+    if (Math.random() < 0.1) {
+      console.log('Therapeutic Frequency Selection:', {
+        frequency: selectedFreq,
+        reason: therapyReason,
+        stressLevel: stressLevel.toFixed(3),
+        breathingRate,
+        duration: Math.round(duration),
+        intensity: intensity.toFixed(3)
+      });
+    }
   }, []);
 
   useEffect(() => {
@@ -256,21 +373,41 @@ export const useBioAcousticAnalysis = (): BioAcousticResult => {
         if (analyserRef.current && dataArrayRef.current) {
           analyserRef.current.getByteFrequencyData(dataArrayRef.current);
           
-          // Calculate RMS for breathing detection
-          let sum = 0;
-          for (let i = 0; i < dataArrayRef.current.length; i++) {
-            sum += dataArrayRef.current[i] * dataArrayRef.current[i];
-          }
-          const rms = Math.sqrt(sum / dataArrayRef.current.length);
-          const normalizedLevel = Math.min(rms / 128, 1);
+          // Multi-band analysis for authentic breathing detection
+          const nyquist = (audioContextRef.current?.sampleRate || 44100) / 2;
+          const binSize = nyquist / dataArrayRef.current.length;
           
-          // Focus on low frequency range for breathing (0-50 Hz)
-          const breathingBins = Math.floor(50 * dataArrayRef.current.length / (audioContextRef.current?.sampleRate || 44100));
-          let breathingSum = 0;
-          for (let i = 0; i < breathingBins; i++) {
-            breathingSum += dataArrayRef.current[i];
+          // Calculate RMS for overall audio level
+          let rmsSum = 0;
+          for (let i = 0; i < dataArrayRef.current.length; i++) {
+            rmsSum += dataArrayRef.current[i] * dataArrayRef.current[i];
           }
-          const breathingLevel = (breathingSum / breathingBins / 255) * 0.3 + normalizedLevel * 0.7;
+          const rms = Math.sqrt(rmsSum / dataArrayRef.current.length);
+          const normalizedRMS = Math.min(rms / 128, 1);
+          
+          // Focus on breathing frequency bands (0.1-2 Hz converted to bins)
+          const breathingStartBin = Math.floor(0.1 / binSize);
+          const breathingEndBin = Math.floor(2 / binSize);
+          
+          let breathingEnergy = 0;
+          for (let i = breathingStartBin; i < Math.min(breathingEndBin, dataArrayRef.current.length); i++) {
+            breathingEnergy += dataArrayRef.current[i];
+          }
+          const breathingSignal = breathingEnergy / (breathingEndBin - breathingStartBin) / 255;
+          
+          // Voice/speech band detection (300-3000 Hz) for filtering out speech
+          const voiceStartBin = Math.floor(300 / binSize);
+          const voiceEndBin = Math.floor(3000 / binSize);
+          
+          let voiceEnergy = 0;
+          for (let i = voiceStartBin; i < Math.min(voiceEndBin, dataArrayRef.current.length); i++) {
+            voiceEnergy += dataArrayRef.current[i];
+          }
+          const voiceLevel = voiceEnergy / (voiceEndBin - voiceStartBin) / 255;
+          
+          // Combine signals with voice suppression
+          const voiceSuppressionFactor = Math.max(0.1, 1 - voiceLevel * 2);
+          const breathingLevel = (breathingSignal * 0.4 + normalizedRMS * 0.6) * voiceSuppressionFactor;
           
           analyzeBreathingPattern(breathingLevel, Date.now());
         }
