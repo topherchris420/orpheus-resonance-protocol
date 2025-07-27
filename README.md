@@ -1,4 +1,4 @@
-# R.A.I.N. division
+# R.A.I.N. Division
 ## Consciousness Modulation Experience by Vers3Dynamics
 
 ![Project Pegasus](https://img.shields.io/badge/Project-PEGASUS-cyan?style=for-the-badge)
