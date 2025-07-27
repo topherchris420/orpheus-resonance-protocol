@@ -118,57 +118,86 @@ export const useAudioAnalysis = (): AudioAnalysisResult => {
           }
           const lowFreqAvg = lowFreqSum / lowFreqBins;
           
-          // Enhanced breathing detection
-          const currentBreathSignal = (lowFreqAvg / 255) + (normalizedLevel * 0.3);
-          breathHistoryRef.current.push(currentBreathSignal);
+          // Simplified breathing detection focusing on overall audio level changes
+          // This is more reliable for microphone breathing detection
+          const currentAudioLevel = normalizedLevel;
           
-          // Keep only last 100 samples (about 3-4 seconds at 30fps)
-          if (breathHistoryRef.current.length > 100) {
+          // Store raw audio levels in history
+          breathHistoryRef.current.push(currentAudioLevel);
+          
+          // Keep only last 90 samples (about 3 seconds at 30fps)
+          if (breathHistoryRef.current.length > 90) {
             breathHistoryRef.current.shift();
           }
           
-          // Calculate breathing pattern and rate
-          if (breathHistoryRef.current.length >= 20) {
-            const recentHistory = breathHistoryRef.current.slice(-20);
-            const avgRecent = recentHistory.reduce((a, b) => a + b, 0) / recentHistory.length;
-            const variance = recentHistory.reduce((acc, val) => acc + Math.pow(val - avgRecent, 2), 0) / recentHistory.length;
-            const breathIntensity = Math.sqrt(variance) * 2;
+          // Calculate breathing pattern and rate when we have enough data
+          if (breathHistoryRef.current.length >= 15) {
+            const history = breathHistoryRef.current;
+            const recentHistory = history.slice(-15); // Last 0.5 seconds
+            const longerHistory = history.slice(-45); // Last 1.5 seconds
             
-            setBreathPattern(Math.max(0, Math.min(1, avgRecent)));
-            setBreathRate(Math.max(0, Math.min(1, breathIntensity)));
+            // Current breath depth - use smoothed recent average with amplification
+            const recentAvg = recentHistory.reduce((a, b) => a + b, 0) / recentHistory.length;
+            const amplifiedBreathDepth = Math.min(1, recentAvg * 2); // Amplify for better visibility
+            setBreathPattern(amplifiedBreathDepth);
             
-            // Determine breath phase
-            const trend = recentHistory.slice(-5).reduce((acc, val, i, arr) => {
-              if (i === 0) return 0;
-              return acc + (val - arr[i-1]);
-            }, 0);
-            
-            let currentPhase: 'inhale' | 'exhale' | 'hold' = 'hold';
-            if (Math.abs(trend) > 0.02) {
-              currentPhase = trend > 0 ? 'inhale' : 'exhale';
+            // Breath rate calculation - measure variance over longer period
+            if (longerHistory.length >= 30) {
+              const longerAvg = longerHistory.reduce((a, b) => a + b, 0) / longerHistory.length;
+              const variance = longerHistory.reduce((acc, val) => acc + Math.pow(val - longerAvg, 2), 0) / longerHistory.length;
+              const breathIntensity = Math.min(1, Math.sqrt(variance) * 8); // Amplify variance
+              setBreathRate(breathIntensity);
+              
+              // Determine breath phase using simple derivative
+              const trend = recentHistory.slice(-5).reduce((acc, val, i, arr) => {
+                if (i === 0) return 0;
+                return acc + (val - arr[i-1]);
+              }, 0);
+              
+              let currentPhase: 'inhale' | 'exhale' | 'hold' = 'hold';
+              const trendThreshold = 0.005; // Lower threshold for more sensitivity
+              
+              if (Math.abs(trend) > trendThreshold) {
+                currentPhase = trend > 0 ? 'inhale' : 'exhale';
+              }
+              
+              // Update phase with some stability filtering
+              if (currentPhase !== lastBreathPhaseRef.current) {
+                if (Date.now() - breathChangeTimeRef.current > 300) { // 300ms minimum
+                  breathChangeTimeRef.current = Date.now();
+                  lastBreathPhaseRef.current = currentPhase;
+                  setBreathPhase(currentPhase);
+                }
+              } else {
+                setBreathPhase(currentPhase);
+              }
+              
+              // Calculate recommended frequency
+              let recFreq = 432;
+              if (breathIntensity < 0.3) {
+                recFreq = 256 + (amplifiedBreathDepth * 120); // 256-376 Hz
+              } else if (breathIntensity < 0.7) {
+                recFreq = 396 + (amplifiedBreathDepth * 136); // 396-532 Hz
+              } else {
+                recFreq = 528 + (amplifiedBreathDepth * 100); // 528-628 Hz
+              }
+              
+              setRecommendedFrequency(Math.round(recFreq));
+              
+              // Debug logging
+              if (Math.random() < 0.02) {
+                console.log('Breath Debug:', {
+                  audioLevel: currentAudioLevel.toFixed(3),
+                  breathDepth: amplifiedBreathDepth.toFixed(3),
+                  breathRate: breathIntensity.toFixed(3),
+                  phase: currentPhase,
+                  trend: trend.toFixed(4)
+                });
+              }
             }
-            
-            if (currentPhase !== lastBreathPhaseRef.current) {
-              breathChangeTimeRef.current = Date.now();
-              lastBreathPhaseRef.current = currentPhase;
-            }
-            
-            setBreathPhase(currentPhase);
-            
-            // Calculate recommended frequency based on breathing pattern
-            let recFreq = 432; // Default healing frequency
-            if (breathIntensity < 0.3) {
-              // Slow, deep breathing - use calming frequencies
-              recFreq = 256 + (avgRecent * 176); // 256-432 Hz range
-            } else if (breathIntensity > 0.7) {
-              // Fast, shallow breathing - use grounding frequencies
-              recFreq = 396 + (avgRecent * 132); // 396-528 Hz range
-            } else {
-              // Normal breathing - use healing frequencies
-              recFreq = 432 + (avgRecent * 96); // 432-528 Hz range
-            }
-            
-            setRecommendedFrequency(Math.round(recFreq));
+          } else {
+            // Not enough data yet, show current audio level as breath pattern
+            setBreathPattern(Math.min(1, currentAudioLevel * 2));
           }
           
           const midFreqStart = lowFreqBins;
