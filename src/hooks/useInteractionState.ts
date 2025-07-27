@@ -1,33 +1,32 @@
-
 import { useState } from 'react';
 
-interface TouchPoint {
+interface InteractionEvent {
   x: number;
   y: number;
   intensity: number;
 }
 
 interface InteractionStateResult {
-  touchPoints: TouchPoint[];
+  interactionEvents: InteractionEvent[];
   currentTimeline: number;
   temporalMoment: number;
-  coherenceLevel: number;
-  activeFrequency: number;
-  addTouchPoint: (point: TouchPoint) => void;
+  cohesionScore: number;
+  bioResonanceFrequency: number;
+  addInteractionEvent: (event: InteractionEvent) => void;
   handleTemporalShift: (timeline: number, moment: number) => void;
-  setCoherenceLevel: (level: number) => void;
-  setActiveFrequency: (frequency: number) => void;
+  setCohesionScore: (score: number) => void;
+  setBioResonanceFrequency: (frequency: number) => void;
 }
 
 export const useInteractionState = (): InteractionStateResult => {
-  const [touchPoints, setTouchPoints] = useState<TouchPoint[]>([]);
+  const [interactionEvents, setInteractionEvents] = useState<InteractionEvent[]>([]);
   const [currentTimeline, setCurrentTimeline] = useState(0);
   const [temporalMoment, setTemporalMoment] = useState(0);
-  const [coherenceLevel, setCoherenceLevel] = useState(0);
-  const [activeFrequency, setActiveFrequency] = useState(432);
+  const [cohesionScore, setCohesionScore] = useState(0);
+  const [bioResonanceFrequency, setBioResonanceFrequency] = useState(40);
 
-  const addTouchPoint = (point: TouchPoint) => {
-    setTouchPoints(prev => [...prev.slice(-4), point]);
+  const addInteractionEvent = (event: InteractionEvent) => {
+    setInteractionEvents(prev => [...prev.slice(-4), event]);
   };
 
   const handleTemporalShift = (timeline: number, moment: number) => {
@@ -36,14 +35,14 @@ export const useInteractionState = (): InteractionStateResult => {
   };
 
   return {
-    touchPoints,
+    interactionEvents,
     currentTimeline,
     temporalMoment,
-    coherenceLevel,
-    activeFrequency,
-    addTouchPoint,
+    cohesionScore,
+    bioResonanceFrequency,
+    addInteractionEvent,
     handleTemporalShift,
-    setCoherenceLevel,
-    setActiveFrequency
+    setCohesionScore,
+    setBioResonanceFrequency
   };
 };
