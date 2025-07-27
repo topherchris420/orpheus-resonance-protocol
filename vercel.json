@@ -5,7 +5,9 @@
   "outputDirectory": "dist/public",
   "installCommand": "npm install",
   "functions": {
-    "api/health.js": "./api/health.js"
+    "api/health.js": {
+      "runtime": "nodejs20.x"
+    }
   },
   "routes": [
     {
