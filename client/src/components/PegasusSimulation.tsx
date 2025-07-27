@@ -14,6 +14,7 @@ import { HeaderStatusBar } from './HeaderStatusBar';
 import { MobileHeader } from './MobileHeader';
 import { VisualOverlays } from './VisualOverlays';
 import { BreathingGuidance } from './BreathingGuidance';
+import { BioAcousticInterface } from './BioAcousticInterface';
 import { useAudioAnalysis } from '../hooks/useAudioAnalysis';
 import { usePhaseProgression } from '../hooks/usePhaseProgression';
 import { useInteractionState } from '../hooks/useInteractionState';
@@ -188,16 +189,9 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
             />
           </div>
 
-          {/* Right Panel Middle - Breathing Guidance */}
+          {/* Right Panel Middle - Bio-Acoustic Interface */}
           <div className="col-span-3 row-span-2">
-            <BreathingGuidance
-              breathPattern={breathPattern}
-              breathRate={breathRate}
-              breathPhase={breathPhase}
-              recommendedFrequency={recommendedFrequency}
-              microphoneConnected={microphoneConnected}
-              audioError={audioError}
-            />
+            <BioAcousticInterface />
           </div>
 
           {/* Right Panel Bottom - Consciousness Memory */}
@@ -295,16 +289,9 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
             />
           </div>
 
-          {/* Mobile Breathing Guidance */}
-          <div className="h-64">
-            <BreathingGuidance
-              breathPattern={breathPattern}
-              breathRate={breathRate}
-              breathPhase={breathPhase}
-              recommendedFrequency={recommendedFrequency}
-              microphoneConnected={microphoneConnected}
-              audioError={audioError}
-            />
+          {/* Mobile Bio-Acoustic Interface */}
+          <div className="h-80">
+            <BioAcousticInterface />
           </div>
 
           {/* Mobile Temporal Archive */}
