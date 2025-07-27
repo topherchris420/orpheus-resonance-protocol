@@ -125,16 +125,4 @@ export const useAudioAnalysis = (): AudioAnalysisResult => {
   }, []);
 
   useEffect(() => {
-    if (oscillatorRef.current) {
-      oscillatorRef.current.frequency.setValueAtTime(healingTone, audioContextRef.current.currentTime);
-    }
-  }, [healingTone]);
-
-  useEffect(() => {
-    if (gainRef.current) {
-      gainRef.current.gain.setValueAtTime(volume, audioContextRef.current.currentTime);
-    }
-  }, [volume]);
-
-  return { audioLevel, breathPattern, pulseRate, activeFrequency, microphoneConnected, audioError, healingTone, setHealingTone, volume, setVolume };
-};
+    if (oscillatorRef.current &&
