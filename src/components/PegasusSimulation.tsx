@@ -13,8 +13,6 @@ import { StatusIndicators } from './StatusIndicators';
 import { HeaderStatusBar } from './HeaderStatusBar';
 import { MobileHeader } from './MobileHeader';
 import { VisualOverlays } from './VisualOverlays';
-import { BreathingGuidance } from './BreathingGuidance';
-import { BioAcousticInterface } from './BioAcousticInterface';
 import { useAudioAnalysis } from '../hooks/useAudioAnalysis';
 import { usePhaseProgression } from '../hooks/usePhaseProgression';
 import { useInteractionState } from '../hooks/useInteractionState';
@@ -34,11 +32,8 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
   const {
     audioLevel,
     breathPattern,
-    breathRate,
-    breathPhase,
     pulseRate,
     activeFrequency: audioFrequency,
-    recommendedFrequency,
     microphoneConnected,
     audioError
   } = useAudioAnalysis();
@@ -181,17 +176,12 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
           </div>
 
           {/* Right Panel Top - Touch Interface */}
-          <div className="col-span-3 row-span-2">
+          <div className="col-span-3 row-span-4">
             <TouchInterface 
               phase={phase}
               onTouch={addTouchPoint}
               onFrequencyChange={setActiveFrequency}
             />
-          </div>
-
-          {/* Right Panel Middle - Bio-Acoustic Interface */}
-          <div className="col-span-3 row-span-2">
-            <BioAcousticInterface />
           </div>
 
           {/* Right Panel Bottom - Consciousness Memory */}
@@ -287,11 +277,6 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
               currentTimeline={currentTimeline}
               temporalMoment={temporalMoment}
             />
-          </div>
-
-          {/* Mobile Bio-Acoustic Interface */}
-          <div className="h-80">
-            <BioAcousticInterface />
           </div>
 
           {/* Mobile Temporal Archive */}

@@ -4,11 +4,8 @@ import { useState, useEffect, useRef } from 'react';
 interface AudioAnalysisResult {
   audioLevel: number;
   breathPattern: number;
-  breathRate: number;
-  breathPhase: 'inhale' | 'exhale' | 'hold';
   pulseRate: number;
   activeFrequency: number;
-  recommendedFrequency: number;
   microphoneConnected: boolean;
   audioError: string | null;
 }
@@ -16,11 +13,8 @@ interface AudioAnalysisResult {
 export const useAudioAnalysis = (): AudioAnalysisResult => {
   const [audioLevel, setAudioLevel] = useState(0);
   const [breathPattern, setBreathPattern] = useState(0);
-  const [breathRate, setBreathRate] = useState(0.5);
-  const [breathPhase, setBreathPhase] = useState<'inhale' | 'exhale' | 'hold'>('inhale');
   const [pulseRate, setPulseRate] = useState(72);
   const [activeFrequency, setActiveFrequency] = useState(432);
-  const [recommendedFrequency, setRecommendedFrequency] = useState(432);
   const [microphoneConnected, setMicrophoneConnected] = useState(false);
   const [audioError, setAudioError] = useState<string | null>(null);
 
@@ -31,9 +25,6 @@ export const useAudioAnalysis = (): AudioAnalysisResult => {
   const animationFrameRef = useRef<number | null>(null);
   const dataArrayRef = useRef<Uint8Array | null>(null);
   const smoothingFactorRef = useRef(0.8);
-  const breathHistoryRef = useRef<number[]>([]);
-  const lastBreathPhaseRef = useRef<'inhale' | 'exhale' | 'hold'>('inhale');
-  const breathChangeTimeRef = useRef(Date.now());
 
   useEffect(() => {
     let retryCount = 0;
@@ -117,88 +108,9 @@ export const useAudioAnalysis = (): AudioAnalysisResult => {
             lowFreqSum += dataArrayRef.current[i];
           }
           const lowFreqAvg = lowFreqSum / lowFreqBins;
-          
-          // Simplified breathing detection focusing on overall audio level changes
-          // This is more reliable for microphone breathing detection
-          const currentAudioLevel = normalizedLevel;
-          
-          // Store raw audio levels in history
-          breathHistoryRef.current.push(currentAudioLevel);
-          
-          // Keep only last 90 samples (about 3 seconds at 30fps)
-          if (breathHistoryRef.current.length > 90) {
-            breathHistoryRef.current.shift();
-          }
-          
-          // Calculate breathing pattern and rate when we have enough data
-          if (breathHistoryRef.current.length >= 15) {
-            const history = breathHistoryRef.current;
-            const recentHistory = history.slice(-15); // Last 0.5 seconds
-            const longerHistory = history.slice(-45); // Last 1.5 seconds
-            
-            // Current breath depth - use smoothed recent average with amplification
-            const recentAvg = recentHistory.reduce((a, b) => a + b, 0) / recentHistory.length;
-            const amplifiedBreathDepth = Math.min(1, recentAvg * 2); // Amplify for better visibility
-            setBreathPattern(amplifiedBreathDepth);
-            
-            // Breath rate calculation - measure variance over longer period
-            if (longerHistory.length >= 30) {
-              const longerAvg = longerHistory.reduce((a, b) => a + b, 0) / longerHistory.length;
-              const variance = longerHistory.reduce((acc, val) => acc + Math.pow(val - longerAvg, 2), 0) / longerHistory.length;
-              const breathIntensity = Math.min(1, Math.sqrt(variance) * 8); // Amplify variance
-              setBreathRate(breathIntensity);
-              
-              // Determine breath phase using simple derivative
-              const trend = recentHistory.slice(-5).reduce((acc, val, i, arr) => {
-                if (i === 0) return 0;
-                return acc + (val - arr[i-1]);
-              }, 0);
-              
-              let currentPhase: 'inhale' | 'exhale' | 'hold' = 'hold';
-              const trendThreshold = 0.005; // Lower threshold for more sensitivity
-              
-              if (Math.abs(trend) > trendThreshold) {
-                currentPhase = trend > 0 ? 'inhale' : 'exhale';
-              }
-              
-              // Update phase with some stability filtering
-              if (currentPhase !== lastBreathPhaseRef.current) {
-                if (Date.now() - breathChangeTimeRef.current > 300) { // 300ms minimum
-                  breathChangeTimeRef.current = Date.now();
-                  lastBreathPhaseRef.current = currentPhase;
-                  setBreathPhase(currentPhase);
-                }
-              } else {
-                setBreathPhase(currentPhase);
-              }
-              
-              // Calculate recommended frequency
-              let recFreq = 432;
-              if (breathIntensity < 0.3) {
-                recFreq = 256 + (amplifiedBreathDepth * 120); // 256-376 Hz
-              } else if (breathIntensity < 0.7) {
-                recFreq = 396 + (amplifiedBreathDepth * 136); // 396-532 Hz
-              } else {
-                recFreq = 528 + (amplifiedBreathDepth * 100); // 528-628 Hz
-              }
-              
-              setRecommendedFrequency(Math.round(recFreq));
-              
-              // Debug logging
-              if (Math.random() < 0.02) {
-                console.log('Breath Debug:', {
-                  audioLevel: currentAudioLevel.toFixed(3),
-                  breathDepth: amplifiedBreathDepth.toFixed(3),
-                  breathRate: breathIntensity.toFixed(3),
-                  phase: currentPhase,
-                  trend: trend.toFixed(4)
-                });
-              }
-            }
-          } else {
-            // Not enough data yet, show current audio level as breath pattern
-            setBreathPattern(Math.min(1, currentAudioLevel * 2));
-          }
+          const breathBase = Math.sin(Date.now() / 4000) * 0.3 + 0.5;
+          const breathModulation = (lowFreqAvg / 255) * 0.4;
+          setBreathPattern(Math.max(0, Math.min(1, breathBase + breathModulation)));
           
           const midFreqStart = lowFreqBins;
           const midFreqEnd = Math.floor(200 * dataArrayRef.current.length / (audioContextRef.current?.sampleRate || 44100));
@@ -236,28 +148,10 @@ export const useAudioAnalysis = (): AudioAnalysisResult => {
       console.log('Starting simulated audio data');
       const simulatedTimer = setInterval(() => {
         const time = Date.now();
-        const breathCycle = (time / 4000) % (2 * Math.PI);
-        const breathValue = Math.sin(breathCycle) * 0.4 + 0.5;
-        const breathSpeed = Math.abs(Math.cos(breathCycle)) * 0.8;
-        
-        setBreathPattern(breathValue);
-        setBreathRate(breathSpeed);
-        
-        // Determine simulated breath phase
-        const cyclePosition = breathCycle % (2 * Math.PI);
-        let phase: 'inhale' | 'exhale' | 'hold' = 'hold';
-        if (cyclePosition < Math.PI * 0.45 || cyclePosition > Math.PI * 1.55) {
-          phase = cyclePosition < Math.PI ? 'inhale' : 'exhale';
-        }
-        setBreathPhase(phase);
-        
+        setBreathPattern(Math.sin(time / 3000) * 0.4 + 0.5);
         setPulseRate(72 + Math.sin(time / 1000) * 8 + Math.random() * 4);
         setAudioLevel(Math.sin(time / 500) * 0.3 + 0.4 + Math.random() * 0.2);
         setActiveFrequency(432 + Math.sin(time / 2000) * 50);
-        
-        // Simulate recommended frequency
-        const recFreq = breathSpeed < 0.3 ? 256 + (breathValue * 176) : 432 + (breathValue * 96);
-        setRecommendedFrequency(Math.round(recFreq));
       }, 100);
       
       return () => clearInterval(simulatedTimer);
@@ -290,11 +184,8 @@ export const useAudioAnalysis = (): AudioAnalysisResult => {
   return {
     audioLevel,
     breathPattern,
-    breathRate,
-    breathPhase,
     pulseRate,
     activeFrequency,
-    recommendedFrequency,
     microphoneConnected,
     audioError
   };
