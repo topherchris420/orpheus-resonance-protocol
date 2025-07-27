@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Slider } from '@/components/ui/slider';
 import { Button } from '@/components/ui/button';
 
@@ -9,6 +9,8 @@ interface BiometricPanelProps {
   audioLevel: number;
   healingTone: number;
   setHealingTone: (tone: number) => void;
+  volume: number;
+  setVolume: (volume: number) => void;
 }
 
 export const BiometricPanel: React.FC<BiometricPanelProps> = ({
@@ -17,9 +19,10 @@ export const BiometricPanel: React.FC<BiometricPanelProps> = ({
   pulseRate,
   audioLevel,
   healingTone,
-  setHealingTone
+  setHealingTone,
+  volume,
+  setVolume
 }) => {
-  const [volume, setVolume] = useState(50);
 
   const getBreathState = () => {
     if (breathPattern < 0.3) return "SHALLOW";
@@ -63,7 +66,7 @@ export const BiometricPanel: React.FC<BiometricPanelProps> = ({
       {/* Volume Control */}
       <div className="space-y-2">
         <div className="opacity-70">VOLUME</div>
-        <Slider defaultValue={[volume]} max={100} step={1} onValueChange={(value) => setVolume(value[0])} />
+        <Slider value={[volume * 100]} max={100} step={1} onValueChange={(value) => setVolume(value[0] / 100)} />
       </div>
 
       {/* Educational Module */}
