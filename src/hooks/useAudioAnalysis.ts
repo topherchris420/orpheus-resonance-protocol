@@ -1,5 +1,4 @@
-
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'eact';
 
 interface AudioAnalysisResult {
   audioLevel: number;
@@ -8,6 +7,8 @@ interface AudioAnalysisResult {
   activeFrequency: number;
   microphoneConnected: boolean;
   audioError: string | null;
+  healingTone: number;
+  setHealingTone: (tone: number) => void;
 }
 
 export const useAudioAnalysis = (): AudioAnalysisResult => {
@@ -17,176 +18,90 @@ export const useAudioAnalysis = (): AudioAnalysisResult => {
   const [activeFrequency, setActiveFrequency] = useState(432);
   const [microphoneConnected, setMicrophoneConnected] = useState(false);
   const [audioError, setAudioError] = useState<string | null>(null);
+  const [healingTone, setHealingTone] = useState(417);
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
-  const microphoneRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const animationFrameRef = useRef<number | null>(null);
-  const dataArrayRef = useRef<Uint8Array | null>(null);
-  const smoothingFactorRef = useRef(0.8);
 
   useEffect(() => {
-    let retryCount = 0;
-    const maxRetries = 3;
-
     const initializeAudio = async () => {
       try {
-        console.log('Requesting microphone access...');
-        
-        const stream = await navigator.mediaDevices.getUserMedia({ 
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true,
-            sampleRate: 44100
-          }
-        });
-
-        console.log('Microphone access granted');
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         streamRef.current = stream;
-
-        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({
-          sampleRate: 44100
-        });
-
-        if (audioContextRef.current.state === 'suspended') {
-          await audioContextRef.current.resume();
-        }
-
+        audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
         analyserRef.current = audioContextRef.current.createAnalyser();
-        analyserRef.current.fftSize = 2048;
-        analyserRef.current.smoothingTimeConstant = 0.8;
-        analyserRef.current.minDecibels = -90;
-        analyserRef.current.maxDecibels = -10;
-
-        microphoneRef.current = audioContextRef.current.createMediaStreamSource(stream);
-        microphoneRef.current.connect(analyserRef.current);
-        
-        dataArrayRef.current = new Uint8Array(analyserRef.current.frequencyBinCount);
-        
+        const source = audioContextRef.current.createMediaStreamSource(stream);
+        source.connect(analyserRef.current);
         setMicrophoneConnected(true);
-        setAudioError(null);
-        console.log('Audio analysis initialized successfully');
-        
-        startAudioAnalysis();
+        startAnalysis();
       } catch (error) {
-        console.error('Microphone initialization failed:', error);
-        setAudioError(`Microphone access failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        setMicrophoneConnected(false);
-        
-        if (retryCount < maxRetries) {
-          retryCount++;
-          console.log(`Retrying microphone initialization (${retryCount}/${maxRetries})...`);
-          setTimeout(initializeAudio, 2000);
-        } else {
-          console.log('Falling back to simulated audio data');
-          startSimulatedAudio();
-        }
+        setAudioError("Microphone access denied. Please enable microphone access in your browser settings.");
       }
     };
 
-    const startAudioAnalysis = () => {
-      if (!analyserRef.current || !dataArrayRef.current) return;
+    const startAnalysis = () => {
+      if (!analyserRef.current) return;
+      const analyser = analyserRef.current;
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
 
-      const updateAudioLevel = () => {
-        if (analyserRef.current && dataArrayRef.current) {
-          analyserRef.current.getByteFrequencyData(dataArrayRef.current);
-          
-          let sum = 0;
-          for (let i = 0; i < dataArrayRef.current.length; i++) {
-            sum += dataArrayRef.current[i] * dataArrayRef.current[i];
-          }
-          const rms = Math.sqrt(sum / dataArrayRef.current.length);
-          const normalizedLevel = Math.min(rms / 128, 1);
-          
-          setAudioLevel(prev => prev * smoothingFactorRef.current + normalizedLevel * (1 - smoothingFactorRef.current));
-          
-          const lowFreqBins = Math.floor(50 * dataArrayRef.current.length / (audioContextRef.current?.sampleRate || 44100));
-          let lowFreqSum = 0;
-          for (let i = 0; i < lowFreqBins; i++) {
-            lowFreqSum += dataArrayRef.current[i];
-          }
-          const lowFreqAvg = lowFreqSum / lowFreqBins;
-          const breathBase = Math.sin(Date.now() / 4000) * 0.3 + 0.5;
-          const breathModulation = (lowFreqAvg / 255) * 0.4;
-          setBreathPattern(Math.max(0, Math.min(1, breathBase + breathModulation)));
-          
-          const midFreqStart = lowFreqBins;
-          const midFreqEnd = Math.floor(200 * dataArrayRef.current.length / (audioContextRef.current?.sampleRate || 44100));
-          let midFreqSum = 0;
-          for (let i = midFreqStart; i < midFreqEnd; i++) {
-            midFreqSum += dataArrayRef.current[i];
-          }
-          const midFreqAvg = midFreqSum / (midFreqEnd - midFreqStart);
-          const pulseBase = 72 + Math.sin(Date.now() / 1200) * 6;
-          const pulseModulation = (midFreqAvg / 255) * 15;
-          setPulseRate(Math.max(45, Math.min(120, pulseBase + pulseModulation)));
-          
-          let maxValue = 0;
-          let maxIndex = 0;
-          for (let i = 0; i < dataArrayRef.current.length; i++) {
-            if (dataArrayRef.current[i] > maxValue) {
-              maxValue = dataArrayRef.current[i];
-              maxIndex = i;
-            }
-          }
-          if (maxValue > 50) {
-            const frequency = maxIndex * (audioContextRef.current?.sampleRate || 44100) / (2 * dataArrayRef.current.length);
-            if (frequency > 80 && frequency < 2000) {
-              setActiveFrequency(Math.round(frequency));
-            }
-          }
+      const analyze = () => {
+        analyser.getByteFrequencyData(dataArray);
+
+        // Breath Analysis (simplified)
+        const breathFrequencyRange = [0, 100]; // Hz
+        const breathEnergy = dataArray.slice(0, Math.round(breathFrequencyRange[1] / (audioContextRef.current.sampleRate / analyser.fftSize))).reduce((sum, value) => sum + value, 0);
+        const breathState = breathEnergy / (breathFrequencyRange[1] * 2); // Normalized
+
+        // Emotion Analysis (simplified)
+        const valenceFrequencyRange = [100, 1000]; // Hz
+        const valenceEnergy = dataArray.slice(Math.round(valenceFrequencyRange[0] / (audioContextRef.current.sampleRate / analyser.fftSize)), Math.round(valenceFrequencyRange[1] / (audioContextRef.current.sampleRate / analyser.fftSize))).reduce((sum, value) => sum + value, 0);
+        const valenceState = valenceEnergy / (valenceFrequencyRange[1] * 2); // Normalized
+
+        // Energy Analysis (simplified)
+        const energyFrequencyRange = [1000, 5000]; // Hz
+        const energyEnergy = dataArray.slice(Math.round(energyFrequencyRange[0] / (audioContextRef.current.sampleRate / analyser.fftSize)), Math.round(energyFrequencyRange[1] / (audioContextRef.current.sampleRate / analyser.fftSize))).reduce((sum, value) => sum + value, 0);
+        const energyState = energyEnergy / (energyFrequencyRange[1] * 2); // Normalized
+
+        // Determine healing tone
+        if (valenceState > 0.6 && energyState > 0.6) {
+          setHealingTone(174); // Stressed
+        } else if (valenceState > 0.6) {
+          setHealingTone(285); // Anxious
+        } else if (breathState < 0.2) {
+          setHealingTone(396); // Sad/Depressed
+        } else if (breathState > 0.8) {
+          setHealingTone(639); // Peaceful
+        } else if (valenceState < 0.2 && energyState < 0.2) {
+            setHealingTone(528); // Calm
+        } else {
+            setHealingTone(417); // Neutral
         }
-        animationFrameRef.current = requestAnimationFrame(updateAudioLevel);
+
+        setAudioLevel(dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length / 255);
+        setBreathPattern(breathState);
+        setPulseRate(60 + (valenceState * 40));
+
+        animationFrameRef.current = requestAnimationFrame(analyze);
       };
-      
-      updateAudioLevel();
+      analyze();
     };
 
-    const startSimulatedAudio = () => {
-      console.log('Starting simulated audio data');
-      const simulatedTimer = setInterval(() => {
-        const time = Date.now();
-        setBreathPattern(Math.sin(time / 3000) * 0.4 + 0.5);
-        setPulseRate(72 + Math.sin(time / 1000) * 8 + Math.random() * 4);
-        setAudioLevel(Math.sin(time / 500) * 0.3 + 0.4 + Math.random() * 0.2);
-        setActiveFrequency(432 + Math.sin(time / 2000) * 50);
-      }, 100);
-      
-      return () => clearInterval(simulatedTimer);
-    };
-
-    const handleUserGesture = () => {
-      initializeAudio();
-      document.removeEventListener('click', handleUserGesture);
-      document.removeEventListener('touchstart', handleUserGesture);
-    };
-
-    document.addEventListener('click', handleUserGesture);
-    document.addEventListener('touchstart', handleUserGesture);
+    initializeAudio();
 
     return () => {
       if (animationFrameRef.current) {
         cancelAnimationFrame(animationFrameRef.current);
       }
-      if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-        audioContextRef.current.close();
-      }
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
       }
-      document.removeEventListener('click', handleUserGesture);
-      document.removeEventListener('touchstart', handleUserGesture);
+      if (audioContextRef.current) {
+        audioContextRef.current.close();
+      }
     };
   }, []);
 
-  return {
-    audioLevel,
-    breathPattern,
-    pulseRate,
-    activeFrequency,
-    microphoneConnected,
-    audioError
-  };
+  return { audioLevel, breathPattern, pulseRate, activeFrequency, microphoneConnected, audioError, healingTone, setHealingTone };
 };
