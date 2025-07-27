@@ -40,3 +40,9 @@ A sophisticated React-based simulation interface featuring:
 - Prefers comprehensive migration with security best practices
 - Client/server separation requirements
 - Fast and efficient adaptation to Replit environment
+- Authentic physiological monitoring with clinical accuracy
+
+## User Preferences
+- Prefers comprehensive migration with security best practices
+- Client/server separation requirements
+- Fast and efficient adaptation to Replit environment
