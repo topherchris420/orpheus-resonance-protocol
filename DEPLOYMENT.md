@@ -24,10 +24,13 @@ Ensure your repository has these files:
 1. Go to https://vercel.com/dashboard
 2. Click "New Project"
 3. Import your Git repository
-4. Vercel will automatically detect the configuration from `vercel.json`:
-   - **Build Command**: `npm run build` (automatic)
-   - **Output Directory**: `dist/public` (automatic)
-   - **Install Command**: `npm install` (automatic)
+4. **IMPORTANT**: Override the auto-detected settings with these:
+   - **Framework Preset**: Other
+   - **Build Command**: `vite build --config vite.config.ts`
+   - **Output Directory**: `dist/public`
+   - **Install Command**: `npm install`
+   
+   Or let Vercel use the `vercel.json` configuration automatically.
 
 ### 3. Deploy via CLI
 
@@ -83,9 +86,17 @@ The app runs entirely on the frontend with microphone access, so no special envi
 - User must interact with page before audio starts
 
 ### Build Fails
-- Check `build-vercel.js` is executable
+- Ensure Framework Preset is set to "Other" (not Node.js)
+- Verify build command is `vite build --config vite.config.ts`
+- Check that output directory is `dist/public`
 - Verify all dependencies are in package.json
 - Check Vercel build logs
+
+### Wrong Content Served (seeing server code)
+- Ensure Framework Preset is "Other", not "Node.js"
+- Check that `outputDirectory` in vercel.json is `dist/public`
+- Verify the build command creates files in `dist/public/`
+- Redeploy after fixing configuration
 
 ### API Issues
 - The app works without API calls
