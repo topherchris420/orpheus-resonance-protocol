@@ -99,10 +99,11 @@ The app runs entirely on the frontend with microphone access, so no special envi
 1. **Delete the current Vercel deployment completely**
 2. **Create a new deployment** with these exact settings:
    - Framework Preset: **Other** (never Node.js)
-   - Root Directory: **/** (leave empty)
-   - Build Command: **Leave empty** (no build needed)
-   - Output Directory: **public**
-3. **Files are already built and ready in the `public/` folder**
+   - Root Directory: **/** (leave empty)  
+   - Build Command: **vite build**
+   - Output Directory: **dist/public**
+   - Install Command: **npm install**
+3. **The `vercel.json` is now simplified to just build settings**
 
 **Alternative**: Contact Vercel support to override framework detection if recreating doesn't work.
 
