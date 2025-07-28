@@ -11,7 +11,7 @@
 
 ## 🌌 Overview
 
-The Orpheus Continuum is an advanced consciousness interface system that uses real-time biometric analysis, quantum resonance patterns, and temporal navigation to create a unique transcendental experience. Built as part of Project Pegasus's Temporal Research Division, this system guides users through progressive phases of consciousness expansion while maintaining temporal stability through the ChronoGlyph Array.
+The Orpheus Continuum is an advanced consciousness interface system that uses real-time biometric analysis, quantum resonance patterns, and temporal navigation to create a unique transcendental experience. Built as part of Vers3Dynamics' R.A.I.N. Research Division, this system guides users through progressive phases of consciousness expansion while maintaining temporal stability through the ChronoGlyph Array.
 
 ### Key Features
 
