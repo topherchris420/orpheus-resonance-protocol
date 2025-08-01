@@ -16,6 +16,7 @@ import { usePhaseProgression } from '../hooks/usePhaseProgression';
 import { useInteractionState } from '../hooks/useInteractionState';
 import { useRedTeamSimulation } from '../hooks/useRedTeamSimulation';
 import { Button } from './ui/button';
+import { dataGenerator } from '../data/realisticData';
 
 interface PegasusSimulationProps {
   accessLevel: number;
@@ -27,6 +28,10 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
   onAccessLevelChange 
 }) => {
   const [isMobile, setIsMobile] = useState(false);
+  const [intelFeed, setIntelFeed] = useState(dataGenerator.getIntelFeed());
+  const [threatIndicators, setThreatIndicators] = useState(dataGenerator.generateThreatIndicators());
+  const [squadPositions, setSquadPositions] = useState(dataGenerator.generateSquadPositions());
+  const [optimalPath, setOptimalPath] = useState(dataGenerator.generateOptimalPath());
 
   // Custom hooks for managing state and logic
   const {
@@ -75,6 +80,29 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  // Generate realistic intel updates
+  useEffect(() => {
+    const intelTimer = setInterval(() => {
+      const newIntel = dataGenerator.generateIntelUpdate(acclimatizationLevel);
+      setIntelFeed(prev => [...prev.slice(-9), newIntel]);
+    }, 15000 + Math.random() * 30000); // Every 15-45 seconds
+
+    return () => clearInterval(intelTimer);
+  }, [acclimatizationLevel]);
+
+  // Update tactical data periodically
+  useEffect(() => {
+    const tacticalTimer = setInterval(() => {
+      setThreatIndicators(dataGenerator.generateThreatIndicators(Math.floor(Math.random() * 5) + 2));
+      setSquadPositions(dataGenerator.generateSquadPositions(4));
+      if (Math.random() > 0.7) {
+        setOptimalPath(dataGenerator.generateOptimalPath());
+      }
+    }, 20000 + Math.random() * 40000); // Every 20-60 seconds
+
+    return () => clearInterval(tacticalTimer);
+  }, []);
+
   const getAcclimatizationStyles = () => {
     if (isRedTeamModeActive) {
       return "bg-gradient-to-br from-red-900 via-black to-black text-red-400";
@@ -93,7 +121,9 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
     }
   };
 
-  const cognitiveStressIndex = 0.3 + redTeamIntensity * 0.5;
+  // Generate realistic vitals
+  const realisticVitals = dataGenerator.generateRealisticVitals(78, 16.2, 0.3 + redTeamIntensity * 0.5);
+  const cognitiveStressIndex = realisticVitals.cognitiveStressIndex;
   const communicationEfficiency = 0.9 - redTeamIntensity * 0.4;
 
   return (
@@ -133,8 +163,8 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
           {/* Left Panel - Operator Vitals */}
           <div className="col-span-3 row-span-4">
             <OperatorVitalsCognitiveLoadMonitor
-              hrv={78 - redTeamIntensity * 20}
-              respiratoryRate={16.2 + redTeamIntensity * 5}
+              hrv={realisticVitals.hrv}
+              respiratoryRate={realisticVitals.respiratoryRate}
               cognitiveStressIndex={cognitiveStressIndex}
               bioResonanceSupportFrequency={bioResonanceFrequency}
               setBioResonanceSupportFrequency={setBioResonanceFrequency}
@@ -146,7 +176,11 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
           {/* Left Panel Bottom - Squad Cohesion */}
           <div className="col-span-3 row-span-3">
             <SquadCohesionIndex
-              squadVitals={[{ hrv: 78, respiratoryRate: 16.2, cognitiveStressIndex }]}
+              squadVitals={squadPositions.map(member => ({
+                hrv: member.vitals.heartRate,
+                respiratoryRate: 16 + Math.random() * 4,
+                cognitiveStressIndex: member.status === 'wounded' ? 0.8 : cognitiveStressIndex
+              }))}
               communicationEfficiency={communicationEfficiency}
               onCohesionChange={setCohesionScore}
             />
@@ -161,9 +195,12 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
               />
             ) : (
               <TacticalDataDisplay
-                threatIndicators={conflictingIntel ? [{ id: 'red-team-threat', position: { x: 200, y: 200 }, type: 'hostile' }] : []}
-                optimalPathing={[]}
-                squadPositions={[]}
+                threatIndicators={conflictingIntel ? 
+                  [...threatIndicators, { id: 'red-team-threat', position: { x: 200, y: 200 }, type: 'hostile', confidence: 90, lastUpdated: Date.now() }] : 
+                  threatIndicators
+                }
+                optimalPathing={optimalPath}
+                squadPositions={squadPositions}
               />
             )}
           </div>
@@ -179,7 +216,10 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
               />
             ) : (
               <SitRepIntelFeed
-                intelFeed={conflictingIntel ? [{ id: 'red-team-intel', timestamp: Date.now(), message: conflictingIntel, clearanceLevel: 1 }] : []}
+                intelFeed={conflictingIntel ? 
+                  [...intelFeed, { id: 'red-team-intel', timestamp: Date.now(), message: conflictingIntel, clearanceLevel: 1, priority: 'CRITICAL', source: 'REDTEAM' }] : 
+                  intelFeed
+                }
                 currentClearance={acclimatizationLevel}
               />
             )}
@@ -206,7 +246,10 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
           {simulationMode && (
             <div className="col-span-12 row-span-2">
               <SitRepIntelFeed
-                intelFeed={conflictingIntel ? [{ id: 'red-team-intel', timestamp: Date.now(), message: conflictingIntel, clearanceLevel: 1 }] : []}
+                intelFeed={conflictingIntel ? 
+                  [...intelFeed, { id: 'red-team-intel', timestamp: Date.now(), message: conflictingIntel, clearanceLevel: 1, priority: 'CRITICAL', source: 'REDTEAM' }] : 
+                  intelFeed
+                }
                 currentClearance={acclimatizationLevel}
               />
             </div>
@@ -235,9 +278,12 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
               />
             ) : (
               <TacticalDataDisplay
-                threatIndicators={conflictingIntel ? [{ id: 'red-team-threat', position: { x: 200, y: 200 }, type: 'hostile' }] : []}
-                optimalPathing={[]}
-                squadPositions={[]}
+                threatIndicators={conflictingIntel ? 
+                  [...threatIndicators, { id: 'red-team-threat', position: { x: 200, y: 200 }, type: 'hostile', confidence: 90, lastUpdated: Date.now() }] : 
+                  threatIndicators
+                }
+                optimalPathing={optimalPath}
+                squadPositions={squadPositions}
               />
             )}
           </div>
@@ -245,8 +291,8 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
           {/* Mobile Grid for Secondary Panels */}
           <div className="grid grid-cols-2 gap-2 h-64">
             <OperatorVitalsCognitiveLoadMonitor
-              hrv={78 - redTeamIntensity * 20}
-              respiratoryRate={16.2 + redTeamIntensity * 5}
+              hrv={realisticVitals.hrv}
+              respiratoryRate={realisticVitals.respiratoryRate}
               cognitiveStressIndex={cognitiveStressIndex}
               bioResonanceSupportFrequency={bioResonanceFrequency}
               setBioResonanceSupportFrequency={setBioResonanceFrequency}
@@ -254,7 +300,11 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
               setVolume={() => {}}
             />
             <SquadCohesionIndex
-              squadVitals={[{ hrv: 78, respiratoryRate: 16.2, cognitiveStressIndex }]}
+              squadVitals={squadPositions.map(member => ({
+                hrv: member.vitals.heartRate,
+                respiratoryRate: 16 + Math.random() * 4,
+                cognitiveStressIndex: member.status === 'wounded' ? 0.8 : cognitiveStressIndex
+              }))}
               communicationEfficiency={communicationEfficiency}
               onCohesionChange={setCohesionScore}
             />
@@ -288,7 +338,10 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
           {/* Mobile SitRep/Intel Feed */}
           <div className="h-48">
             <SitRepIntelFeed
-              intelFeed={conflictingIntel ? [{ id: 'red-team-intel', timestamp: Date.now(), message: conflictingIntel, clearanceLevel: 1 }] : []}
+              intelFeed={conflictingIntel ? 
+                [...intelFeed, { id: 'red-team-intel', timestamp: Date.now(), message: conflictingIntel, clearanceLevel: 1, priority: 'CRITICAL', source: 'REDTEAM' }] : 
+                intelFeed
+              }
               currentClearance={acclimatizationLevel}
             />
           </div>
