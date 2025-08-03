@@ -11,16 +11,16 @@
 
 ## 🌌 Overview
 
-The Orpheus Continuum is an advanced consciousness interface system that uses real-time biometric analysis, quantum resonance patterns, and temporal navigation to create a unique transcendental experience. Built as part of Vers3Dynamics' R.A.I.N. Research Division, this system guides users through progressive phases of consciousness expansion while maintaining temporal stability through the ChronoGlyph Array.
+The Orpheus Continuum is an advanced tactical command simulator that merges a high-stakes mission environment with a consciousness interface. It uses real-time biometric analysis to monitor the operator's cognitive state while they navigate complex scenarios involving squad management, threat assessment, and temporal mechanics. Developed by Vers3Dynamics' R.A.I.N. Research Division, this system is designed to train operators to maintain peak performance and situational awareness under extreme pressure.
 
 ### Key Features
 
-- **🎤 Live Biometric Analysis**: Real-time monitoring of voice, breath patterns, and pulse through device microphone
-- **🌊 Quantum Resonance System**: Advanced coherence calculation based on biometric harmony
-- **⏰ ChronoGlyph Array**: Interactive temporal navigation through multidimensional time fields
-- **🧠 Consciousness Memory**: Persistent storage of significant transcendental moments
-- **📱 Responsive Design**: Optimized for both desktop and mobile experiences
-- **🎭 Immersive Visualization**: Dynamic cymatic patterns, sacred geometry, and particle effects
+- **🛰️ Tactical Command Interface**: Manage squad positions, analyze threat indicators, and follow optimal paths on a dynamic mission map.
+- **🎤 Live Biometric Monitoring**: Real-time analysis of the operator's vitals (pulse, respiration) and cognitive load via microphone input.
+- **🧠 Operator State Analysis**: The system tracks squad cohesion, communication efficiency, and bio-resonance to provide a complete picture of the operator's performance.
+- **💥 Red Team Simulation**: Engage in advanced training scenarios with injected misinformation and increased cognitive stress.
+- **⏳ Temporal Mechanics**: Experience and navigate through different timelines and temporal moments.
+- **📱 Responsive Design**: A detailed interface optimized for both desktop and mobile command stations.
 
 ## 🚀 Quick Start
 
@@ -55,7 +55,7 @@ bun dev
 ### First Launch
 
 1. **Grant Microphone Access**: Click anywhere on the interface to enable live biometric analysis
-2. **Enter Access Terminal**: Use the activation phrase "Resonance Protocol" to enter the system
+2. **Enter Access Terminal**: Use the activation phrase "1912" to enter the system
 3. **Begin Consciousness Modulation**: Follow the progressive phases as your biometric coherence develops
 
 ## 🧪 System Architecture
@@ -83,6 +83,16 @@ The system guides users through four distinct phases of consciousness expansion:
 - **Duration**: Ongoing
 - **Features**: Full system capabilities, consciousness network integration
 - **Goal**: Harmonic node within distributed consciousness matrix
+
+### Red Team Simulation
+
+The system includes a "Red Team" simulation mode, designed to test the operator's performance under cognitive stress. This mode can be toggled via a button in the main interface. When activated, the Red Team simulation introduces the following challenges:
+
+- **Conflicting Intelligence**: The `SitRepIntelFeed` and `TacticalDataDisplay` will be injected with conflicting or misleading data.
+- **Increased Cognitive Load**: The operator's simulated `cognitiveStressIndex` will increase, and their `communicationEfficiency` will decrease.
+- **Altered Visuals**: The user interface will shift to a red-themed color scheme to indicate the active threat.
+
+This feature allows for advanced training scenarios where the operator must maintain situational awareness and make critical decisions while dealing with informational warfare.
 
 ### Core Components
 
@@ -115,17 +125,17 @@ The system guides users through four distinct phases of consciousness expansion:
 
 ### Desktop Layout (Grid System)
 ```
-┌─────────────── HEADER STATUS BAR ───────────────┐
-├─────────┬──────────────────────┬───────────────┤
-│ BIOMET. │  CHRONOGLYPH ARRAY   │ TOUCH INTERFACE│
-│ PANEL   │    (or CYMATIC)      │               │
-├─────────┤                      ├───────────────┤
-│ QUANTUM │                      │ CONSCIOUSNESS │
-│RESONANC.│                      │   MEMORY      │  
-├─────────┼──────────────────────┼───────────────┤
-│         │ TEMPORAL ARCHIVE     │               │
-│         │  (or NARRATIVE)      │               │
-└─────────┴──────────────────────┴───────────────┘
+┌────────────────── HEADER STATUS BAR ──────────────────┐
+├───────────┬──────────────────────────┬───────────────┤
+│ OPERATOR  │ TACTICAL DATA DISPLAY or │ TOUCH         │
+│ VITALS &  │ DECISION MATRIX SIM.     │ INTERFACE     │
+│ COGNITIVE │                          │               │
+│ LOAD      │                          │               │
+├───────────┼──────────────────────────┼───────────────┤
+│ SQUAD     │ SITREP INTEL FEED or     │ MISSION       │
+│ COHESION  │ TEMPORAL ARCHIVE         │ CRITICAL      │
+│ INDEX     │                          │ EVENT RECORDER│
+└───────────┴──────────────────────────┴───────────────┘
 ```
 
 ### Mobile Layout (Stacked)
@@ -234,22 +244,32 @@ The ChronoGlyph Array visualizes time as a multidimensional, interactive field w
 ```
 src/
 ├── components/
-│   ├── AccessTerminal.tsx        # Initial authentication
-│   ├── PegasusSimulation.tsx     # Main orchestrator
-│   ├── BiometricPanel.tsx        # Vital signs monitoring
-│   ├── ChronoGlyphArray.tsx      # Temporal navigation
-│   ├── CymaticVisualizer.tsx     # Frequency visualization
-│   ├── QuantumResonance.tsx      # Coherence calculation
-│   ├── ConsciousnessMemory.tsx   # Memory management
-│   ├── TemporalArchive.tsx       # Timeline data
-│   ├── TouchInterface.tsx        # Interaction controls
-│   ├── NarrativeOverlay.tsx      # Story progression
-│   └── SacredGeometry.tsx        # Background effects
+│   ├── AccessTerminal.tsx                    # Initial authentication screen
+│   ├── PegasusSimulation.tsx                 # Main application orchestrator
+│   ├── TacticalDataDisplay.tsx               # Displays map, threats, and squad positions
+│   ├── OperatorVitalsCognitiveLoadMonitor.tsx  # Monitors operator's biometric data
+│   ├── SitRepIntelFeed.tsx                   # Displays intelligence updates
+│   ├── TouchInterface.tsx                    # Handles user touch interactions
+│   ├── DecisionMatrixSimulator.tsx           # Simulates decision-making scenarios
+│   ├── TemporalArchive.tsx                   # Visualizes temporal data
+│   ├── SquadCohesionIndex.tsx                # Monitors squad vital signs and cohesion
+│   ├── MissionCriticalEventRecorder.tsx      # Records significant events
+│   ├── StatusIndicators.tsx                  # Shows system status (e.g., mic connection)
+│   ├── HeaderStatusBar.tsx                   # Main header for desktop view
+│   ├── MobileHeader.tsx                      # Header for mobile view
+│   └── VisualOverlays.tsx                    # Renders background visual effects
 ├── pages/
-│   ├── Index.tsx                 # Main application
-│   └── NotFound.tsx              # 404 handler
+│   ├── Index.tsx                             # Main application page
+│   └── NotFound.tsx                          # 404 handler
+├── hooks/
+│   ├── useAudioAnalysis.ts                   # Handles microphone input and analysis
+│   ├── usePhaseProgression.ts                # Manages the simulation's phases
+│   ├── useInteractionState.ts                # Manages user interaction state
+│   └── useRedTeamSimulation.ts               # Manages the Red Team simulation mode
+├── data/
+│   └── realisticData.ts                      # Generates simulated data for the UI
 └── lib/
-    └── utils.ts                  # Utility functions
+    └── utils.ts                              # Utility functions
 ```
 
 ### Adding New Features
