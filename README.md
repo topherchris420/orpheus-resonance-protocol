@@ -1,7 +1,4 @@
-# Orpheus Resonance Protocol
-
-[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Live Demo](https://img.shields.io/badge/demo-huggingface-brightgreen)](https://huggingface.co/spaces/ciaochris/Temporal_Exploration)
+# Pegasus Simulation Interface
 
 **Status:** TRL 4 Prototype  
 **Division:** R.A.I.N. (Recursive Architecture for Intelligent Nexus)  
@@ -10,59 +7,66 @@
 
 ## 🧠 Overview
 
-The **Orpheus Resonance Protocol** is a perceptual AI interface designed to stabilize cognitive states under high-pressure conditions through **bio-symbolic entrainment**. It synchronizes user breath patterns with a symbolic starfield environment that responds in real-time, transforming physiological input into a **closed cognitive feedback loop**.
+The **Pegasus Simulation Interface** is a next-generation, web-based command and control (C2) dashboard designed for high-stakes, information-rich environments. It serves as a powerful tool for enhancing the situational awareness and cognitive performance of a human operator.
 
-Rather than showing dashboards or alerts, Orpheus becomes the data—rendering **resonance fields**, **gesture-linked topologies**, and **attention-modulated environments**. This architecture enables **situational reset**, **focus continuity**, and **symbolic learning adaptation**.
+This application fuses tactical data, intelligence feeds, and real-time biometric monitoring into a single, intuitive interface. By providing a holistic view of the operational landscape and the operator's own physiological state, the system aims to improve decision-making, reduce cognitive load, and increase mission effectiveness.
 
----
-
-## 🔧 System Components
-
-| Module | Function |
-|--------|----------|
-| `breath_interface.py` | Extracts real-time breath patterns from audio stream |
-| `reentry_engine.py` | Maps breath rhythm into symbolic harmonic space |
-| `starfield_navigator.py` | Gesture-driven perceptual navigation interface |
-| `resonance_feedback.py` | Audio-visual modulation loop |
-| `state_logger.py` | Captures symbolic transitions and state coherence |
-| `config.yaml` | Tunable parameters for resonance cycles and field dynamics |
+This project is a high-fidelity front-end prototype built with **React, TypeScript, and Vite**. It uses simulated data to showcase its rich feature set and user experience.
 
 ---
 
-## 🚀 Features
+## 🛰️ Early Prototype
 
-- **Biometric breath-to-symbolic feedback loop**
-- **Recursive entrainment architecture**
-- **Low-latency perceptual rendering**
-- **Modular for integration into cockpit, analyst, or training environments**
-- **Python-based with real-time performance in Gradio**
+An early prototype of the core concepts, named the **Orpheus Resonance Protocol**, was developed in Python with Gradio. It demonstrates the initial exploration into bio-symbolic entrainment and can be viewed here:
+
+**🔗 [Live Demo on Hugging Face](https://huggingface.co/spaces/ciaochris/Temporal_Exploration)**
 
 ---
 
-## 🛰 Use Case: Reentry Interface for Strategic Systems
+## ✨ Key Features
 
-Submitted under DARPA’s ERIS program as *Reentry: A Perceptual Instrument for Cognitive Stability*, this prototype addresses:
-
-- Operator attention degradation
-- Analyst cognitive fatigue
-- Warfighter readiness training under stress
-
-- ## 🌐 Live Demo
-
-Experience the prototype in real time:
-
-**🔗 [Rhythma: Temporal Exploration Interface](https://huggingface.co/spaces/ciaochris/Temporal_Exploration)**  
-A deployed demonstration of resonance-based symbolic feedback and biometric entrainment, aligned with the Orpheus Resonance Protocol architecture.
-
-> Built with Gradio, deployed by R.A.I.N. (Recursive Architecture for Intelligent Nexus)
+*   **Integrated Tactical Display:** Visualizes real-time positions of squad members, known threats, and AI-calculated optimal paths on a dynamic map.
+*   **Operator Vitals & Cognitive Load Monitor:** Utilizes microphone input for real-time analysis of the operator's breath patterns and pulse rate, calculating a "Cognitive Stress Index" to provide bio-feedback.
+*   **Live Intelligence Feed:** Displays a continuous stream of simulated intelligence reports, complete with clearance levels and priority rankings.
+*   **Squad Cohesion Index:** Aggregates the vital signs and status of all squad members to provide a high-level "cohesion score," representing the team's overall effectiveness.
+*   **Decision Matrix Simulator:** An interactive tool that allows operators to run through various scenarios and simulate the potential outcomes of their decisions.
+*   **Red Team Simulation Mode:** A built-in training feature that introduces conflicting intelligence and other stressors to test and improve an operator's resilience to information warfare and high-pressure situations.
+*   **Electrokinetic Modeling Layer:** A unique visualization layer that models complex data fields, potentially related to signal intelligence or the operator's own "bio-resonance frequency."
+*   **Modular & Responsive Design:** The interface is built with a responsive layout that adapts to both desktop and mobile form factors.
 
 ---
 
-## 🛠️ Install
+## 🛠️ Installation and Usage
 
-```bash
-git clone https://github.com/topherchris420/orpheus-resonance-protocol.git
-cd orpheus-resonance-protocol
-pip install -r requirements.txt
-python reentry_engine.py
+To run this application locally, you will need to have [Node.js](https://nodejs.org/) and `npm` installed.
 
+1.  **Clone the repository:**
+    ```bash
+    git clone <repository-url>
+    cd <repository-directory>
+    ```
+
+2.  **Install dependencies:**
+    ```bash
+    npm install
+    ```
+
+3.  **Run the development server:**
+    ```bash
+    npm run dev
+    ```
+    This will start the Vite development server, and you can view the application in your browser at `http://localhost:5173` (the port may vary).
+
+### Other Available Scripts
+
+*   **Build for production:**
+    ```bash
+    npm run build
+    ```
+*   **Preview the production build:**
+    ```bash
+    npm run preview
+    ```
+
+---
+> This project was developed by the **R.A.I.N. Research Division**.
