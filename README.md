@@ -15,6 +15,14 @@ This project is a high-fidelity front-end prototype built with **React, TypeScri
 
 ---
 
+## 🛰️ Early Prototype
+
+An early prototype of the core concepts, named the **Orpheus Resonance Protocol**, was developed in Python with Gradio. It demonstrates the initial exploration into bio-symbolic entrainment and can be viewed here:
+
+**🔗 [Live Demo on Hugging Face](https://huggingface.co/spaces/ciaochris/Temporal_Exploration)**
+
+---
+
 ## ✨ Key Features
 
 *   **Integrated Tactical Display:** Visualizes real-time positions of squad members, known threats, and AI-calculated optimal paths on a dynamic map.
