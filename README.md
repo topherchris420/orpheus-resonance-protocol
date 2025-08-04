@@ -7,7 +7,7 @@
 
 ## 🧠 Overview
 
-The **Pegasus Simulation Interface** is a next-generation, web-based command and control (C2) dashboard designed for high-stakes, information-rich environments. It serves as a powerful tool for enhancing the situational awareness and cognitive performance of a human operator.
+The **Pegasus Interface** is a next-generation, web-based command and control (C2) dashboard designed for high-stakes, information-rich environments. It serves as a powerful tool for enhancing the situational awareness and cognitive performance of a human operator.
 
 This app fuses tactical data, intelligence feeds, and real-time biometric monitoring into a single, intuitive interface. By providing a holistic view of the operational landscape and the operator's own physiological state, the system aims to improve decision-making, reduce cognitive load, and increase mission effectiveness.
 
