@@ -11,7 +11,7 @@ import { StatusIndicators } from './StatusIndicators';
 import { HeaderStatusBar } from './HeaderStatusBar';
 import { MobileHeader } from './MobileHeader';
 import { VisualOverlays } from './VisualOverlays';
-import { useAudioAnalysis } from '../hooks/useAudioAnalysis';
+import { useAdvancedAudioAnalysis, HEALING_FREQUENCIES } from '../hooks/useAdvancedAudioAnalysis';
 import { usePhaseProgression } from '../hooks/usePhaseProgression';
 import { useInteractionState } from '../hooks/useInteractionState';
 import { useRedTeamSimulation } from '../hooks/useRedTeamSimulation';
@@ -35,13 +35,12 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
 
   // Custom hooks for managing state and logic
   const {
-    audioLevel,
-    breathPattern,
+    emotionalState,
+    modelReady,
+    listening,
+    error: audioError,
     pulseRate,
-    activeFrequency: audioFrequency,
-    microphoneConnected,
-    audioError
-  } = useAudioAnalysis();
+  } = useAdvancedAudioAnalysis();
 
   const { acclimatizationLevel, simulationMode, handleAcclimatizationAdvance } = usePhaseProgression(onAccessLevelChange);
 
@@ -64,10 +63,11 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
     toggleRedTeamMode,
   } = useRedTeamSimulation(simulationMode);
 
-  // Set initial frequency from audio analysis
+  // Set frequency based on emotional state
   useEffect(() => {
-    setBioResonanceFrequency(audioFrequency);
-  }, [audioFrequency, setBioResonanceFrequency]);
+    const newFrequency = HEALING_FREQUENCIES[emotionalState];
+    setBioResonanceFrequency(newFrequency);
+  }, [emotionalState, setBioResonanceFrequency]);
 
   // Check if mobile
   useEffect(() => {
@@ -142,7 +142,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
       {/* Status Indicators */}
       <StatusIndicators 
         audioError={audioError}
-        microphoneConnected={microphoneConnected}
+        microphoneConnected={listening}
       />
 
       {/* Desktop Layout */}
@@ -152,7 +152,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
           <HeaderStatusBar
             phase={acclimatizationLevel}
             temporalMode={simulationMode}
-            microphoneConnected={microphoneConnected}
+            microphoneConnected={listening}
             coherenceLevel={cohesionScore}
             activeFrequency={bioResonanceFrequency}
             pulseRate={pulseRate}
@@ -168,7 +168,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
               cognitiveStressIndex={cognitiveStressIndex}
               bioResonanceSupportFrequency={bioResonanceFrequency}
               setBioResonanceSupportFrequency={setBioResonanceFrequency}
-              volume={audioLevel}
+              volume={0.5} // No longer have direct audio level
               setVolume={() => {}}
             />
           </div>
@@ -212,7 +212,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
                 phase={acclimatizationLevel}
                 currentTimeline={currentTimeline}
                 temporalMoment={temporalMoment}
-                audioLevel={audioLevel}
+                audioLevel={0.5} // No longer have direct audio level
               />
             ) : (
               <SitRepIntelFeed
@@ -262,7 +262,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
           <MobileHeader
             phase={acclimatizationLevel}
             temporalMode={simulationMode}
-            microphoneConnected={microphoneConnected}
+            microphoneConnected={listening}
             coherenceLevel={cohesionScore}
             pulseRate={pulseRate}
             currentTimeline={currentTimeline}
@@ -296,7 +296,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
               cognitiveStressIndex={cognitiveStressIndex}
               bioResonanceSupportFrequency={bioResonanceFrequency}
               setBioResonanceSupportFrequency={setBioResonanceFrequency}
-              volume={audioLevel}
+              volume={0.5} // No longer have direct audio level
               setVolume={() => {}}
             />
             <SquadCohesionIndex
@@ -330,7 +330,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
                 phase={acclimatizationLevel}
                 currentTimeline={currentTimeline}
                 temporalMoment={temporalMoment}
-                audioLevel={audioLevel}
+                audioLevel={0.5} // No longer have direct audio level
               />
             </div>
           )}
