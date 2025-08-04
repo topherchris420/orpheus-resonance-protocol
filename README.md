@@ -1,4 +1,4 @@
-# Pegasus Simulation Interface
+# Pegasus Interface
 
 **Status:** TRL 4 Prototype  
 **Division:** R.A.I.N. (Recursive Architecture for Intelligent Nexus)  
