@@ -9,7 +9,7 @@
 
 The **Pegasus Simulation Interface** is a next-generation, web-based command and control (C2) dashboard designed for high-stakes, information-rich environments. It serves as a powerful tool for enhancing the situational awareness and cognitive performance of a human operator.
 
-This application fuses tactical data, intelligence feeds, and real-time biometric monitoring into a single, intuitive interface. By providing a holistic view of the operational landscape and the operator's own physiological state, the system aims to improve decision-making, reduce cognitive load, and increase mission effectiveness.
+This app fuses tactical data, intelligence feeds, and real-time biometric monitoring into a single, intuitive interface. By providing a holistic view of the operational landscape and the operator's own physiological state, the system aims to improve decision-making, reduce cognitive load, and increase mission effectiveness.
 
 This project is a high-fidelity front-end prototype built with **React, TypeScript, and Vite**. It uses simulated data to showcase its rich feature set and user experience.
 
@@ -42,8 +42,8 @@ To run this application locally, you will need to have [Node.js](https://nodejs.
 
 1.  **Clone the repository:**
     ```bash
-    git clone <repository-url>
-    cd <repository-directory>
+    git clone <this-repository-url>
+    cd <this-repository-directory>
     ```
 
 2.  **Install dependencies:**
