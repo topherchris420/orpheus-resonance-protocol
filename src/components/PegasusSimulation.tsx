@@ -15,6 +15,7 @@ import { useAudioAnalysis } from '../hooks/useAudioAnalysis';
 import { usePhaseProgression } from '../hooks/usePhaseProgression';
 import { useInteractionState } from '../hooks/useInteractionState';
 import { useRedTeamSimulation } from '../hooks/useRedTeamSimulation';
+import { ElectrokineticModelingLayer } from './ElectrokineticModelingLayer';
 import { Button } from './ui/button';
 import { dataGenerator } from '../data/realisticData';
 
@@ -28,6 +29,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
   onAccessLevelChange 
 }) => {
   const [isMobile, setIsMobile] = useState(false);
+  const [showElectrokineticLayer, setShowElectrokineticLayer] = useState(false);
   const [intelFeed, setIntelFeed] = useState(dataGenerator.getIntelFeed());
   const [threatIndicators, setThreatIndicators] = useState(dataGenerator.generateThreatIndicators());
   const [squadPositions, setSquadPositions] = useState(dataGenerator.generateSquadPositions());
@@ -128,16 +130,23 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
 
   return (
     <div className={`min-h-screen ${getAcclimatizationStyles()} transition-all duration-1000 relative overflow-hidden`}>
-      {/* Red Team Mode Toggle */}
-      {simulationMode && (
+      {/* Control Toggles */}
+      <div className="absolute top-4 right-4 z-20 flex gap-2">
         <Button
-          onClick={toggleRedTeamMode}
-          className="absolute top-4 right-4 z-20"
-          variant={isRedTeamModeActive ? "destructive" : "default"}
+          onClick={() => setShowElectrokineticLayer(prev => !prev)}
+          variant={showElectrokineticLayer ? "secondary" : "default"}
         >
-          {isRedTeamModeActive ? "Deactivate Red Team" : "Activate Red Team"}
+          {showElectrokineticLayer ? "EK Layer Off" : "EK Layer On"}
         </Button>
-      )}
+        {simulationMode && (
+          <Button
+            onClick={toggleRedTeamMode}
+            variant={isRedTeamModeActive ? "destructive" : "default"}
+          >
+            {isRedTeamModeActive ? "Deactivate Red Team" : "Activate Red Team"}
+          </Button>
+        )}
+      </div>
 
       {/* Status Indicators */}
       <StatusIndicators 
@@ -188,7 +197,9 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
 
           {/* Center Top - Decision Matrix Simulator or Tactical Data Display */}
           <div className="col-span-6 row-span-3">
-            {simulationMode ? (
+            {showElectrokineticLayer ? (
+              <ElectrokineticModelingLayer bioResonanceFrequency={bioResonanceFrequency} />
+            ) : simulationMode ? (
               <DecisionMatrixSimulator
                 decisionPoints={[]}
                 onOutcomeSelect={() => {}}
@@ -271,7 +282,9 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
 
           {/* Mobile Main Visualizer */}
           <div className="flex-1 min-h-[40vh]">
-            {simulationMode ? (
+            {showElectrokineticLayer ? (
+              <ElectrokineticModelingLayer bioResonanceFrequency={bioResonanceFrequency} />
+            ) : simulationMode ? (
               <DecisionMatrixSimulator
                 decisionPoints={[]}
                 onOutcomeSelect={() => {}}
