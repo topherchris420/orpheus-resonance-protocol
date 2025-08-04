@@ -44,6 +44,15 @@ Submitted under DARPA’s ERIS program as *Reentry: A Perceptual Instrument for 
 - Analyst cognitive fatigue
 - Warfighter readiness training under stress
 
+- ## 🌐 Live Demo
+
+Experience the prototype in real time:
+
+**🔗 [Rhythma: Temporal Exploration Interface](https://huggingface.co/spaces/ciaochris/Temporal_Exploration)**  
+A deployed demonstration of resonance-based symbolic feedback and biometric entrainment, aligned with the Orpheus Resonance Protocol architecture.
+
+> Built with Gradio, deployed by R.A.I.N. (Recursive Architecture for Intelligent Nexus)
+
 ---
 
 ## 🛠️ Install
@@ -54,11 +63,3 @@ cd orpheus-resonance-protocol
 pip install -r requirements.txt
 python reentry_engine.py
 
-## 🌐 Live Demo
-
-Experience the prototype in real time:
-
-**🔗 [Rhythma: Temporal Exploration Interface](https://huggingface.co/spaces/ciaochris/Temporal_Exploration)**  
-A deployed demonstration of resonance-based symbolic feedback and biometric entrainment, aligned with the Orpheus Resonance Protocol architecture.
-
-> Built with Gradio, powered by R.A.I.N. (Recursive Architecture for Intelligent Nexus)
