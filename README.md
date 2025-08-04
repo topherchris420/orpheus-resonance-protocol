@@ -53,3 +53,12 @@ git clone https://github.com/topherchris420/orpheus-resonance-protocol.git
 cd orpheus-resonance-protocol
 pip install -r requirements.txt
 python reentry_engine.py
+
+## 🌐 Live Demo
+
+Experience the prototype in real time:
+
+**🔗 [Rhythma: Temporal Exploration Interface](https://huggingface.co/spaces/ciaochris/Temporal_Exploration)**  
+A deployed demonstration of resonance-based symbolic feedback and biometric entrainment, aligned with the Orpheus Resonance Protocol architecture.
+
+> Built with Gradio, powered by R.A.I.N. (Recursive Architecture for Intelligent Nexus)
