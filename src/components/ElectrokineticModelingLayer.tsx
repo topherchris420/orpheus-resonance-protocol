@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import styles from './ElectrokineticModelingLayer.module.css';
 import { Slider } from './ui/slider';
 import { Label } from './ui/label';
+import { Button } from './ui/button';
 
 interface ElectrokineticModelingLayerProps {
   bioResonanceFrequency: number;
@@ -46,6 +47,46 @@ export const ElectrokineticModelingLayer: React.FC<ElectrokineticModelingLayerPr
     };
   }, [chargeSymmetry, voltage, dIdt]);
 
+  const cymaticPatterns = useMemo(() => {
+    const numCircles = Math.floor(bioResonanceFrequency / 50);
+    return Array.from({ length: numCircles }).map((_, i) => ({
+      id: i,
+      r: (i + 1) * 20,
+      // Animation duration based on dIdt, faster pulse for higher dIdt
+      animationDuration: `${2 / dIdt}s`,
+    }));
+  }, [bioResonanceFrequency, dIdt]);
+
+  const handleExport = () => {
+    const exportData = {
+      timestamp: new Date().toISOString(),
+      resonanceLog: {
+        bioResonanceFrequency,
+      },
+      simulationParameters: {
+        voltage,
+        chargeSymmetry,
+        dielectric,
+        dIdt,
+      },
+      symbolicForceMap: {
+        forceVector,
+        fieldLineCount: fieldLines.length,
+      },
+    };
+
+    const jsonString = JSON.stringify(exportData, null, 2);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `electrokinetic_log_${Date.now()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className={styles.container}>
       <h2 className={styles.title}>Electrokinetic Modeling Layer</h2>
@@ -57,7 +98,28 @@ export const ElectrokineticModelingLayer: React.FC<ElectrokineticModelingLayerPr
                 orient="auto-start-reverse">
               <path d="M 0 0 L 10 5 L 0 10 z" fill="#0f0" />
             </marker>
+            <filter id="cymaticFilter">
+              <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="3" result="turbulence" />
+              <feDisplacementMap in2="turbulence" in="SourceGraphic" scale="10" xChannelSelector="R" yChannelSelector="G" />
+            </filter>
           </defs>
+
+          {/* Cymatic Imagery */}
+          <g filter="url(#cymaticFilter)" opacity="0.3">
+            {cymaticPatterns.map(circle => (
+              <circle
+                key={circle.id}
+                cx="150"
+                cy="100"
+                r={circle.r}
+                fill="none"
+                stroke="#0f0"
+                strokeWidth="1"
+                className={styles.cymaticCircle}
+                style={{ animationDuration: circle.animationDuration }}
+              />
+            ))}
+          </g>
 
           {/* Field Lines */}
           {fieldLines.map(line => (
@@ -103,6 +165,7 @@ export const ElectrokineticModelingLayer: React.FC<ElectrokineticModelingLayerPr
           <Label htmlFor="didt">Waveform Slope (dI/dt)</Label>
           <Slider id="didt" min={0.1} max={5} step={0.1} value={[dIdt]} onValueChange={([val]) => setDIdt(val)} />
         </div>
+        <Button onClick={handleExport} className={styles.exportButton}>Export Data</Button>
       </div>
     </div>
   );
