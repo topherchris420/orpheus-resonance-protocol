@@ -1,5 +1,8 @@
 # Orpheus Resonance Protocol
 
+[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Live Demo](https://img.shields.io/badge/demo-huggingface-brightgreen)](https://huggingface.co/spaces/ciaochris/Temporal_Exploration)
+
 **Status:** TRL 4 Prototype  
 **Division:** R.A.I.N. (Recursive Architecture for Intelligent Nexus)  
 
