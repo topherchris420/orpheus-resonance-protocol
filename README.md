@@ -69,4 +69,8 @@ To run this application locally, you will need to have [Node.js](https://nodejs.
     ```
 
 ---
+## License
+
+This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
+
 > This project was developed by the **R.A.I.N. Research Division**.
