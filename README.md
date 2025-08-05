@@ -1,4 +1,4 @@
-# Pegasus Interface
+# Reentry Interface
 
 **Status:** TRL 4 Prototype  
 **Division:** R.A.I.N. (Recursive Architecture for Intelligent Nexus)  
@@ -7,7 +7,7 @@
 
 ## 🧠 Overview
 
-The **Pegasus Interface** is a next-generation, web-based command and control (C2) dashboard designed for high-stakes, information-rich environments. It serves as a powerful tool for enhancing the situational awareness and cognitive performance of a human operator.
+The **Reentry Interface** is a next-generation, web-based command and control (C2) dashboard designed for high-stakes, information-rich environments. It serves as a powerful tool for enhancing the situational awareness and cognitive performance of a human operator.
 
 This app fuses tactical data, intelligence feeds, and real-time biometric monitoring into a single, intuitive interface. By providing a holistic view of the operational landscape and the operator's own physiological state, the system aims to improve decision-making, reduce cognitive load, and increase mission effectiveness.
 
@@ -17,7 +17,7 @@ This project is a high-fidelity front-end prototype built with **React, TypeScri
 
 ## 🛰️ Early Prototype
 
-An early prototype of the core concepts, named the **Orpheus Resonance Protocol**, was developed in Python with Gradio. It demonstrates the initial exploration into bio-symbolic entrainment and can be viewed here:
+An early prototype of the core concepts, named **Rhythma**, was developed in Python with Gradio. It demonstrates the initial exploration into bio-symbolic entrainment and can be viewed here:
 
 **🔗 [Live Demo on Hugging Face](https://huggingface.co/spaces/ciaochris/Temporal_Exploration)**
 
