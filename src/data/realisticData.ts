@@ -168,13 +168,14 @@ export class RealisticDataGenerator {
 
   generateRealisticVitals(baseHrv: number, baseRespRate: number, stressLevel: number) {
     // Add realistic variability to vitals based on stress and time
-    const timeVariation = Math.sin(Date.now() / 10000) * 0.1;
-    const randomVariation = (Math.random() - 0.5) * 0.2;
+    // Use slower time variation to prevent glitching (every ~30 seconds instead of ~10 seconds)
+    const timeVariation = Math.sin(Date.now() / 30000) * 0.1;
+    const randomVariation = (Math.random() - 0.5) * 0.1; // Reduced random variation
     
     return {
-      hrv: Math.max(20, baseHrv + (stressLevel * -30) + (timeVariation * 10) + (randomVariation * 5)),
-      respiratoryRate: Math.max(8, baseRespRate + (stressLevel * 8) + (timeVariation * 2) + (randomVariation * 1)),
-      cognitiveStressIndex: Math.min(1, Math.max(0, stressLevel + (timeVariation * 0.1) + (randomVariation * 0.05)))
+      hrv: Math.max(20, Math.round((baseHrv + (stressLevel * -30) + (timeVariation * 10) + (randomVariation * 5)) * 10) / 10),
+      respiratoryRate: Math.max(8, Math.round((baseRespRate + (stressLevel * 8) + (timeVariation * 2) + (randomVariation * 1)) * 10) / 10),
+      cognitiveStressIndex: Math.min(1, Math.max(0, Math.round((stressLevel + (timeVariation * 0.1) + (randomVariation * 0.05)) * 100) / 100))
     };
   }
 }
