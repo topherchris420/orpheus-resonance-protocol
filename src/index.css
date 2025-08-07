@@ -101,3 +101,17 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Smooth transitions for live data updates */
+.smooth-data-transition {
+  transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.data-value {
+  transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+}
+
+.data-value-changing {
+  transform: scale(1.02);
+  opacity: 0.8;
+}

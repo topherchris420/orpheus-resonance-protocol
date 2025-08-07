@@ -34,6 +34,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
   const [threatIndicators, setThreatIndicators] = useState(dataGenerator.generateThreatIndicators());
   const [squadPositions, setSquadPositions] = useState(dataGenerator.generateSquadPositions());
   const [optimalPath, setOptimalPath] = useState(dataGenerator.generateOptimalPath());
+  const [realtimeVitals, setRealtimeVitals] = useState(dataGenerator.generateRealisticVitals(78, 16.2, 0.3));
 
   // Custom hooks for managing state and logic
   const {
@@ -105,6 +106,15 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
     return () => clearInterval(tacticalTimer);
   }, []);
 
+  // Update vitals with smooth live feedback (every 2.5 seconds)
+  useEffect(() => {
+    const vitalsTimer = setInterval(() => {
+      setRealtimeVitals(dataGenerator.generateRealisticVitals(78, 16.2, 0.3 + redTeamIntensity * 0.5));
+    }, 2500); // Every 2.5 seconds for live feel without glitching
+
+    return () => clearInterval(vitalsTimer);
+  }, [redTeamIntensity]);
+
   const getAcclimatizationStyles = () => {
     if (isRedTeamModeActive) {
       return "bg-gradient-to-br from-red-900 via-black to-black text-red-400";
@@ -123,9 +133,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
     }
   };
 
-  // Generate realistic vitals
-  const realisticVitals = dataGenerator.generateRealisticVitals(78, 16.2, 0.3 + redTeamIntensity * 0.5);
-  const cognitiveStressIndex = realisticVitals.cognitiveStressIndex;
+  const cognitiveStressIndex = realtimeVitals.cognitiveStressIndex;
   const communicationEfficiency = 0.9 - redTeamIntensity * 0.4;
 
   return (
@@ -172,8 +180,8 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
           {/* Left Panel - Operator Vitals */}
           <div className="col-span-3 row-span-4">
             <OperatorVitalsCognitiveLoadMonitor
-              hrv={realisticVitals.hrv}
-              respiratoryRate={realisticVitals.respiratoryRate}
+              hrv={realtimeVitals.hrv}
+              respiratoryRate={realtimeVitals.respiratoryRate}
               cognitiveStressIndex={cognitiveStressIndex}
               bioResonanceSupportFrequency={bioResonanceFrequency}
               setBioResonanceSupportFrequency={setBioResonanceFrequency}
@@ -304,8 +312,8 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
           {/* Mobile Grid for Secondary Panels */}
           <div className="grid grid-cols-2 gap-2 h-64">
             <OperatorVitalsCognitiveLoadMonitor
-              hrv={realisticVitals.hrv}
-              respiratoryRate={realisticVitals.respiratoryRate}
+              hrv={realtimeVitals.hrv}
+              respiratoryRate={realtimeVitals.respiratoryRate}
               cognitiveStressIndex={cognitiveStressIndex}
               bioResonanceSupportFrequency={bioResonanceFrequency}
               setBioResonanceSupportFrequency={setBioResonanceFrequency}
