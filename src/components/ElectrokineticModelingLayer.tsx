@@ -22,40 +22,139 @@ export const ElectrokineticModelingLayer: React.FC<ElectrokineticModelingLayerPr
   }, [bioResonanceFrequency]);
 
   const fieldLines = useMemo(() => {
-    const numLines = Math.floor(voltage / 20);
-    const baseCurvature = 80;
+    const numLines = Math.floor(voltage / 15) + 3;
+    const baseCurvature = 60;
     const curvature = baseCurvature / dielectric;
+    const asymmetryFactor = (chargeSymmetry - 0.5) * 40;
 
     return Array.from({ length: numLines }).map((_, i) => {
-      const startY = 100 - (numLines / 2) * 10 + i * 10;
+      const normalizedPos = (i / (numLines - 1)) - 0.5;
+      const baseY = 100 + normalizedPos * 80;
+      const controlY = baseY + normalizedPos * curvature + asymmetryFactor * Math.sin(normalizedPos * Math.PI);
+      const endY = 100 + normalizedPos * 60 * chargeSymmetry;
+      
       return {
         id: i,
-        d: `M 10,100 Q 150,${100 + (i - numLines / 2) * curvature} 290,100`
+        d: `M 10,${baseY} Q 150,${controlY} 290,${endY}`,
+        opacity: 0.3 + (voltage / 400) + Math.abs(normalizedPos) * 0.3
       };
     });
-  }, [voltage, dielectric]);
+  }, [voltage, dielectric, chargeSymmetry]);
 
-  const forceVector = useMemo(() => {
-    const angle = (chargeSymmetry - 0.5) * Math.PI; // -PI/2 to PI/2
-    // Symbolic representation of force based on voltage and dI/dt
-    const length = (voltage / 4) * (1 + dIdt);
-    return {
-      x1: 150,
-      y1: 150,
-      x2: 150 + length * Math.sin(angle),
-      y2: 150 - length * Math.cos(angle),
-    };
+  // Multiple force vectors based on Jefimenko field equations
+  const forceVectors = useMemo(() => {
+    const baseAngle = (chargeSymmetry - 0.5) * Math.PI;
+    const baseLength = (voltage / 4) * (1 + dIdt);
+    
+    return [
+      // Primary thrust vector
+      {
+        id: 'primary',
+        x1: 150,
+        y1: 100,
+        x2: 150 + baseLength * Math.sin(baseAngle),
+        y2: 100 - baseLength * Math.cos(baseAngle),
+        color: '#0f0',
+        width: 3
+      },
+      // Secondary field vectors
+      {
+        id: 'secondary-1',
+        x1: 100,
+        y1: 130,
+        x2: 100 + (baseLength * 0.6) * Math.sin(baseAngle + 0.5),
+        y2: 130 - (baseLength * 0.6) * Math.cos(baseAngle + 0.5),
+        color: '#0ff',
+        width: 2
+      },
+      {
+        id: 'secondary-2',
+        x1: 200,
+        y1: 130,
+        x2: 200 + (baseLength * 0.6) * Math.sin(baseAngle - 0.5),
+        y2: 130 - (baseLength * 0.6) * Math.cos(baseAngle - 0.5),
+        color: '#0ff',
+        width: 2
+      }
+    ];
   }, [chargeSymmetry, voltage, dIdt]);
 
   const cymaticPatterns = useMemo(() => {
-    const numCircles = Math.floor(bioResonanceFrequency / 50);
-    return Array.from({ length: numCircles }).map((_, i) => ({
-      id: i,
-      r: (i + 1) * 20,
-      // Animation duration based on dIdt, faster pulse for higher dIdt
-      animationDuration: `${2 / dIdt}s`,
-    }));
-  }, [bioResonanceFrequency, dIdt]);
+    const baseCircles = Math.floor(bioResonanceFrequency / 50) + 2;
+    const patterns = [];
+    
+    // Concentric resonance circles
+    for (let i = 0; i < baseCircles; i++) {
+      patterns.push({
+        id: `circle-${i}`,
+        type: 'circle',
+        cx: 150,
+        cy: 100,
+        r: (i + 1) * (15 + voltage / 50),
+        animationDuration: `${2 / dIdt}s`,
+        opacity: 0.2 + (i * 0.1)
+      });
+    }
+    
+    // Standing wave patterns based on charge symmetry
+    const waveNodes = Math.floor(chargeSymmetry * 6) + 3;
+    for (let i = 0; i < waveNodes; i++) {
+      const x = 50 + (i * 200 / waveNodes);
+      patterns.push({
+        id: `node-${i}`,
+        type: 'ellipse',
+        cx: x,
+        cy: 100 + Math.sin(i * Math.PI / 3) * 20 * chargeSymmetry,
+        rx: 8 + voltage / 100,
+        ry: 4 + voltage / 200,
+        animationDuration: `${1.5 / dIdt}s`,
+        opacity: 0.4
+      });
+    }
+    
+    return patterns;
+  }, [bioResonanceFrequency, dIdt, voltage, chargeSymmetry]);
+
+  // Thrust zones based on field strength and symmetry
+  const thrustZones = useMemo(() => {
+    const zones = [];
+    const zoneIntensity = (voltage / 200) * chargeSymmetry;
+    
+    // Primary thrust zone
+    zones.push({
+      id: 'primary-zone',
+      x: 130,
+      y: 80,
+      width: 40,
+      height: 40,
+      opacity: zoneIntensity * 0.3,
+      color: '0, 255, 0'
+    });
+    
+    // Secondary zones based on dielectric properties
+    if (dielectric > 3) {
+      zones.push({
+        id: 'secondary-zone-1',
+        x: 80,
+        y: 120,
+        width: 30,
+        height: 30,
+        opacity: zoneIntensity * 0.2,
+        color: '0, 255, 255'
+      });
+      zones.push({
+        id: 'secondary-zone-2',
+        x: 190,
+        y: 120,
+        width: 30,
+        height: 30,
+        opacity: zoneIntensity * 0.2,
+        color: '0, 255, 255'
+      });
+    }
+    
+    return zones;
+  }, [voltage, chargeSymmetry, dielectric]);
 
   const handleExport = () => {
     const exportData = {
@@ -70,7 +169,7 @@ export const ElectrokineticModelingLayer: React.FC<ElectrokineticModelingLayerPr
         dIdt,
       },
       symbolicForceMap: {
-        forceVector,
+        forceVectors,
         fieldLineCount: fieldLines.length,
       },
     };
@@ -106,19 +205,34 @@ export const ElectrokineticModelingLayer: React.FC<ElectrokineticModelingLayerPr
 
           {/* Cymatic Imagery */}
           <g filter="url(#cymaticFilter)" opacity="0.3">
-            {cymaticPatterns.map(circle => (
-              <circle
-                key={circle.id}
-                cx="150"
-                cy="100"
-                r={circle.r}
-                fill="none"
-                stroke="#0f0"
-                strokeWidth="1"
-                className={styles.cymaticCircle}
-                style={{ animationDuration: circle.animationDuration }}
-              />
-            ))}
+            {cymaticPatterns.map(pattern => 
+              pattern.type === 'circle' ? (
+                <circle
+                  key={pattern.id}
+                  cx={pattern.cx}
+                  cy={pattern.cy}
+                  r={pattern.r}
+                  fill="none"
+                  stroke={`rgba(0, 255, 0, ${pattern.opacity})`}
+                  strokeWidth="1"
+                  className={styles.cymaticCircle}
+                  style={{ animationDuration: pattern.animationDuration }}
+                />
+              ) : (
+                <ellipse
+                  key={pattern.id}
+                  cx={pattern.cx}
+                  cy={pattern.cy}
+                  rx={pattern.rx}
+                  ry={pattern.ry}
+                  fill="none"
+                  stroke={`rgba(0, 255, 255, ${pattern.opacity})`}
+                  strokeWidth="1"
+                  className={styles.cymaticCircle}
+                  style={{ animationDuration: pattern.animationDuration }}
+                />
+              )
+            )}
           </g>
 
           {/* Field Lines */}
@@ -126,26 +240,56 @@ export const ElectrokineticModelingLayer: React.FC<ElectrokineticModelingLayerPr
             <path
               key={line.id}
               d={line.d}
-              stroke="rgba(0, 255, 0, 0.4)"
+              stroke={`rgba(0, 255, 0, ${line.opacity})`}
               strokeWidth="1"
               fill="none"
               className={styles.fieldLine}
             />
           ))}
 
-          {/* Force Vector */}
-          <line
-            x1={forceVector.x1} y1={forceVector.y1}
-            x2={forceVector.x2} y2={forceVector.y2}
-            stroke="#0f0"
-            strokeWidth="2"
-            markerEnd="url(#arrow)"
-            className={styles.forceVector}
-          />
+          {/* Force Vectors */}
+          {forceVectors.map(vector => (
+            <line
+              key={vector.id}
+              x1={vector.x1} y1={vector.y1}
+              x2={vector.x2} y2={vector.y2}
+              stroke={vector.color}
+              strokeWidth={vector.width}
+              markerEnd="url(#arrow)"
+              className={styles.forceVector}
+            />
+          ))}
 
-          {/* Capacitor Plates */}
-          <rect x="50" y="180" width="200" height="5" fill="rgba(0,255,255,0.5)" />
-          <rect x="50" y="10" width="200" height="5" fill="rgba(255,0,255,0.5)" />
+          {/* Thrust Zones */}
+          {thrustZones.map(zone => (
+            <rect
+              key={zone.id}
+              x={zone.x}
+              y={zone.y}
+              width={zone.width}
+              height={zone.height}
+              fill={`rgba(${zone.color}, ${zone.opacity})`}
+              stroke={`rgba(${zone.color}, ${zone.opacity * 2})`}
+              strokeWidth="1"
+              rx="5"
+            />
+          ))}
+
+          {/* Dynamic Capacitor Plates */}
+          <rect 
+            x="50" 
+            y="180" 
+            width={200 + voltage / 5} 
+            height={3 + dielectric} 
+            fill={`rgba(0,255,255,${0.3 + voltage / 400})`} 
+          />
+          <rect 
+            x="50" 
+            y={10 - chargeSymmetry * 5} 
+            width={200 + voltage / 5} 
+            height={3 + dielectric} 
+            fill={`rgba(255,0,255,${0.3 + voltage / 400})`} 
+          />
         </svg>
       </div>
       <div className={styles.controls}>
