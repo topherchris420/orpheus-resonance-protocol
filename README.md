@@ -42,7 +42,7 @@ To run this application locally, you will need to have [Node.js](https://nodejs.
 
 1.  **Clone the repository:**
     ```bash
-    git clone <https://github.com/topherchris420/orpheus-resonance-protocol.git
+    git clone https://github.com/topherchris420/orpheus-resonance-protocol.git
     cd orpheus-resonance-protocol
     ```
 
