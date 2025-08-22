@@ -20,6 +20,7 @@ This project is a high-fidelity front-end prototype built with **React, TypeScri
 An early prototype of the core concepts, named **Rhythma**, was developed in Python with Gradio. It demonstrates the initial exploration into bio-symbolic entrainment and can be viewed here:
 
 **🔗 [Live Demo on Hugging Face](https://huggingface.co/spaces/ciaochris/Temporal_Exploration)**
+      [Live Demo from Google](https://opal.withgoogle.com/?flow=drive:/1BipLEqTmAsN9CKVLINFhbDl7JKxJZ0Mz&shared&mode=app)
 
 ---
 
