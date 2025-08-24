@@ -15,7 +15,7 @@ import { useAudioAnalysis } from '../hooks/useAudioAnalysis';
 import { usePhaseProgression } from '../hooks/usePhaseProgression';
 import { useInteractionState } from '../hooks/useInteractionState';
 import { useRedTeamSimulation } from '../hooks/useRedTeamSimulation';
-import { ElectrokineticModelingLayer } from './ElectrokineticModelingLayer';
+import { NeuroEmSimulator } from './NeuroEmSimulator';
 import { Button } from './ui/button';
 import { dataGenerator } from '../data/realisticData';
 
@@ -144,7 +144,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
           onClick={() => setShowElectrokineticLayer(prev => !prev)}
           variant={showElectrokineticLayer ? "secondary" : "default"}
         >
-          {showElectrokineticLayer ? "EK Layer Off" : "EK Layer On"}
+          {showElectrokineticLayer ? "NeuroSim Off" : "NeuroSim On"}
         </Button>
         {simulationMode && (
           <Button
@@ -206,7 +206,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
           {/* Center Top - Decision Matrix Simulator or Tactical Data Display */}
           <div className="col-span-6 row-span-3">
             {showElectrokineticLayer ? (
-              <ElectrokineticModelingLayer bioResonanceFrequency={bioResonanceFrequency} />
+              <NeuroEmSimulator bioResonanceFrequency={bioResonanceFrequency} />
             ) : simulationMode ? (
               <DecisionMatrixSimulator
                 decisionPoints={[]}
@@ -291,7 +291,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
           {/* Mobile Main Visualizer */}
           <div className="flex-1 min-h-[40vh]">
             {showElectrokineticLayer ? (
-              <ElectrokineticModelingLayer bioResonanceFrequency={bioResonanceFrequency} />
+              <NeuroEmSimulator bioResonanceFrequency={bioResonanceFrequency} />
             ) : simulationMode ? (
               <DecisionMatrixSimulator
                 decisionPoints={[]}
