@@ -43,7 +43,9 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
     pulseRate,
     activeFrequency: audioFrequency,
     microphoneConnected,
-    audioError
+    audioError,
+    volume,
+    setVolume
   } = useAudioAnalysis();
 
   const { acclimatizationLevel, simulationMode, handleAcclimatizationAdvance } = usePhaseProgression(onAccessLevelChange);
@@ -185,8 +187,8 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
               cognitiveStressIndex={cognitiveStressIndex}
               bioResonanceSupportFrequency={bioResonanceFrequency}
               setBioResonanceSupportFrequency={setBioResonanceFrequency}
-              volume={audioLevel}
-              setVolume={() => {}}
+              volume={volume}
+              setVolume={setVolume}
             />
           </div>
 
