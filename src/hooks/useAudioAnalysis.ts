@@ -29,13 +29,16 @@ export const useAudioAnalysis = (): AudioAnalysisResult => {
   const animationFrameRef = useRef<number | null>(null);
   const oscillatorRef = useRef<OscillatorNode | null>(null);
   const gainRef = useRef<GainNode | null>(null);
+  const lastUpdateRef = useRef(0);
 
   useEffect(() => {
     const initializeAudio = async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         streamRef.current = stream;
-        const context = new (window.AudioContext || (window as any).webkitAudioContext)();
+        // Fix for 'Unexpected any' lint error
+        const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+        const context = new AudioContextClass();
         audioContextRef.current = context;
 
         analyserRef.current = context.createAnalyser();
@@ -64,21 +67,33 @@ export const useAudioAnalysis = (): AudioAnalysisResult => {
       const dataArray = new Uint8Array(analyser.frequencyBinCount);
 
       const analyze = () => {
+        // Throttle updates to ~20fps (every 50ms) to reduce React re-renders
+        const now = Date.now();
+        if (now - lastUpdateRef.current < 50) {
+          animationFrameRef.current = requestAnimationFrame(analyze);
+          return;
+        }
+        lastUpdateRef.current = now;
+
         analyser.getByteFrequencyData(dataArray);
 
         // Breath Analysis (simplified)
         const breathFrequencyRange = [0, 100]; // Hz
-        const breathEnergy = dataArray.slice(0, Math.round(breathFrequencyRange[1] / (audioContextRef.current.sampleRate / analyser.fftSize))).reduce((sum, value) => sum + value, 0);
+        // Use non-null assertion for audioContextRef.current as it is initialized in initializeAudio
+        const sampleRate = audioContextRef.current!.sampleRate;
+        const fftSize = analyser.fftSize;
+
+        const breathEnergy = dataArray.slice(0, Math.round(breathFrequencyRange[1] / (sampleRate / fftSize))).reduce((sum, value) => sum + value, 0);
         const breathState = breathEnergy / (breathFrequencyRange[1] * 2); // Normalized
 
         // Emotion Analysis (simplified)
         const valenceFrequencyRange = [100, 1000]; // Hz
-        const valenceEnergy = dataArray.slice(Math.round(valenceFrequencyRange[0] / (audioContextRef.current.sampleRate / analyser.fftSize)), Math.round(valenceFrequencyRange[1] / (audioContextRef.current.sampleRate / analyser.fftSize))).reduce((sum, value) => sum + value, 0);
+        const valenceEnergy = dataArray.slice(Math.round(valenceFrequencyRange[0] / (sampleRate / fftSize)), Math.round(valenceFrequencyRange[1] / (sampleRate / fftSize))).reduce((sum, value) => sum + value, 0);
         const valenceState = valenceEnergy / (valenceFrequencyRange[1] * 2); // Normalized
 
         // Energy Analysis (simplified)
         const energyFrequencyRange = [1000, 5000]; // Hz
-        const energyEnergy = dataArray.slice(Math.round(energyFrequencyRange[0] / (audioContextRef.current.sampleRate / analyser.fftSize)), Math.round(energyFrequencyRange[1] / (audioContextRef.current.sampleRate / analyser.fftSize))).reduce((sum, value) => sum + value, 0);
+        const energyEnergy = dataArray.slice(Math.round(energyFrequencyRange[0] / (sampleRate / fftSize)), Math.round(energyFrequencyRange[1] / (sampleRate / fftSize))).reduce((sum, value) => sum + value, 0);
         const energyState = energyEnergy / (energyFrequencyRange[1] * 2); // Normalized
 
         // Determine healing tone
