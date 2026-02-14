@@ -33,7 +33,7 @@ An earlier version, **Rhythma**, explored bio-symbolic entrainment using Python 
 - **Red Team Simulation Mode:** Introduces stressors to build resilience, mimicking high-pressure civilian ops.
 - **Modular & Responsive Design:** Adapts to desktop or mobile, ensuring usability across devices.
 
-*Note:* The "Electrokinetic Modeling Layer" is under development and not yet functional in this prototype.
+*Note:* The NeuroSim (Electrokinetic Modeling Layer) is currently experimental and intended for exploratory simulation workflows.
 
 ---
 
@@ -57,22 +57,6 @@ Run this locally with [Node.js](https://nodejs.org/) and `npm` installed:
 
 ## 🚀 Next Steps
 This solo-developed prototype is open for collaboration. Contact me at ciao_chris@proton.me or connect on LinkedIn to explore pilots with FAA, healthcare, or emergency response teams. Built with AI efficiency—30% faster development time!
-1.  **Clone the repository:**
-    ```bash
-    git clone topherchris420/orpheus-resonance-protocol.git
-    cd orpheus-resonance-protocol
-    ```
-
-2.  **Install dependencies:**
-    ```bash
-    npm install
-    ```
-
-3.  **Run the development server:**
-    ```bash
-    npm run dev
-    ```
-    This will start the Vite development server, and you can view the application in your browser at `http://localhost:5173` (the port may vary).
 
 ### Other Available Scripts
 
@@ -83,6 +67,10 @@ This solo-developed prototype is open for collaboration. Contact me at ciao_chri
 *   **Preview the production build:**
     ```bash
     npm run preview
+    ```
+*   **Run tests:**
+    ```bash
+    npm run test
     ```
 
 ---
