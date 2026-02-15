@@ -13,14 +13,23 @@ interface AudioAnalysisResult {
   setVolume: (volume: number) => void;
 }
 
+interface AnalysisState {
+  audioLevel: number;
+  breathPattern: number;
+  pulseRate: number;
+  healingTone: number;
+}
+
 export const useAudioAnalysis = (): AudioAnalysisResult => {
-  const [audioLevel, setAudioLevel] = useState(0);
-  const [breathPattern, setBreathPattern] = useState(0);
-  const [pulseRate, setPulseRate] = useState(72);
+  const [analysisState, setAnalysisState] = useState<AnalysisState>({
+    audioLevel: 0,
+    breathPattern: 0,
+    pulseRate: 72,
+    healingTone: 417,
+  });
   const [activeFrequency, setActiveFrequency] = useState(432);
   const [microphoneConnected, setMicrophoneConnected] = useState(false);
   const [audioError, setAudioError] = useState<string | null>(null);
-  const [healingTone, setHealingTone] = useState(417);
   const [volume, setVolume] = useState(0.5);
 
   const audioContextRef = useRef<AudioContext | null>(null);
@@ -97,24 +106,31 @@ export const useAudioAnalysis = (): AudioAnalysisResult => {
         const energyState = energyEnergy / (energyFrequencyRange[1] * 2); // Normalized
 
         // Determine healing tone
+        let newHealingTone = 417;
         if (valenceState > 0.6 && energyState > 0.6) {
-          setHealingTone(174); // Stressed
+          newHealingTone = 174; // Stressed
         } else if (valenceState > 0.6) {
-          setHealingTone(285); // Anxious
+          newHealingTone = 285; // Anxious
         } else if (breathState < 0.2) {
-          setHealingTone(396); // Sad/Depressed
+          newHealingTone = 396; // Sad/Depressed
         } else if (breathState > 0.8) {
-          setHealingTone(639); // Peaceful
+          newHealingTone = 639; // Peaceful
         } else if (valenceState < 0.2 && energyState < 0.2) {
-            setHealingTone(528); // Calm
+            newHealingTone = 528; // Calm
         } else {
-            setHealingTone(417); // Neutral
+            newHealingTone = 417; // Neutral
         }
 
+        const newAudioLevel = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length / 255;
+        const newBreathPattern = breathState;
+        const newPulseRate = 60 + (valenceState * 40);
 
-        setAudioLevel(dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length / 255);
-        setBreathPattern(breathState);
-        setPulseRate(60 + (valenceState * 40));
+        setAnalysisState({
+          audioLevel: newAudioLevel,
+          breathPattern: newBreathPattern,
+          pulseRate: newPulseRate,
+          healingTone: newHealingTone
+        });
 
         animationFrameRef.current = requestAnimationFrame(analyze);
       };
@@ -141,9 +157,9 @@ export const useAudioAnalysis = (): AudioAnalysisResult => {
 
   useEffect(() => {
     if (oscillatorRef.current && audioContextRef.current) {
-      oscillatorRef.current.frequency.setValueAtTime(healingTone, audioContextRef.current.currentTime);
+      oscillatorRef.current.frequency.setValueAtTime(analysisState.healingTone, audioContextRef.current.currentTime);
     }
-  }, [healingTone]);
+  }, [analysisState.healingTone]);
 
   useEffect(() => {
     if (gainRef.current && audioContextRef.current) {
@@ -151,5 +167,13 @@ export const useAudioAnalysis = (): AudioAnalysisResult => {
     }
   }, [volume]);
 
-  return { audioLevel, breathPattern, pulseRate, activeFrequency, microphoneConnected, audioError, healingTone, setHealingTone, volume, setVolume };
+  return {
+    ...analysisState,
+    activeFrequency,
+    microphoneConnected,
+    audioError,
+    setHealingTone: (tone: number) => setAnalysisState(prev => ({ ...prev, healingTone: tone })),
+    volume,
+    setVolume
+  };
 };
