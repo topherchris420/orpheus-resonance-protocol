@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 
 interface AudioAnalysisResult {
   audioLevel: number;
@@ -167,12 +167,16 @@ export const useAudioAnalysis = (): AudioAnalysisResult => {
     }
   }, [volume]);
 
+  const setHealingTone = useCallback((tone: number) => {
+    setAnalysisState(prev => ({ ...prev, healingTone: tone }));
+  }, []);
+
   return {
     ...analysisState,
     activeFrequency,
     microphoneConnected,
     audioError,
-    setHealingTone: (tone: number) => setAnalysisState(prev => ({ ...prev, healingTone: tone })),
+    setHealingTone,
     volume,
     setVolume
   };

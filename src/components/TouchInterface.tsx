@@ -9,7 +9,7 @@ interface TouchInterfaceProps {
   onFrequencyChange: (frequency: number) => void;
 }
 
-export const TouchInterface: React.FC<TouchInterfaceProps> = ({
+export const TouchInterface: React.FC<TouchInterfaceProps> = React.memo(({
   phase,
   onTouch,
   onFrequencyChange
@@ -145,4 +145,4 @@ export const TouchInterface: React.FC<TouchInterfaceProps> = ({
       )}
     </div>
   );
-};
+});

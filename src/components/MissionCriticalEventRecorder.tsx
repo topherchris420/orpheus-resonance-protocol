@@ -1,6 +1,6 @@
 import React from 'react';
 
-interface CognitiveSnapshot {
+export interface CognitiveSnapshot {
   id: string;
   timestamp: number;
   event: string;
@@ -13,7 +13,7 @@ interface MissionCriticalEventRecorderProps {
   onSnapshotSelect: (snapshot: CognitiveSnapshot) => void;
 }
 
-export const MissionCriticalEventRecorder: React.FC<MissionCriticalEventRecorderProps> = ({
+export const MissionCriticalEventRecorder: React.FC<MissionCriticalEventRecorderProps> = React.memo(({
   snapshots,
   onSnapshotSelect,
 }) => {
@@ -39,4 +39,4 @@ export const MissionCriticalEventRecorder: React.FC<MissionCriticalEventRecorder
       </div>
     </div>
   );
-};
+});

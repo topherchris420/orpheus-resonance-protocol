@@ -14,7 +14,7 @@ interface SitRepIntelFeedProps {
   currentClearance: number;
 }
 
-export const SitRepIntelFeed: React.FC<SitRepIntelFeedProps> = ({
+export const SitRepIntelFeed: React.FC<SitRepIntelFeedProps> = React.memo(({
   intelFeed,
   currentClearance,
 }) => {
@@ -51,4 +51,4 @@ export const SitRepIntelFeed: React.FC<SitRepIntelFeedProps> = ({
       </div>
     </div>
   );
-};
+});

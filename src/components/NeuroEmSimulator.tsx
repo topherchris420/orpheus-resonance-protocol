@@ -110,7 +110,7 @@ interface NeuroEmSimulatorProps {
   bioResonanceFrequency: number;
 }
 
-export const NeuroEmSimulator: React.FC<NeuroEmSimulatorProps> = ({ bioResonanceFrequency }) => {
+export const NeuroEmSimulator: React.FC<NeuroEmSimulatorProps> = React.memo(({ bioResonanceFrequency }) => {
   const [frequency, setFrequency] = useState(10); // Hz
   const [amplitude, setAmplitude] = useState(0.5); // 0 to 1
   const [waveform, setWaveform] = useState('sine'); // sine, square, sawtooth
@@ -198,4 +198,4 @@ export const NeuroEmSimulator: React.FC<NeuroEmSimulatorProps> = ({ bioResonance
       </div>
     </div>
   );
-};
+});

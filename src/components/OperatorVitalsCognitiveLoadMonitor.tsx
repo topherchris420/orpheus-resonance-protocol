@@ -12,7 +12,7 @@ interface OperatorVitalsCognitiveLoadMonitorProps {
   setVolume: (volume: number) => void;
 }
 
-export const OperatorVitalsCognitiveLoadMonitor: React.FC<OperatorVitalsCognitiveLoadMonitorProps> = ({
+export const OperatorVitalsCognitiveLoadMonitor: React.FC<OperatorVitalsCognitiveLoadMonitorProps> = React.memo(({
   hrv,
   respiratoryRate,
   cognitiveStressIndex,
@@ -78,4 +78,4 @@ export const OperatorVitalsCognitiveLoadMonitor: React.FC<OperatorVitalsCognitiv
       </div>
     </div>
   );
-};
+});
