@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { TacticalDataDisplay } from './TacticalDataDisplay';
+import { TacticalDataDisplay as RawTacticalDataDisplay } from './TacticalDataDisplay';
 import { OperatorVitalsCognitiveLoadMonitor } from './OperatorVitalsCognitiveLoadMonitor';
-import { SitRepIntelFeed } from './SitRepIntelFeed';
-import { TouchInterface } from './TouchInterface';
-import { DecisionMatrixSimulator } from './DecisionMatrixSimulator';
+import { SitRepIntelFeed as RawSitRepIntelFeed } from './SitRepIntelFeed';
+import { TouchInterface as RawTouchInterface } from './TouchInterface';
+import { DecisionMatrixSimulator as RawDecisionMatrixSimulator } from './DecisionMatrixSimulator';
 import { TemporalArchive } from './TemporalArchive';
-import { SquadCohesionIndex } from './SquadCohesionIndex';
-import { MissionCriticalEventRecorder } from './MissionCriticalEventRecorder';
+import { SquadCohesionIndex as RawSquadCohesionIndex } from './SquadCohesionIndex';
+import { MissionCriticalEventRecorder as RawMissionCriticalEventRecorder } from './MissionCriticalEventRecorder';
 import { StatusIndicators } from './StatusIndicators';
 import { HeaderStatusBar } from './HeaderStatusBar';
 import { MobileHeader } from './MobileHeader';
@@ -18,6 +18,16 @@ import { useRedTeamSimulation } from '../hooks/useRedTeamSimulation';
 import { NeuroEmSimulator } from './NeuroEmSimulator';
 import { Button } from './ui/button';
 import { dataGenerator } from '../data/realisticData';
+
+const TacticalDataDisplay = React.memo(RawTacticalDataDisplay);
+const SitRepIntelFeed = React.memo(RawSitRepIntelFeed);
+const TouchInterface = React.memo(RawTouchInterface);
+const DecisionMatrixSimulator = React.memo(RawDecisionMatrixSimulator);
+const SquadCohesionIndex = React.memo(RawSquadCohesionIndex);
+const MissionCriticalEventRecorder = React.memo(RawMissionCriticalEventRecorder);
+
+const EMPTY_LIST = [];
+const NO_OP = () => {};
 
 interface PegasusSimulationProps {
   accessLevel: number;
@@ -221,11 +231,11 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
           {/* Center Top - Decision Matrix Simulator or Tactical Data Display */}
           <div className="col-span-6 row-span-3">
             {showElectrokineticLayer ? (
-              <NeuroEmSimulator bioResonanceFrequency={bioResonanceFrequency} />
+              <NeuroEmSimulator />
             ) : simulationMode ? (
               <DecisionMatrixSimulator
-                decisionPoints={[]}
-                onOutcomeSelect={() => {}}
+                decisionPoints={EMPTY_LIST}
+                onOutcomeSelect={NO_OP}
               />
             ) : (
               <TacticalDataDisplay
@@ -265,8 +275,8 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
           {/* Right Panel Bottom - Mission Critical Event Recorder */}
           <div className="col-span-3 row-span-3">
             <MissionCriticalEventRecorder
-              snapshots={[]}
-              onSnapshotSelect={() => {}}
+              snapshots={EMPTY_LIST}
+              onSnapshotSelect={NO_OP}
             />
           </div>
 
@@ -297,11 +307,11 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
           {/* Mobile Main Visualizer */}
           <div className="flex-1 min-h-[40vh]">
             {showElectrokineticLayer ? (
-              <NeuroEmSimulator bioResonanceFrequency={bioResonanceFrequency} />
+              <NeuroEmSimulator />
             ) : simulationMode ? (
               <DecisionMatrixSimulator
-                decisionPoints={[]}
-                onOutcomeSelect={() => {}}
+                decisionPoints={EMPTY_LIST}
+                onOutcomeSelect={NO_OP}
               />
             ) : (
               <TacticalDataDisplay
@@ -338,8 +348,8 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
               onFrequencyChange={setBioResonanceFrequency}
             />
             <MissionCriticalEventRecorder
-              snapshots={[]}
-              onSnapshotSelect={() => {}}
+              snapshots={EMPTY_LIST}
+              onSnapshotSelect={NO_OP}
             />
           </div>
 
