@@ -7,7 +7,7 @@ interface SquadCohesionIndexProps {
   onCohesionChange: (cohesion: number) => void;
 }
 
-export const SquadCohesionIndex: React.FC<SquadCohesionIndexProps> = ({
+export const SquadCohesionIndex: React.FC<SquadCohesionIndexProps> = React.memo(({
   squadVitals,
   communicationEfficiency,
   onCohesionChange,
@@ -155,4 +155,4 @@ export const SquadCohesionIndex: React.FC<SquadCohesionIndexProps> = ({
       )}
     </div>
   );
-};
+});

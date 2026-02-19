@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-interface DecisionPoint {
+export interface DecisionPoint {
   id: string;
   title: string;
   description: string;
@@ -17,7 +17,7 @@ interface DecisionMatrixSimulatorProps {
   onOutcomeSelect: (outcomeId: string) => void;
 }
 
-export const DecisionMatrixSimulator: React.FC<DecisionMatrixSimulatorProps> = ({
+export const DecisionMatrixSimulator: React.FC<DecisionMatrixSimulatorProps> = React.memo(({
   decisionPoints,
   onOutcomeSelect,
 }) => {
@@ -81,4 +81,4 @@ export const DecisionMatrixSimulator: React.FC<DecisionMatrixSimulatorProps> = (
       </div>
     </div>
   );
-};
+});

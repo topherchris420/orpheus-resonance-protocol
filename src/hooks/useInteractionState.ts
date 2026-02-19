@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 
 interface InteractionEvent {
   x: number;
@@ -25,14 +25,14 @@ export const useInteractionState = (): InteractionStateResult => {
   const [cohesionScore, setCohesionScore] = useState(0);
   const [bioResonanceFrequency, setBioResonanceFrequency] = useState(40);
 
-  const addInteractionEvent = (event: InteractionEvent) => {
+  const addInteractionEvent = useCallback((event: InteractionEvent) => {
     setInteractionEvents(prev => [...prev.slice(-4), event]);
-  };
+  }, []);
 
-  const handleTemporalShift = (timeline: number, moment: number) => {
+  const handleTemporalShift = useCallback((timeline: number, moment: number) => {
     setCurrentTimeline(timeline);
     setTemporalMoment(moment);
-  };
+  }, []);
 
   return {
     interactionEvents,

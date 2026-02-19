@@ -3,10 +3,10 @@ import { TacticalDataDisplay } from './TacticalDataDisplay';
 import { OperatorVitalsCognitiveLoadMonitor } from './OperatorVitalsCognitiveLoadMonitor';
 import { SitRepIntelFeed } from './SitRepIntelFeed';
 import { TouchInterface } from './TouchInterface';
-import { DecisionMatrixSimulator } from './DecisionMatrixSimulator';
+import { DecisionMatrixSimulator, DecisionPoint } from './DecisionMatrixSimulator';
 import { TemporalArchive } from './TemporalArchive';
 import { SquadCohesionIndex } from './SquadCohesionIndex';
-import { MissionCriticalEventRecorder } from './MissionCriticalEventRecorder';
+import { MissionCriticalEventRecorder, CognitiveSnapshot } from './MissionCriticalEventRecorder';
 import { StatusIndicators } from './StatusIndicators';
 import { HeaderStatusBar } from './HeaderStatusBar';
 import { MobileHeader } from './MobileHeader';
@@ -18,6 +18,11 @@ import { useRedTeamSimulation } from '../hooks/useRedTeamSimulation';
 import { NeuroEmSimulator } from './NeuroEmSimulator';
 import { Button } from './ui/button';
 import { dataGenerator } from '../data/realisticData';
+
+// Stable constants to prevent unnecessary re-renders in memoized children
+const EMPTY_SNAPSHOTS: CognitiveSnapshot[] = [];
+const EMPTY_DECISION_POINTS: DecisionPoint[] = [];
+const NO_OP = () => {};
 
 interface PegasusSimulationProps {
   accessLevel: number;
@@ -224,8 +229,8 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
               <NeuroEmSimulator bioResonanceFrequency={bioResonanceFrequency} />
             ) : simulationMode ? (
               <DecisionMatrixSimulator
-                decisionPoints={[]}
-                onOutcomeSelect={() => {}}
+                decisionPoints={EMPTY_DECISION_POINTS}
+                onOutcomeSelect={NO_OP}
               />
             ) : (
               <TacticalDataDisplay
@@ -265,8 +270,8 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
           {/* Right Panel Bottom - Mission Critical Event Recorder */}
           <div className="col-span-3 row-span-3">
             <MissionCriticalEventRecorder
-              snapshots={[]}
-              onSnapshotSelect={() => {}}
+              snapshots={EMPTY_SNAPSHOTS}
+              onSnapshotSelect={NO_OP}
             />
           </div>
 
@@ -300,8 +305,8 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
               <NeuroEmSimulator bioResonanceFrequency={bioResonanceFrequency} />
             ) : simulationMode ? (
               <DecisionMatrixSimulator
-                decisionPoints={[]}
-                onOutcomeSelect={() => {}}
+                decisionPoints={EMPTY_DECISION_POINTS}
+                onOutcomeSelect={NO_OP}
               />
             ) : (
               <TacticalDataDisplay
@@ -338,8 +343,8 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
               onFrequencyChange={setBioResonanceFrequency}
             />
             <MissionCriticalEventRecorder
-              snapshots={[]}
-              onSnapshotSelect={() => {}}
+              snapshots={EMPTY_SNAPSHOTS}
+              onSnapshotSelect={NO_OP}
             />
           </div>
 

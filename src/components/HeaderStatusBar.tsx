@@ -12,7 +12,7 @@ interface HeaderStatusBarProps {
   temporalMoment: number;
 }
 
-export const HeaderStatusBar: React.FC<HeaderStatusBarProps> = ({
+export const HeaderStatusBar: React.FC<HeaderStatusBarProps> = React.memo(({
   phase,
   temporalMode,
   microphoneConnected,
@@ -56,4 +56,4 @@ export const HeaderStatusBar: React.FC<HeaderStatusBarProps> = ({
       </div>
     </div>
   );
-};
+});

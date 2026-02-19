@@ -11,7 +11,7 @@ interface MobileHeaderProps {
   temporalMoment: number;
 }
 
-export const MobileHeader: React.FC<MobileHeaderProps> = ({
+export const MobileHeader: React.FC<MobileHeaderProps> = React.memo(({
   phase,
   temporalMode,
   microphoneConnected,
@@ -48,4 +48,4 @@ export const MobileHeader: React.FC<MobileHeaderProps> = ({
       )}
     </div>
   );
-};
+});

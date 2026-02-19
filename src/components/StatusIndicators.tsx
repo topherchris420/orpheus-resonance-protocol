@@ -6,7 +6,7 @@ interface StatusIndicatorsProps {
   microphoneConnected: boolean;
 }
 
-export const StatusIndicators: React.FC<StatusIndicatorsProps> = ({
+export const StatusIndicators: React.FC<StatusIndicatorsProps> = React.memo(({
   audioError,
   microphoneConnected
 }) => {
@@ -27,4 +27,4 @@ export const StatusIndicators: React.FC<StatusIndicatorsProps> = ({
   }
 
   return null;
-};
+});

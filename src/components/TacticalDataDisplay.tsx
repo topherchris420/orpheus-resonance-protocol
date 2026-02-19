@@ -7,7 +7,7 @@ interface TacticalDataDisplayProps {
   squadPositions: Array<{ id: string; position: { x: number; y: number } }>;
 }
 
-export const TacticalDataDisplay: React.FC<TacticalDataDisplayProps> = ({
+export const TacticalDataDisplay: React.FC<TacticalDataDisplayProps> = React.memo(({
   threatIndicators,
   optimalPathing,
   squadPositions,
@@ -87,4 +87,4 @@ export const TacticalDataDisplay: React.FC<TacticalDataDisplayProps> = ({
       <div className="absolute top-2 left-2 font-bold">TACTICAL DATA DISPLAY</div>
     </div>
   );
-};
+});
