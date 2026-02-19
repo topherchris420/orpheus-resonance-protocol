@@ -20,6 +20,16 @@ interface AnalysisState {
   healingTone: number;
 }
 
+// Helper to sum array range without slicing (avoids GC)
+const sumRange = (array: Uint8Array, start: number, end: number): number => {
+  let sum = 0;
+  const safeEnd = Math.min(end, array.length);
+  for (let i = start; i < safeEnd; i++) {
+    sum += array[i];
+  }
+  return sum;
+};
+
 export const useAudioAnalysis = (): AudioAnalysisResult => {
   const [analysisState, setAnalysisState] = useState<AnalysisState>({
     audioLevel: 0,
@@ -91,18 +101,24 @@ export const useAudioAnalysis = (): AudioAnalysisResult => {
         // Use non-null assertion for audioContextRef.current as it is initialized in initializeAudio
         const sampleRate = audioContextRef.current!.sampleRate;
         const fftSize = analyser.fftSize;
+        const binSize = sampleRate / fftSize;
 
-        const breathEnergy = dataArray.slice(0, Math.round(breathFrequencyRange[1] / (sampleRate / fftSize))).reduce((sum, value) => sum + value, 0);
+        const breathEndIndex = Math.round(breathFrequencyRange[1] / binSize);
+        const breathEnergy = sumRange(dataArray, 0, breathEndIndex);
         const breathState = breathEnergy / (breathFrequencyRange[1] * 2); // Normalized
 
         // Emotion Analysis (simplified)
         const valenceFrequencyRange = [100, 1000]; // Hz
-        const valenceEnergy = dataArray.slice(Math.round(valenceFrequencyRange[0] / (sampleRate / fftSize)), Math.round(valenceFrequencyRange[1] / (sampleRate / fftSize))).reduce((sum, value) => sum + value, 0);
+        const valenceStartIndex = Math.round(valenceFrequencyRange[0] / binSize);
+        const valenceEndIndex = Math.round(valenceFrequencyRange[1] / binSize);
+        const valenceEnergy = sumRange(dataArray, valenceStartIndex, valenceEndIndex);
         const valenceState = valenceEnergy / (valenceFrequencyRange[1] * 2); // Normalized
 
         // Energy Analysis (simplified)
         const energyFrequencyRange = [1000, 5000]; // Hz
-        const energyEnergy = dataArray.slice(Math.round(energyFrequencyRange[0] / (sampleRate / fftSize)), Math.round(energyFrequencyRange[1] / (sampleRate / fftSize))).reduce((sum, value) => sum + value, 0);
+        const energyStartIndex = Math.round(energyFrequencyRange[0] / binSize);
+        const energyEndIndex = Math.round(energyFrequencyRange[1] / binSize);
+        const energyEnergy = sumRange(dataArray, energyStartIndex, energyEndIndex);
         const energyState = energyEnergy / (energyFrequencyRange[1] * 2); // Normalized
 
         // Determine healing tone
@@ -121,7 +137,14 @@ export const useAudioAnalysis = (): AudioAnalysisResult => {
             newHealingTone = 417; // Neutral
         }
 
-        const newAudioLevel = dataArray.reduce((sum, value) => sum + value, 0) / dataArray.length / 255;
+        // Optimized: Calculate average without reduce/slice overhead
+        let totalSum = 0;
+        const len = dataArray.length;
+        for (let i = 0; i < len; i++) {
+          totalSum += dataArray[i];
+        }
+        const newAudioLevel = totalSum / len / 255;
+
         const newBreathPattern = breathState;
         const newPulseRate = 60 + (valenceState * 40);
 
