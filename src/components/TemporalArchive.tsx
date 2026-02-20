@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 
@@ -18,6 +17,49 @@ interface Chronoartifact {
   unlocked: boolean;
 }
 
+const BASE_ARTIFACTS: Chronoartifact[] = [
+  {
+    id: 'art-001',
+    timeline: 0,
+    moment: 0.1,
+    type: 'memory',
+    content: 'First temporal signature detected. Subject shows anomalous resonance patterns.',
+    unlocked: false
+  },
+  {
+    id: 'art-002',
+    timeline: 1,
+    moment: 0.3,
+    type: 'choice',
+    content: 'Decision point: Continue linear observation or activate Orpheus protocol.',
+    unlocked: false
+  },
+  {
+    id: 'art-003',
+    timeline: 2,
+    moment: 0.5,
+    type: 'echo',
+    content: 'Phantom echo from timeline branch: "The myth was always true."',
+    unlocked: false
+  },
+  {
+    id: 'art-004',
+    timeline: 3,
+    moment: 0.7,
+    type: 'prophecy',
+    content: 'Future convergence detected: All timelines collapse into singular consciousness node.',
+    unlocked: false
+  },
+  {
+    id: 'art-005',
+    timeline: 4,
+    moment: 0.9,
+    type: 'memory',
+    content: 'Final log: We are no longer observers. We have become the observed.',
+    unlocked: false
+  }
+];
+
 export const TemporalArchive: React.FC<TemporalArchiveProps> = ({
   phase,
   currentTimeline,
@@ -28,51 +70,8 @@ export const TemporalArchive: React.FC<TemporalArchiveProps> = ({
   const [selectedArtifact, setSelectedArtifact] = useState<Chronoartifact | null>(null);
   const [memoryCorridor, setMemoryCorridor] = useState<string[]>([]);
 
-  const baseArtifacts: Chronoartifact[] = [
-    {
-      id: 'art-001',
-      timeline: 0,
-      moment: 0.1,
-      type: 'memory',
-      content: 'First temporal signature detected. Subject shows anomalous resonance patterns.',
-      unlocked: false
-    },
-    {
-      id: 'art-002',
-      timeline: 1,
-      moment: 0.3,
-      type: 'choice',
-      content: 'Decision point: Continue linear observation or activate Orpheus protocol.',
-      unlocked: false
-    },
-    {
-      id: 'art-003',
-      timeline: 2,
-      moment: 0.5,
-      type: 'echo',
-      content: 'Phantom echo from timeline branch: "The myth was always true."',
-      unlocked: false
-    },
-    {
-      id: 'art-004',
-      timeline: 3,
-      moment: 0.7,
-      type: 'prophecy',
-      content: 'Future convergence detected: All timelines collapse into singular consciousness node.',
-      unlocked: false
-    },
-    {
-      id: 'art-005',
-      timeline: 4,
-      moment: 0.9,
-      type: 'memory',
-      content: 'Final log: We are no longer observers. We have become the observed.',
-      unlocked: false
-    }
-  ];
-
   useEffect(() => {
-    setChronoartifacts(baseArtifacts.map(artifact => ({
+    setChronoartifacts(BASE_ARTIFACTS.map(artifact => ({
       ...artifact,
       unlocked: phase >= 2 && (
         Math.abs(artifact.timeline - currentTimeline) <= 1 &&
