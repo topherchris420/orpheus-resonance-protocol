@@ -1,69 +1,118 @@
 # Reentry Interface
 
-Reentry Interface is a React + TypeScript control-room style dashboard prototype for simulation-heavy operations workflows.
+Reentry Interface is a React + TypeScript tactical dashboard prototype for simulation-heavy operations workflows. It combines real-time visual telemetry, interactive mission modules, and operator-state monitoring into a single browser-based command surface.
 
-## Commercial-Readiness Enhancements Included
+## Why this project exists
 
-- Global runtime error boundary with incident IDs and support contact fallback.
-- Environment-driven configuration (`.env`) for feature flags and operational limits.
-- Explicit microphone consent flow (biofeedback is opt-in and can be toggled on/off).
-- Access-gate hardening with configurable attempt limits and temporary lockouts.
-- Standardized Node-based tests via Vitest (no Bun dependency required).
-- Lint/build/test scripts aligned for CI usage.
+This repository is a front-end sandbox for exploring:
 
-## Tech Stack
+- high-density control-room UIs
+- simulation-oriented interaction patterns
+- resilient UX behavior under noisy runtime conditions
+- configurable feature toggles for gated demos and staged rollouts
+
+## Commercial-readiness capabilities included
+
+- **Global runtime safety net** via an application error boundary with incident IDs and support contact fallback.
+- **Environment-driven runtime configuration** (`.env`) for feature flags and operational thresholds.
+- **Explicit microphone-consent flow** so audio biofeedback remains opt-in.
+- **Access-gate hardening controls** with configurable attempt limits and temporary lockouts.
+- **Node-first test tooling** through Vitest (no Bun dependency required).
+- **CI-friendly scripts** for linting, build, preview, and test workflows.
+
+## Technology stack
 
 - React 18
 - TypeScript
 - Vite
 - Tailwind CSS
-- shadcn/ui
+- shadcn/ui + Radix UI primitives
 - TanStack Query
+- Vitest + V8 coverage
 
-## Getting Started
+## Project structure (high level)
+
+```text
+src/
+  components/      Reusable UI and domain modules (simulation widgets, status panels)
+  config/          App-level runtime configuration parsing
+  data/            Static/mock realistic data sets + tests
+  hooks/           Custom interaction and state hooks
+  pages/           Route-level views
+  lib/             Shared utilities
+```
+
+## Prerequisites
+
+- **Node.js 18+** (Node 20+ recommended)
+- **npm** (ships with Node)
+
+## Quick start
 
 1. Install dependencies:
    ```bash
    npm install
    ```
-2. Create environment file:
+2. Create a local environment file:
    ```bash
-   copy .env.example .env
+   cp .env.example .env
    ```
-3. Run locally:
+3. Start the dev server:
    ```bash
    npm run dev
    ```
+4. Open the local URL printed by Vite (usually `http://localhost:5173`).
 
-## Environment Variables
+## Environment variables
 
-See `.env.example` for defaults.
+Use `.env.example` as the baseline.
 
-- `VITE_APP_NAME`: Display name used in UI.
-- `VITE_SUPPORT_EMAIL`: Contact shown in fatal-error fallback.
-- `VITE_REQUIRE_ACCESS_GATE`: Enables/disables the access terminal gate.
-- `VITE_ENABLE_AUDIO_BIOFEEDBACK`: Enables microphone-based analysis features.
-- `VITE_MAX_INTEL_FEED_ITEMS`: Max live intel feed history size.
-- `VITE_MAX_ACCESS_ATTEMPTS`: Attempts before temporary lockout.
-- `VITE_ACCESS_LOCKOUT_MS`: Lockout duration in milliseconds.
-- `VITE_ACCESS_PASSPHRASE`: Client-side gate phrase for demo flow.
+| Variable | Default | Description |
+| --- | --- | --- |
+| `VITE_APP_NAME` | `Reentry Interface` | Display name shown in the UI. |
+| `VITE_SUPPORT_EMAIL` | `support@example.com` | Contact shown in fatal-error fallback states. |
+| `VITE_REQUIRE_ACCESS_GATE` | `true` | Enables/disables the access terminal gate. |
+| `VITE_ENABLE_AUDIO_BIOFEEDBACK` | `true` | Enables microphone-based analysis features. |
+| `VITE_MAX_INTEL_FEED_ITEMS` | `10` | Max intel-feed history retained in UI memory. |
+| `VITE_MAX_ACCESS_ATTEMPTS` | `5` | Allowed gate attempts before lockout. |
+| `VITE_ACCESS_LOCKOUT_MS` | `30000` | Lockout duration in milliseconds. |
+| `VITE_ACCESS_PASSPHRASE` | `1912` | Demo passphrase used by the client-side gate flow. |
 
 ## Scripts
 
-- `npm run dev`: Start local dev server.
-- `npm run build`: Create production build.
-- `npm run preview`: Preview production bundle.
-- `npm run lint`: Run ESLint.
-- `npm run test`: Run test suite once (Vitest).
-- `npm run test:watch`: Run tests in watch mode.
-- `npm run test:coverage`: Run tests with coverage.
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Start local development server. |
+| `npm run build` | Create production bundle. |
+| `npm run build:dev` | Build using development mode flags. |
+| `npm run preview` | Preview production build locally. |
+| `npm run lint` | Run ESLint across the project. |
+| `npm run test` | Run the Vitest suite once. |
+| `npm run test:watch` | Run Vitest in watch mode. |
+| `npm run test:coverage` | Run tests with coverage output. |
 
-## Production Notes
+## Recommended local validation sequence
 
-- The access terminal is a client-side interaction gate, not authentication.
-- For commercial deployment, enforce identity, authorization, and audit logging on a server/API tier.
-- Keep PII and regulated biometric processing out of the frontend unless backed by compliant backend controls.
+Run these before opening a PR:
+
+```bash
+npm run lint
+npm run test
+npm run build
+```
+
+## Production and security notes
+
+- The access terminal is a **client-side interaction gate**, not authentication.
+- For production deployment, enforce identity, authorization, and audit logging at an API/server layer.
+- Avoid processing sensitive biometric or regulated data exclusively in the frontend; use compliant backend controls and explicit consent workflows.
+
+## Troubleshooting
+
+- **Port already in use**: run `npm run dev -- --port 5174` to use an alternate port.
+- **Environment changes not reflected**: stop/restart the Vite dev server after editing `.env`.
+- **Microphone access unavailable**: ensure browser permissions are granted and `VITE_ENABLE_AUDIO_BIOFEEDBACK=true`.
 
 ## License
 
-MIT (see `LICENSE`).
+MIT (see [`LICENSE`](LICENSE)).
