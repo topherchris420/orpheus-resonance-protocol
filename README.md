@@ -1,10 +1,10 @@
 # Reentry Interface
 
-Reentry Interface is a React + TypeScript tactical dashboard prototype for simulation-heavy operations workflows. It combines real-time visual telemetry, interactive mission modules, and operator-state monitoring into a single browser-based command surface.
+Reentry Interface is a tactical dashboard prototype for simulation-heavy operations workflows. It combines real-time visual telemetry, interactive mission modules, and operator-state monitoring into a single browser-based command surface.
 
-## Why this project exists
+## Why this exists
 
-This repository is a front-end sandbox for exploring:
+This repository is for exploring:
 
 - high-density control-room UIs
 - simulation-oriented interaction patterns
@@ -20,21 +20,12 @@ This repository is a front-end sandbox for exploring:
 - **Node-first test tooling** through Vitest (no Bun dependency required).
 - **CI-friendly scripts** for linting, build, preview, and test workflows.
 
-## Technology stack
 
-- React 18
-- TypeScript
-- Vite
-- Tailwind CSS
-- shadcn/ui + Radix UI primitives
-- TanStack Query
-- Vitest + V8 coverage
-
-## Project structure (high level)
+## Project structure 
 
 ```text
 src/
-  components/      Reusable UI and domain modules (simulation widgets, status panels)
+  components/      Reusable UI and domain modules (sim widgets, status panels)
   config/          App-level runtime configuration parsing
   data/            Static/mock realistic data sets + tests
   hooks/           Custom interaction and state hooks
