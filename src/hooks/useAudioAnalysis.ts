@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface AudioAnalysisResult {
   audioLevel: number;
@@ -40,23 +40,25 @@ const RELAXED_BASELINE_TARGET: BinauralTarget = {
   beatFrequency: 8,
 };
 
+const DEFAULT_ANALYSIS_STATE: AnalysisState = {
+  audioLevel: 0,
+  breathPattern: 0,
+  pulseRate: 72,
+  healingTone: 417,
+};
+
 // Helper to sum array range without slicing (avoids GC)
 const sumRange = (array: Uint8Array, start: number, end: number): number => {
   let sum = 0;
   const safeEnd = Math.min(end, array.length);
-  for (let i = start; i < safeEnd; i++) {
+  for (let i = start; i < safeEnd; i += 1) {
     sum += array[i];
   }
   return sum;
 };
 
-export const useAudioAnalysis = (): AudioAnalysisResult => {
-  const [analysisState, setAnalysisState] = useState<AnalysisState>({
-    audioLevel: 0,
-    breathPattern: 0,
-    pulseRate: 72,
-    healingTone: 417,
-  });
+export const useAudioAnalysis = (enabled: boolean = true): AudioAnalysisResult => {
+  const [analysisState, setAnalysisState] = useState<AnalysisState>(DEFAULT_ANALYSIS_STATE);
   const [activeFrequency, setActiveFrequency] = useState(432);
   const [microphoneConnected, setMicrophoneConnected] = useState(false);
   const [audioError, setAudioError] = useState<string | null>(null);
@@ -71,19 +73,158 @@ export const useAudioAnalysis = (): AudioAnalysisResult => {
   const gainRef = useRef<GainNode | null>(null);
   const lastUpdateRef = useRef(0);
 
+  const cleanupAudio = useCallback(() => {
+    if (animationFrameRef.current !== null) {
+      cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+
+    if (leftOscillatorRef.current) {
+      try {
+        leftOscillatorRef.current.stop();
+      } catch {
+        // Ignore repeated stop errors.
+      }
+      leftOscillatorRef.current = null;
+    }
+
+    if (rightOscillatorRef.current) {
+      try {
+        rightOscillatorRef.current.stop();
+      } catch {
+        // Ignore repeated stop errors.
+      }
+      rightOscillatorRef.current = null;
+    }
+
+    analyserRef.current = null;
+    gainRef.current = null;
+
+    if (audioContextRef.current) {
+      void audioContextRef.current.close();
+      audioContextRef.current = null;
+    }
+
+    setMicrophoneConnected(false);
+  }, []);
+
   useEffect(() => {
+    if (!enabled) {
+      cleanupAudio();
+      setAudioError(null);
+      setAnalysisState(DEFAULT_ANALYSIS_STATE);
+      return;
+    }
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+      setAudioError("Microphone input is not supported in this browser.");
+      return;
+    }
+
+    let cancelled = false;
+
+    const startAnalysis = () => {
+      if (!analyserRef.current || !audioContextRef.current) {
+        return;
+      }
+
+      const analyser = analyserRef.current;
+      const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+      const analyze = () => {
+        const now = Date.now();
+        if (now - lastUpdateRef.current < 50) {
+          animationFrameRef.current = requestAnimationFrame(analyze);
+          return;
+        }
+        lastUpdateRef.current = now;
+
+        analyser.getByteFrequencyData(dataArray);
+
+        const breathFrequencyRange = [0, 100];
+        const sampleRate = audioContextRef.current!.sampleRate;
+        const fftSize = analyser.fftSize;
+        const binSize = sampleRate / fftSize;
+
+        const breathEndIndex = Math.round(breathFrequencyRange[1] / binSize);
+        const breathEnergy = sumRange(dataArray, 0, breathEndIndex);
+        const breathState = breathEnergy / (breathFrequencyRange[1] * 2);
+
+        const valenceFrequencyRange = [100, 1000];
+        const valenceStartIndex = Math.round(valenceFrequencyRange[0] / binSize);
+        const valenceEndIndex = Math.round(valenceFrequencyRange[1] / binSize);
+        const valenceEnergy = sumRange(dataArray, valenceStartIndex, valenceEndIndex);
+        const valenceState = valenceEnergy / (valenceFrequencyRange[1] * 2);
+
+        let target: BinauralTarget = RELAXED_BASELINE_TARGET;
+
+        if (breathState > 0.62) {
+          target = THETA_ANXIETY_RELIEF_TARGET;
+        } else if (breathState < 0.28) {
+          target = ALPHA_PEACEFULNESS_TARGET;
+        }
+
+        const newHealingTone = target.carrier;
+        const beatFrequency = target.beatFrequency;
+
+        setActiveFrequency(beatFrequency);
+
+        if (audioContextRef.current) {
+          const nowTime = audioContextRef.current.currentTime;
+          const leftFrequency = newHealingTone - beatFrequency / 2;
+          const rightFrequency = newHealingTone + beatFrequency / 2;
+          leftOscillatorRef.current?.frequency.setValueAtTime(leftFrequency, nowTime);
+          rightOscillatorRef.current?.frequency.setValueAtTime(rightFrequency, nowTime);
+        }
+
+        let totalSum = 0;
+        const len = dataArray.length;
+        for (let i = 0; i < len; i += 1) {
+          totalSum += dataArray[i];
+        }
+        const newAudioLevel = totalSum / len / 255;
+
+        const newBreathPattern = breathState;
+        const newPulseRate = 60 + valenceState * 40;
+
+        setAnalysisState({
+          audioLevel: newAudioLevel,
+          breathPattern: newBreathPattern,
+          pulseRate: newPulseRate,
+          healingTone: newHealingTone,
+        });
+
+        animationFrameRef.current = requestAnimationFrame(analyze);
+      };
+
+      analyze();
+    };
+
     const initializeAudio = async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        if (cancelled) {
+          stream.getTracks().forEach((track) => track.stop());
+          return;
+        }
+
         streamRef.current = stream;
-        // Fix for 'Unexpected any' lint error
-        const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+        const AudioContextClass =
+          window.AudioContext ||
+          (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
         const context = new AudioContextClass();
         audioContextRef.current = context;
 
-        analyserRef.current = context.createAnalyser();
+        const analyser = context.createAnalyser();
+        analyserRef.current = analyser;
+
         const source = context.createMediaStreamSource(stream);
-        source.connect(analyserRef.current);
+        source.connect(analyser);
 
         const leftOscillator = context.createOscillator();
         const rightOscillator = context.createOscillator();
@@ -107,123 +248,39 @@ export const useAudioAnalysis = (): AudioAnalysisResult => {
         leftOscillator.start();
         rightOscillator.start();
 
+        setAudioError(null);
         setMicrophoneConnected(true);
         startAnalysis();
-      } catch (error) {
-        setAudioError("Microphone access denied. Please enable microphone access in your browser settings.");
+      } catch {
+        if (!cancelled) {
+          setMicrophoneConnected(false);
+          setAudioError("Microphone access was denied. Enable it to use live biofeedback.");
+        }
       }
     };
 
-    const startAnalysis = () => {
-      if (!analyserRef.current) return;
-      const analyser = analyserRef.current;
-      const dataArray = new Uint8Array(analyser.frequencyBinCount);
-
-      const analyze = () => {
-        // Throttle updates to ~20fps (every 50ms) to reduce React re-renders
-        const now = Date.now();
-        if (now - lastUpdateRef.current < 50) {
-          animationFrameRef.current = requestAnimationFrame(analyze);
-          return;
-        }
-        lastUpdateRef.current = now;
-
-        analyser.getByteFrequencyData(dataArray);
-
-        // Breath Analysis (simplified)
-        const breathFrequencyRange = [0, 100]; // Hz
-        // Use non-null assertion for audioContextRef.current as it is initialized in initializeAudio
-        const sampleRate = audioContextRef.current!.sampleRate;
-        const fftSize = analyser.fftSize;
-        const binSize = sampleRate / fftSize;
-
-        const breathEndIndex = Math.round(breathFrequencyRange[1] / binSize);
-        const breathEnergy = sumRange(dataArray, 0, breathEndIndex);
-        const breathState = breathEnergy / (breathFrequencyRange[1] * 2); // Normalized
-
-        // Emotion Analysis (simplified)
-        const valenceFrequencyRange = [100, 1000]; // Hz
-        const valenceStartIndex = Math.round(valenceFrequencyRange[0] / binSize);
-        const valenceEndIndex = Math.round(valenceFrequencyRange[1] / binSize);
-        const valenceEnergy = sumRange(dataArray, valenceStartIndex, valenceEndIndex);
-        const valenceState = valenceEnergy / (valenceFrequencyRange[1] * 2); // Normalized
-
-        // Energy Analysis (simplified)
-        const energyFrequencyRange = [1000, 5000]; // Hz
-        const energyStartIndex = Math.round(energyFrequencyRange[0] / binSize);
-        const energyEndIndex = Math.round(energyFrequencyRange[1] / binSize);
-        const energyEnergy = sumRange(dataArray, energyStartIndex, energyEndIndex);
-        void energyEnergy; // reserved for future emotional-state tuning
-
-        // Determine healing tone based on respiration pace
-        let target: BinauralTarget = RELAXED_BASELINE_TARGET;
-
-        if (breathState > 0.62) {
-          // Fast breathing: 6 Hz theta-targeted binaural beat is commonly used for anxiety down-regulation
-          target = THETA_ANXIETY_RELIEF_TARGET;
-        } else if (breathState < 0.28) {
-          // Slow breathing: 10 Hz alpha-targeted binaural beat is commonly used to promote peaceful alertness
-          target = ALPHA_PEACEFULNESS_TARGET;
-        }
-
-        const newHealingTone = target.carrier;
-        const beatFrequency = target.beatFrequency;
-
-        setActiveFrequency(beatFrequency);
-
-        if (audioContextRef.current) {
-          const nowTime = audioContextRef.current.currentTime;
-          const leftFrequency = newHealingTone - beatFrequency / 2;
-          const rightFrequency = newHealingTone + beatFrequency / 2;
-          leftOscillatorRef.current?.frequency.setValueAtTime(leftFrequency, nowTime);
-          rightOscillatorRef.current?.frequency.setValueAtTime(rightFrequency, nowTime);
-        }
-
-        // Optimized: Calculate average without reduce/slice overhead
-        let totalSum = 0;
-        const len = dataArray.length;
-        for (let i = 0; i < len; i++) {
-          totalSum += dataArray[i];
-        }
-        const newAudioLevel = totalSum / len / 255;
-
-        const newBreathPattern = breathState;
-        const newPulseRate = 60 + (valenceState * 40);
-
-        setAnalysisState({
-          audioLevel: newAudioLevel,
-          breathPattern: newBreathPattern,
-          pulseRate: newPulseRate,
-          healingTone: newHealingTone
-        });
-
-        animationFrameRef.current = requestAnimationFrame(analyze);
-      };
-      analyze();
-    };
-
-    initializeAudio();
+    void initializeAudio();
 
     return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
-      }
-      leftOscillatorRef.current?.stop();
-      rightOscillatorRef.current?.stop();
-      if (audioContextRef.current) {
-        audioContextRef.current.close();
-      }
+      cancelled = true;
+      cleanupAudio();
     };
-  }, []);
+  }, [cleanupAudio, enabled]);
 
   useEffect(() => {
-    if (!audioContextRef.current) return;
+    if (!audioContextRef.current) {
+      return;
+    }
+
     const nowTime = audioContextRef.current.currentTime;
-    leftOscillatorRef.current?.frequency.setValueAtTime(analysisState.healingTone - activeFrequency / 2, nowTime);
-    rightOscillatorRef.current?.frequency.setValueAtTime(analysisState.healingTone + activeFrequency / 2, nowTime);
+    leftOscillatorRef.current?.frequency.setValueAtTime(
+      analysisState.healingTone - activeFrequency / 2,
+      nowTime,
+    );
+    rightOscillatorRef.current?.frequency.setValueAtTime(
+      analysisState.healingTone + activeFrequency / 2,
+      nowTime,
+    );
   }, [analysisState.healingTone, activeFrequency]);
 
   useEffect(() => {
@@ -233,7 +290,7 @@ export const useAudioAnalysis = (): AudioAnalysisResult => {
   }, [volume]);
 
   const setHealingTone = useCallback((tone: number) => {
-    setAnalysisState(prev => ({ ...prev, healingTone: tone }));
+    setAnalysisState((prev) => ({ ...prev, healingTone: tone }));
   }, []);
 
   return {
@@ -243,6 +300,6 @@ export const useAudioAnalysis = (): AudioAnalysisResult => {
     audioError,
     setHealingTone,
     volume,
-    setVolume
+    setVolume,
   };
 };

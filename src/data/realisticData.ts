@@ -63,7 +63,7 @@ export class RealisticDataGenerator {
     const template = INTEL_TEMPLATES[Math.floor(Math.random() * INTEL_TEMPLATES.length)];
     const priority = Math.random() > 0.7 ? 'HIGH' : Math.random() > 0.4 ? 'MEDIUM' : 'LOW';
     
-    let message = template
+    const message = template
       .replace('{count}', String(Math.floor(Math.random() * 8) + 2))
       .replace('{grid}', GRIDS[Math.floor(Math.random() * GRIDS.length)])
       .replace('{location}', LOCATIONS[Math.floor(Math.random() * LOCATIONS.length)])

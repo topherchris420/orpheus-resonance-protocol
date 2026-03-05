@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { Suspense, lazy, useEffect, useMemo, useState } from 'react';
 import { TacticalDataDisplay } from './TacticalDataDisplay';
 import { OperatorVitalsCognitiveLoadMonitor } from './OperatorVitalsCognitiveLoadMonitor';
 import { SitRepIntelFeed } from './SitRepIntelFeed';
@@ -15,14 +15,18 @@ import { useAudioAnalysis } from '../hooks/useAudioAnalysis';
 import { usePhaseProgression } from '../hooks/usePhaseProgression';
 import { useInteractionState } from '../hooks/useInteractionState';
 import { useRedTeamSimulation } from '../hooks/useRedTeamSimulation';
-import { NeuroEmSimulator } from './NeuroEmSimulator';
 import { Button } from './ui/button';
 import { dataGenerator } from '../data/realisticData';
+import { appConfig } from '@/config/appConfig';
 
 // Stable constants to prevent unnecessary re-renders in memoized children
 const EMPTY_SNAPSHOTS: CognitiveSnapshot[] = [];
 const EMPTY_DECISION_POINTS: DecisionPoint[] = [];
 const NO_OP = () => {};
+const AUDIO_PREFERENCE_STORAGE_KEY = "orpheus.audio.enabled";
+const NeuroEmSimulator = lazy(() =>
+  import("./NeuroEmSimulator").then((module) => ({ default: module.NeuroEmSimulator })),
+);
 
 interface PegasusSimulationProps {
   accessLevel: number;
@@ -40,6 +44,21 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
   const [squadPositions, setSquadPositions] = useState(dataGenerator.generateSquadPositions());
   const [optimalPath, setOptimalPath] = useState(dataGenerator.generateOptimalPath());
   const [realtimeVitals, setRealtimeVitals] = useState(dataGenerator.generateRealisticVitals(78, 16.2, 0.3));
+  const [audioEnabled, setAudioEnabled] = useState(() => {
+    if (!appConfig.features.enableAudioBiofeedback) {
+      return false;
+    }
+
+    try {
+      const stored = window.localStorage.getItem(AUDIO_PREFERENCE_STORAGE_KEY);
+      if (stored === null) {
+        return false;
+      }
+      return stored === "true";
+    } catch {
+      return false;
+    }
+  });
 
   // Custom hooks for managing state and logic
   const {
@@ -51,7 +70,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
     audioError,
     volume,
     setVolume
-  } = useAudioAnalysis();
+  } = useAudioAnalysis(audioEnabled);
 
   const { acclimatizationLevel, simulationMode, handleAcclimatizationAdvance } = usePhaseProgression(onAccessLevelChange);
 
@@ -79,6 +98,19 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
     setBioResonanceFrequency(audioFrequency);
   }, [audioFrequency, setBioResonanceFrequency]);
 
+  useEffect(() => {
+    if (!appConfig.features.enableAudioBiofeedback) {
+      setAudioEnabled(false);
+      return;
+    }
+
+    try {
+      window.localStorage.setItem(AUDIO_PREFERENCE_STORAGE_KEY, String(audioEnabled));
+    } catch {
+      // Ignore localStorage write issues and keep runtime behavior.
+    }
+  }, [audioEnabled]);
+
   // Check if mobile
   useEffect(() => {
     const checkMobile = () => {
@@ -94,7 +126,8 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
   useEffect(() => {
     const intelTimer = setInterval(() => {
       const newIntel = dataGenerator.generateIntelUpdate(acclimatizationLevel);
-      setIntelFeed(prev => [...prev.slice(-9), newIntel]);
+      const historyWindow = Math.max(1, appConfig.limits.maxIntelFeedItems - 1);
+      setIntelFeed(prev => [...prev.slice(-historyWindow), newIntel]);
     }, 15000 + Math.random() * 30000); // Every 15-45 seconds
 
     return () => clearInterval(intelTimer);
@@ -160,10 +193,30 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
     intelFeed,
   [conflictingIntel, intelFeed]);
 
+  const renderNeuroEmSimulator = () => (
+    <Suspense
+      fallback={
+        <div className="h-full w-full border border-current/30 bg-black/40 backdrop-blur-sm p-4 flex items-center justify-center text-sm opacity-80">
+          Loading NeuroSim module...
+        </div>
+      }
+    >
+      <NeuroEmSimulator bioResonanceFrequency={bioResonanceFrequency} />
+    </Suspense>
+  );
+
   return (
     <div className={`min-h-screen ${getAcclimatizationStyles()} transition-all duration-1000 relative overflow-hidden`}>
       {/* Control Toggles */}
       <div className="absolute top-4 right-4 z-20 flex gap-2">
+        {appConfig.features.enableAudioBiofeedback && (
+          <Button
+            onClick={() => setAudioEnabled(prev => !prev)}
+            variant={audioEnabled ? "secondary" : "outline"}
+          >
+            {audioEnabled ? "Disable Biofeedback" : "Enable Biofeedback"}
+          </Button>
+        )}
         <Button
           onClick={() => setShowElectrokineticLayer(prev => !prev)}
           variant={showElectrokineticLayer ? "secondary" : "default"}
@@ -184,6 +237,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
       <StatusIndicators 
         audioError={audioError}
         microphoneConnected={microphoneConnected}
+        audioEnabled={audioEnabled}
       />
 
       {/* Desktop Layout */}
@@ -226,7 +280,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
           {/* Center Top - Decision Matrix Simulator or Tactical Data Display */}
           <div className="col-span-6 row-span-3">
             {showElectrokineticLayer ? (
-              <NeuroEmSimulator bioResonanceFrequency={bioResonanceFrequency} />
+              renderNeuroEmSimulator()
             ) : simulationMode ? (
               <DecisionMatrixSimulator
                 decisionPoints={EMPTY_DECISION_POINTS}
@@ -302,7 +356,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
           {/* Mobile Main Visualizer */}
           <div className="flex-1 min-h-[40vh]">
             {showElectrokineticLayer ? (
-              <NeuroEmSimulator bioResonanceFrequency={bioResonanceFrequency} />
+              renderNeuroEmSimulator()
             ) : simulationMode ? (
               <DecisionMatrixSimulator
                 decisionPoints={EMPTY_DECISION_POINTS}
@@ -325,8 +379,8 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
               cognitiveStressIndex={cognitiveStressIndex}
               bioResonanceSupportFrequency={bioResonanceFrequency}
               setBioResonanceSupportFrequency={setBioResonanceFrequency}
-              volume={audioLevel}
-              setVolume={() => {}}
+              volume={volume}
+              setVolume={setVolume}
             />
             <SquadCohesionIndex
               squadVitals={squadVitals}

@@ -1,10 +1,11 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { PegasusSimulation } from '../components/PegasusSimulation';
 import { AccessTerminal } from '../components/AccessTerminal';
+import { appConfig } from '@/config/appConfig';
 
 const Index = () => {
-  const [isAccessed, setIsAccessed] = useState(false);
+  const [isAccessed, setIsAccessed] = useState(!appConfig.features.requireAccessGate);
   const [accessLevel, setAccessLevel] = useState(0);
 
   return (
