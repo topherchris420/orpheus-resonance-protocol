@@ -20,6 +20,26 @@ interface AnalysisState {
   healingTone: number;
 }
 
+interface BinauralTarget {
+  carrier: number;
+  beatFrequency: number;
+}
+
+const THETA_ANXIETY_RELIEF_TARGET: BinauralTarget = {
+  carrier: 220,
+  beatFrequency: 6,
+};
+
+const ALPHA_PEACEFULNESS_TARGET: BinauralTarget = {
+  carrier: 220,
+  beatFrequency: 10,
+};
+
+const RELAXED_BASELINE_TARGET: BinauralTarget = {
+  carrier: 220,
+  beatFrequency: 8,
+};
+
 // Helper to sum array range without slicing (avoids GC)
 const sumRange = (array: Uint8Array, start: number, end: number): number => {
   let sum = 0;
@@ -46,7 +66,8 @@ export const useAudioAnalysis = (): AudioAnalysisResult => {
   const analyserRef = useRef<AnalyserNode | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const animationFrameRef = useRef<number | null>(null);
-  const oscillatorRef = useRef<OscillatorNode | null>(null);
+  const leftOscillatorRef = useRef<OscillatorNode | null>(null);
+  const rightOscillatorRef = useRef<OscillatorNode | null>(null);
   const gainRef = useRef<GainNode | null>(null);
   const lastUpdateRef = useRef(0);
 
@@ -64,14 +85,27 @@ export const useAudioAnalysis = (): AudioAnalysisResult => {
         const source = context.createMediaStreamSource(stream);
         source.connect(analyserRef.current);
 
-        const oscillator = context.createOscillator();
-        oscillatorRef.current = oscillator;
+        const leftOscillator = context.createOscillator();
+        const rightOscillator = context.createOscillator();
+        leftOscillatorRef.current = leftOscillator;
+        rightOscillatorRef.current = rightOscillator;
+
+        const leftPanner = context.createStereoPanner();
+        leftPanner.pan.value = -0.8;
+
+        const rightPanner = context.createStereoPanner();
+        rightPanner.pan.value = 0.8;
+
         const gain = context.createGain();
         gainRef.current = gain;
 
-        oscillator.connect(gain);
+        leftOscillator.connect(leftPanner);
+        rightOscillator.connect(rightPanner);
+        leftPanner.connect(gain);
+        rightPanner.connect(gain);
         gain.connect(context.destination);
-        oscillator.start();
+        leftOscillator.start();
+        rightOscillator.start();
 
         setMicrophoneConnected(true);
         startAnalysis();
@@ -119,22 +153,30 @@ export const useAudioAnalysis = (): AudioAnalysisResult => {
         const energyStartIndex = Math.round(energyFrequencyRange[0] / binSize);
         const energyEndIndex = Math.round(energyFrequencyRange[1] / binSize);
         const energyEnergy = sumRange(dataArray, energyStartIndex, energyEndIndex);
-        const energyState = energyEnergy / (energyFrequencyRange[1] * 2); // Normalized
+        void energyEnergy; // reserved for future emotional-state tuning
 
-        // Determine healing tone
-        let newHealingTone = 417;
-        if (valenceState > 0.6 && energyState > 0.6) {
-          newHealingTone = 174; // Stressed
-        } else if (valenceState > 0.6) {
-          newHealingTone = 285; // Anxious
-        } else if (breathState < 0.2) {
-          newHealingTone = 396; // Sad/Depressed
-        } else if (breathState > 0.8) {
-          newHealingTone = 639; // Peaceful
-        } else if (valenceState < 0.2 && energyState < 0.2) {
-            newHealingTone = 528; // Calm
-        } else {
-            newHealingTone = 417; // Neutral
+        // Determine healing tone based on respiration pace
+        let target: BinauralTarget = RELAXED_BASELINE_TARGET;
+
+        if (breathState > 0.62) {
+          // Fast breathing: 6 Hz theta-targeted binaural beat is commonly used for anxiety down-regulation
+          target = THETA_ANXIETY_RELIEF_TARGET;
+        } else if (breathState < 0.28) {
+          // Slow breathing: 10 Hz alpha-targeted binaural beat is commonly used to promote peaceful alertness
+          target = ALPHA_PEACEFULNESS_TARGET;
+        }
+
+        const newHealingTone = target.carrier;
+        const beatFrequency = target.beatFrequency;
+
+        setActiveFrequency(beatFrequency);
+
+        if (audioContextRef.current) {
+          const nowTime = audioContextRef.current.currentTime;
+          const leftFrequency = newHealingTone - beatFrequency / 2;
+          const rightFrequency = newHealingTone + beatFrequency / 2;
+          leftOscillatorRef.current?.frequency.setValueAtTime(leftFrequency, nowTime);
+          rightOscillatorRef.current?.frequency.setValueAtTime(rightFrequency, nowTime);
         }
 
         // Optimized: Calculate average without reduce/slice overhead
@@ -169,9 +211,8 @@ export const useAudioAnalysis = (): AudioAnalysisResult => {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
       }
-      if (oscillatorRef.current) {
-        oscillatorRef.current.stop();
-      }
+      leftOscillatorRef.current?.stop();
+      rightOscillatorRef.current?.stop();
       if (audioContextRef.current) {
         audioContextRef.current.close();
       }
@@ -179,10 +220,11 @@ export const useAudioAnalysis = (): AudioAnalysisResult => {
   }, []);
 
   useEffect(() => {
-    if (oscillatorRef.current && audioContextRef.current) {
-      oscillatorRef.current.frequency.setValueAtTime(analysisState.healingTone, audioContextRef.current.currentTime);
-    }
-  }, [analysisState.healingTone]);
+    if (!audioContextRef.current) return;
+    const nowTime = audioContextRef.current.currentTime;
+    leftOscillatorRef.current?.frequency.setValueAtTime(analysisState.healingTone - activeFrequency / 2, nowTime);
+    rightOscillatorRef.current?.frequency.setValueAtTime(analysisState.healingTone + activeFrequency / 2, nowTime);
+  }, [analysisState.healingTone, activeFrequency]);
 
   useEffect(() => {
     if (gainRef.current && audioContextRef.current) {
