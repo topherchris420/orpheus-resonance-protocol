@@ -344,8 +344,8 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
         </div>
       ) : (
         /* Mobile Layout */
-        <div className="relative z-10 min-h-screen flex flex-col gap-2 p-2">
-          {/* Mobile Header */}
+        <div className="relative z-10 min-h-screen flex flex-col gap-2 p-2 pb-6">
+          {/* Mobile Header with embedded controls */}
           <MobileHeader
             phase={acclimatizationLevel}
             temporalMode={simulationMode}
@@ -354,10 +354,42 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
             pulseRate={pulseRate}
             currentTimeline={currentTimeline}
             temporalMoment={temporalMoment}
+            controls={
+              <>
+                {appConfig.features.enableAudioBiofeedback && (
+                  <Button
+                    size="sm"
+                    onClick={() => setAudioEnabled(prev => !prev)}
+                    variant={audioEnabled ? "secondary" : "outline"}
+                    className="text-[10px] h-7 touch-manipulation"
+                  >
+                    {audioEnabled ? "Bio Off" : "Bio On"}
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  onClick={() => setShowElectrokineticLayer(prev => !prev)}
+                  variant={showElectrokineticLayer ? "secondary" : "default"}
+                  className="text-[10px] h-7 touch-manipulation"
+                >
+                  {showElectrokineticLayer ? "NeuroSim Off" : "NeuroSim On"}
+                </Button>
+                {simulationMode && (
+                  <Button
+                    size="sm"
+                    onClick={toggleRedTeamMode}
+                    variant={isRedTeamModeActive ? "destructive" : "default"}
+                    className="text-[10px] h-7 touch-manipulation"
+                  >
+                    {isRedTeamModeActive ? "Red Team Off" : "Red Team On"}
+                  </Button>
+                )}
+              </>
+            }
           />
 
           {/* Mobile Main Visualizer */}
-          <div className="flex-1 min-h-[40vh]">
+          <div className="min-h-[35vh] max-h-[45vh]">
             {showElectrokineticLayer ? (
               renderNeuroEmSimulator()
             ) : simulationMode ? (
@@ -374,56 +406,88 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
             )}
           </div>
 
-          {/* Mobile Grid for Secondary Panels */}
-          <div className="grid grid-cols-2 gap-2 h-64">
-            <OperatorVitalsCognitiveLoadMonitor
-              hrv={realtimeVitals.hrv}
-              respiratoryRate={realtimeVitals.respiratoryRate}
-              cognitiveStressIndex={cognitiveStressIndex}
-              bioResonanceSupportFrequency={bioResonanceFrequency}
-              setBioResonanceSupportFrequency={setBioResonanceFrequency}
-              volume={volume}
-              setVolume={setVolume}
-            />
-            <SquadCohesionIndex
-              squadVitals={squadVitals}
-              communicationEfficiency={communicationEfficiency}
-              onCohesionChange={setCohesionScore}
-            />
-          </div>
-
-          {/* Mobile Secondary Grid */}
-          <div className="grid grid-cols-2 gap-2 h-64">
-            <TouchInterface 
-              phase={acclimatizationLevel}
-              onTouch={addInteractionEvent}
-              onFrequencyChange={setBioResonanceFrequency}
-            />
-            <MissionCriticalEventRecorder
-              snapshots={EMPTY_SNAPSHOTS}
-              onSnapshotSelect={NO_OP}
-            />
-          </div>
-
-          {/* Mobile Temporal Archive */}
-          {simulationMode && (
-            <div className="h-32">
-              <TemporalArchive
-                phase={acclimatizationLevel}
-                currentTimeline={currentTimeline}
-                temporalMoment={temporalMoment}
-                audioLevel={audioLevel}
+          {/* Collapsible panels */}
+          <CollapsiblePanel
+            title="Operator Vitals"
+            defaultOpen={true}
+            statusBadge={
+              <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded-sm ${
+                cognitiveStressIndex > 0.7 ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'
+              }`}>
+                {cognitiveStressIndex > 0.7 ? 'HIGH' : 'NOMINAL'}
+              </span>
+            }
+          >
+            <div className="h-48">
+              <OperatorVitalsCognitiveLoadMonitor
+                hrv={realtimeVitals.hrv}
+                respiratoryRate={realtimeVitals.respiratoryRate}
+                cognitiveStressIndex={cognitiveStressIndex}
+                bioResonanceSupportFrequency={bioResonanceFrequency}
+                setBioResonanceSupportFrequency={setBioResonanceFrequency}
+                volume={volume}
+                setVolume={setVolume}
               />
             </div>
+          </CollapsiblePanel>
+
+          <CollapsiblePanel
+            title="Squad Cohesion"
+            statusBadge={
+              <span className="text-[9px] font-mono px-1.5 py-0.5 bg-cyan-500/20 text-cyan-400 rounded-sm">
+                {(cohesionScore * 100).toFixed(0)}%
+              </span>
+            }
+          >
+            <div className="h-48">
+              <SquadCohesionIndex
+                squadVitals={squadVitals}
+                communicationEfficiency={communicationEfficiency}
+                onCohesionChange={setCohesionScore}
+              />
+            </div>
+          </CollapsiblePanel>
+
+          <CollapsiblePanel title="Touch Interface" defaultOpen={true}>
+            <div className="h-48">
+              <TouchInterface 
+                phase={acclimatizationLevel}
+                onTouch={addInteractionEvent}
+                onFrequencyChange={setBioResonanceFrequency}
+              />
+            </div>
+          </CollapsiblePanel>
+
+          <CollapsiblePanel title="Event Recorder">
+            <div className="h-48">
+              <MissionCriticalEventRecorder
+                snapshots={EMPTY_SNAPSHOTS}
+                onSnapshotSelect={NO_OP}
+              />
+            </div>
+          </CollapsiblePanel>
+
+          {simulationMode && (
+            <CollapsiblePanel title="Temporal Archive" defaultOpen={true}>
+              <div className="h-32">
+                <TemporalArchive
+                  phase={acclimatizationLevel}
+                  currentTimeline={currentTimeline}
+                  temporalMoment={temporalMoment}
+                  audioLevel={audioLevel}
+                />
+              </div>
+            </CollapsiblePanel>
           )}
 
-          {/* Mobile SitRep/Intel Feed */}
-          <div className="h-48">
-            <SitRepIntelFeed
-              intelFeed={displayedIntelFeed}
-              currentClearance={acclimatizationLevel}
-            />
-          </div>
+          <CollapsiblePanel title="Intel Feed" defaultOpen={true}>
+            <div className="h-48">
+              <SitRepIntelFeed
+                intelFeed={displayedIntelFeed}
+                currentClearance={acclimatizationLevel}
+              />
+            </div>
+          </CollapsiblePanel>
         </div>
       )}
 
