@@ -208,31 +208,33 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
 
   return (
     <div className={`min-h-screen ${getAcclimatizationStyles()} transition-all duration-1000 relative overflow-hidden`}>
-      {/* Control Toggles */}
-      <div className="absolute top-4 right-4 z-20 flex gap-2">
-        {appConfig.features.enableAudioBiofeedback && (
+      {/* Control Toggles - Desktop only */}
+      {!isMobile && (
+        <div className="absolute top-4 right-4 z-20 flex gap-2">
+          {appConfig.features.enableAudioBiofeedback && (
+            <Button
+              onClick={() => setAudioEnabled(prev => !prev)}
+              variant={audioEnabled ? "secondary" : "outline"}
+            >
+              {audioEnabled ? "Disable Biofeedback" : "Enable Biofeedback"}
+            </Button>
+          )}
           <Button
-            onClick={() => setAudioEnabled(prev => !prev)}
-            variant={audioEnabled ? "secondary" : "outline"}
+            onClick={() => setShowElectrokineticLayer(prev => !prev)}
+            variant={showElectrokineticLayer ? "secondary" : "default"}
           >
-            {audioEnabled ? "Disable Biofeedback" : "Enable Biofeedback"}
+            {showElectrokineticLayer ? "NeuroSim Off" : "NeuroSim On"}
           </Button>
-        )}
-        <Button
-          onClick={() => setShowElectrokineticLayer(prev => !prev)}
-          variant={showElectrokineticLayer ? "secondary" : "default"}
-        >
-          {showElectrokineticLayer ? "NeuroSim Off" : "NeuroSim On"}
-        </Button>
-        {simulationMode && (
-          <Button
-            onClick={toggleRedTeamMode}
-            variant={isRedTeamModeActive ? "destructive" : "default"}
-          >
-            {isRedTeamModeActive ? "Deactivate Red Team" : "Activate Red Team"}
-          </Button>
-        )}
-      </div>
+          {simulationMode && (
+            <Button
+              onClick={toggleRedTeamMode}
+              variant={isRedTeamModeActive ? "destructive" : "default"}
+            >
+              {isRedTeamModeActive ? "Deactivate Red Team" : "Activate Red Team"}
+            </Button>
+          )}
+        </div>
+      )}
 
       {/* Status Indicators */}
       <StatusIndicators 
