@@ -10,6 +10,7 @@ import { MissionCriticalEventRecorder, CognitiveSnapshot } from './MissionCritic
 import { StatusIndicators } from './StatusIndicators';
 import { HeaderStatusBar } from './HeaderStatusBar';
 import { MobileHeader } from './MobileHeader';
+import { CollapsiblePanel } from './CollapsiblePanel';
 import { VisualOverlays } from './VisualOverlays';
 import { useAudioAnalysis } from '../hooks/useAudioAnalysis';
 import { usePhaseProgression } from '../hooks/usePhaseProgression';
