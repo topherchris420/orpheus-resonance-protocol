@@ -189,7 +189,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
   [conflictingIntel, threatIndicators]);
 
   const displayedIntelFeed = useMemo(() => conflictingIntel ?
-    [...intelFeed, { id: 'red-team-intel', timestamp: Date.now(), message: conflictingIntel, clearanceLevel: 1, priority: 'CRITICAL', source: 'REDTEAM' }] :
+    [...intelFeed, { id: 'red-team-intel', timestamp: Date.now(), message: conflictingIntel, clearanceLevel: 1, priority: 'CRITICAL' as const, source: 'REDTEAM' }] :
     intelFeed,
   [conflictingIntel, intelFeed]);
 
