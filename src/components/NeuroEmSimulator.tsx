@@ -75,6 +75,7 @@ const BrainRegion = ({ name, position, color, activity }: { name: string, positi
           emissiveIntensity={activity * 0.5}
         />
       </mesh>
+      {/* @ts-ignore - drei Text component type mismatch with older @types/three */}
       <Text
         position={[0, 0.5, 0]}
         fontSize={0.1}
