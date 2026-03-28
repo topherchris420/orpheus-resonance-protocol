@@ -153,7 +153,7 @@ export const NeuroEmSimulator: React.FC<NeuroEmSimulatorProps> = React.memo(({ b
       <h2 className={styles.title}>Neuro-EM Simulator</h2>
       <div className={styles.mainContent}>
         <div className={styles.visualization}>
-          <Canvas camera={{ position: [0, 0, 3], fov: 50 }}>
+          <Canvas camera={{ position: [0, 0, 3] as [number, number, number], fov: 50 }}>
             <ambientLight intensity={0.2} />
             <pointLight position={[10, 10, 10]} intensity={0.8} />
             <BrainModel activityLevels={activityLevels} />
