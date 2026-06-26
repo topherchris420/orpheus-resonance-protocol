@@ -147,10 +147,6 @@ export const AccessTerminal: React.FC<AccessTerminalProps> = ({ onAccess }) => {
           {currentLine >= TERMINAL_SEQUENCE.length && (
             <div className="mt-3 text-xs opacity-70">{statusLine}</div>
           )}
-
-          <div className="mt-2 text-[10px] opacity-50">
-            Client-side gate for demo flow only. Use server-side identity controls for production security.
-          </div>
         </div>
       </div>
     </div>
