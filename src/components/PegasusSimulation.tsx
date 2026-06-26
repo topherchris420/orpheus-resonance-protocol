@@ -1,4 +1,4 @@
-import React, { Suspense, lazy, useEffect, useMemo, useState } from 'react';
+import React, { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { TacticalDataDisplay } from './TacticalDataDisplay';
 import { OperatorVitalsCognitiveLoadMonitor } from './OperatorVitalsCognitiveLoadMonitor';
 import { SitRepIntelFeed } from './SitRepIntelFeed';
@@ -6,27 +6,32 @@ import { TouchInterface } from './TouchInterface';
 import { DecisionMatrixSimulator, DecisionPoint } from './DecisionMatrixSimulator';
 import { TemporalArchive } from './TemporalArchive';
 import { SquadCohesionIndex } from './SquadCohesionIndex';
-import { MissionCriticalEventRecorder, CognitiveSnapshot } from './MissionCriticalEventRecorder';
-import { StatusIndicators } from './StatusIndicators';
-import { HeaderStatusBar } from './HeaderStatusBar';
-import { MobileHeader } from './MobileHeader';
-import { CollapsiblePanel } from './CollapsiblePanel';
 import { VisualOverlays } from './VisualOverlays';
+import { MissionCommandStrip } from './MissionCommandStrip';
+import { MissionAlertQueue } from './MissionAlertQueue';
+import { ModeToolbar } from './ModeToolbar';
+import { BiofeedbackConsentDialog } from './BiofeedbackConsentDialog';
+import { OperatorEventTimeline } from './OperatorEventTimeline';
+import { NeuroSimFallback } from './NeuroSimFallback';
 import { useAudioAnalysis } from '../hooks/useAudioAnalysis';
 import { usePhaseProgression } from '../hooks/usePhaseProgression';
 import { useInteractionState } from '../hooks/useInteractionState';
 import { useRedTeamSimulation } from '../hooks/useRedTeamSimulation';
-import { Button } from './ui/button';
+import { usePersistentState } from '../hooks/usePersistentState';
 import { dataGenerator } from '../data/realisticData';
 import { appConfig } from '@/config/appConfig';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { appendOperatorEvent, deriveMissionUx, MissionSeverity, OperatorEvent } from '@/lib/missionUx';
 
-// Stable constants to prevent unnecessary re-renders in memoized children
-const EMPTY_SNAPSHOTS: CognitiveSnapshot[] = [];
 const EMPTY_DECISION_POINTS: DecisionPoint[] = [];
 const NO_OP = () => {};
-const AUDIO_PREFERENCE_STORAGE_KEY = "orpheus.audio.enabled";
+const AUDIO_PREFERENCE_STORAGE_KEY = 'orpheus.audio.enabled';
+const NEUROSIM_PREFERENCE_STORAGE_KEY = 'orpheus.preference.neurosim';
+const ALERT_ACK_STORAGE_KEY = 'orpheus.preference.acknowledgedAlerts';
+const MOBILE_TAB_STORAGE_KEY = 'orpheus.preference.mobileTab';
+
 const NeuroEmSimulator = lazy(() =>
-  import("./NeuroEmSimulator").then((module) => ({ default: module.NeuroEmSimulator })),
+  import('./NeuroEmSimulator').then((module) => ({ default: module.NeuroEmSimulator })),
 );
 
 interface PegasusSimulationProps {
@@ -34,57 +39,74 @@ interface PegasusSimulationProps {
   onAccessLevelChange: (level: number) => void;
 }
 
-export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({ 
-  accessLevel, 
-  onAccessLevelChange 
+const createEventId = (label: string) => `${label.toLowerCase().replace(/[^a-z0-9]+/g, '-')}-${Date.now()}`;
+
+export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
+  accessLevel,
+  onAccessLevelChange,
 }) => {
   const [isMobile, setIsMobile] = useState(false);
-  const [showElectrokineticLayer, setShowElectrokineticLayer] = useState(false);
+  const [showElectrokineticLayer, setShowElectrokineticLayer] = usePersistentState(
+    NEUROSIM_PREFERENCE_STORAGE_KEY,
+    false,
+  );
+  const [mobileTab, setMobileTab] = usePersistentState(MOBILE_TAB_STORAGE_KEY, 'map');
+  const [dismissedAlertIds, setDismissedAlertIds] = usePersistentState<string[]>(ALERT_ACK_STORAGE_KEY, []);
+  const [biofeedbackDialogOpen, setBiofeedbackDialogOpen] = useState(false);
+  const [operatorEvents, setOperatorEvents] = useState<OperatorEvent[]>([
+    {
+      id: 'session-started',
+      timestamp: Date.now(),
+      label: 'Session Started',
+      detail: 'Operator command surface initialized.',
+      severity: 'nominal',
+    },
+  ]);
   const [intelFeed, setIntelFeed] = useState(dataGenerator.getIntelFeed());
   const [threatIndicators, setThreatIndicators] = useState(dataGenerator.generateThreatIndicators());
   const [squadPositions, setSquadPositions] = useState(dataGenerator.generateSquadPositions());
   const [optimalPath, setOptimalPath] = useState(dataGenerator.generateOptimalPath());
   const [realtimeVitals, setRealtimeVitals] = useState(dataGenerator.generateRealisticVitals(78, 16.2, 0.3));
-  const [audioEnabled, setAudioEnabled] = useState(() => {
-    if (!appConfig.features.enableAudioBiofeedback) {
-      return false;
-    }
+  const previousStressRef = useRef(realtimeVitals.cognitiveStressIndex);
+  const previousPhaseRef = useRef(1);
 
-    try {
-      const stored = window.localStorage.getItem(AUDIO_PREFERENCE_STORAGE_KEY);
-      if (stored === null) {
-        return false;
-      }
-      return stored === "true";
-    } catch {
-      return false;
-    }
-  });
+  const [audioEnabled, setAudioEnabled] = usePersistentState(
+    AUDIO_PREFERENCE_STORAGE_KEY,
+    appConfig.features.enableAudioBiofeedback ? false : false,
+  );
 
-  // Custom hooks for managing state and logic
+  const logOperatorEvent = useCallback((label: string, detail: string, severity: MissionSeverity = 'nominal') => {
+    setOperatorEvents((previous) =>
+      appendOperatorEvent(previous, {
+        id: createEventId(label),
+        timestamp: Date.now(),
+        label,
+        detail,
+        severity,
+      }),
+    );
+  }, []);
+
   const {
     audioLevel,
-    breathPattern,
     pulseRate,
     activeFrequency: audioFrequency,
     microphoneConnected,
     audioError,
     volume,
-    setVolume
-  } = useAudioAnalysis(audioEnabled);
+    setVolume,
+  } = useAudioAnalysis(audioEnabled && appConfig.features.enableAudioBiofeedback);
 
-  const { acclimatizationLevel, simulationMode, handleAcclimatizationAdvance } = usePhaseProgression(onAccessLevelChange);
+  const { acclimatizationLevel, simulationMode } = usePhaseProgression(onAccessLevelChange);
 
   const {
-    interactionEvents,
     currentTimeline,
     temporalMoment,
     cohesionScore,
     bioResonanceFrequency,
     addInteractionEvent,
-    handleTemporalShift,
     setCohesionScore,
-    setBioResonanceFrequency
+    setBioResonanceFrequency,
   } = useInteractionState();
 
   const {
@@ -94,185 +116,296 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
     toggleRedTeamMode,
   } = useRedTeamSimulation(simulationMode);
 
-  // Set initial frequency from audio analysis
   useEffect(() => {
     setBioResonanceFrequency(audioFrequency);
   }, [audioFrequency, setBioResonanceFrequency]);
 
   useEffect(() => {
-    if (!appConfig.features.enableAudioBiofeedback) {
+    previousStressRef.current = realtimeVitals.cognitiveStressIndex;
+  }, [realtimeVitals.cognitiveStressIndex]);
+
+  useEffect(() => {
+    if (!appConfig.features.enableAudioBiofeedback && audioEnabled) {
       setAudioEnabled(false);
-      return;
     }
+  }, [audioEnabled, setAudioEnabled]);
 
-    try {
-      window.localStorage.setItem(AUDIO_PREFERENCE_STORAGE_KEY, String(audioEnabled));
-    } catch {
-      // Ignore localStorage write issues and keep runtime behavior.
+  useEffect(() => {
+    if (previousPhaseRef.current !== acclimatizationLevel) {
+      logOperatorEvent(
+        'Phase Advanced',
+        `Acclimatization moved to phase ${acclimatizationLevel}.`,
+        acclimatizationLevel >= 3 ? 'watch' : 'nominal',
+      );
+      previousPhaseRef.current = acclimatizationLevel;
     }
-  }, [audioEnabled]);
+  }, [acclimatizationLevel, logOperatorEvent]);
 
-  // Check if mobile
   useEffect(() => {
     const checkMobile = () => {
       setIsMobile(window.innerWidth < 768);
     };
-    
+
     checkMobile();
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Generate realistic intel updates
   useEffect(() => {
     const intelTimer = setInterval(() => {
       const newIntel = dataGenerator.generateIntelUpdate(acclimatizationLevel);
       const historyWindow = Math.max(1, appConfig.limits.maxIntelFeedItems - 1);
-      setIntelFeed(prev => [...prev.slice(-historyWindow), newIntel]);
-    }, 15000 + Math.random() * 30000); // Every 15-45 seconds
+      setIntelFeed((prev) => [...prev.slice(-historyWindow), newIntel]);
+      logOperatorEvent('Intel Updated', newIntel.message, newIntel.priority === 'HIGH' ? 'watch' : 'nominal');
+    }, 15000 + Math.random() * 30000);
 
     return () => clearInterval(intelTimer);
-  }, [acclimatizationLevel]);
+  }, [acclimatizationLevel, logOperatorEvent]);
 
-  // Update tactical data periodically
   useEffect(() => {
     const tacticalTimer = setInterval(() => {
-      setThreatIndicators(dataGenerator.generateThreatIndicators(Math.floor(Math.random() * 5) + 2));
+      const nextThreats = dataGenerator.generateThreatIndicators(Math.floor(Math.random() * 5) + 2);
+      setThreatIndicators(nextThreats);
       setSquadPositions(dataGenerator.generateSquadPositions(4));
       if (Math.random() > 0.7) {
         setOptimalPath(dataGenerator.generateOptimalPath());
       }
-    }, 20000 + Math.random() * 40000); // Every 20-60 seconds
+      const hostileCount = nextThreats.filter((threat) => threat.type === 'hostile').length;
+      logOperatorEvent(
+        'Threat Map Refreshed',
+        `${nextThreats.length} indicators refreshed; ${hostileCount} hostile.`,
+        hostileCount >= 3 ? 'critical' : hostileCount > 0 ? 'watch' : 'nominal',
+      );
+    }, 20000 + Math.random() * 40000);
 
     return () => clearInterval(tacticalTimer);
-  }, []);
+  }, [logOperatorEvent]);
 
-  // Update vitals with smooth live feedback (every 2.5 seconds)
   useEffect(() => {
     const vitalsTimer = setInterval(() => {
       setRealtimeVitals(dataGenerator.generateRealisticVitals(78, 16.2, 0.3 + redTeamIntensity * 0.5));
-    }, 2500); // Every 2.5 seconds for live feel without glitching
+    }, 2500);
 
     return () => clearInterval(vitalsTimer);
   }, [redTeamIntensity]);
 
+  useEffect(() => {
+    if (conflictingIntel) {
+      logOperatorEvent('Red Team Intel', conflictingIntel, 'critical');
+    }
+  }, [conflictingIntel, logOperatorEvent]);
+
   const getAcclimatizationStyles = () => {
     if (isRedTeamModeActive) {
-      return "bg-gradient-to-br from-red-900 via-black to-black text-red-400";
+      return 'bg-neutral-950 text-red-300';
     }
     switch (acclimatizationLevel) {
       case 1:
-        return "bg-gradient-to-br from-slate-900 to-black text-green-400";
+        return 'bg-neutral-950 text-emerald-300';
       case 2:
-        return "bg-gradient-to-br from-blue-900 to-black text-cyan-400";
+        return 'bg-neutral-950 text-cyan-300';
       case 3:
-        return "bg-gradient-to-br from-gray-800 via-slate-900 to-black text-yellow-400";
+        return 'bg-neutral-950 text-amber-200';
       case 4:
-        return "bg-gradient-to-br from-orange-900 via-gray-900 to-black text-white";
+        return 'bg-neutral-950 text-white';
       default:
-        return "bg-black text-green-400";
+        return 'bg-black text-emerald-300';
     }
   };
 
   const cognitiveStressIndex = realtimeVitals.cognitiveStressIndex;
   const communicationEfficiency = 0.9 - redTeamIntensity * 0.4;
 
-  // Memoized values to prevent unnecessary re-renders and computations
-  const squadVitals = useMemo(() => squadPositions.map(member => ({
+  const squadVitals = useMemo(() => squadPositions.map((member) => ({
     hrv: member.vitals.heartRate,
     respiratoryRate: 16 + Math.random() * 4,
-    cognitiveStressIndex: member.status === 'wounded' ? 0.8 : cognitiveStressIndex
+    cognitiveStressIndex: member.status === 'wounded' ? 0.8 : cognitiveStressIndex,
   })), [squadPositions, cognitiveStressIndex]);
 
-  const displayedThreatIndicators = useMemo(() => conflictingIntel ?
-    [...threatIndicators, { id: 'red-team-threat', position: { x: 200, y: 200 }, type: 'hostile' as const, confidence: 90, lastUpdated: Date.now() }] :
-    threatIndicators,
+  const displayedThreatIndicators = useMemo(() => conflictingIntel
+    ? [...threatIndicators, { id: 'red-team-threat', position: { x: 200, y: 200 }, type: 'hostile' as const, confidence: 90, lastUpdated: Date.now() }]
+    : threatIndicators,
   [conflictingIntel, threatIndicators]);
 
-  const displayedIntelFeed = useMemo(() => conflictingIntel ?
-    [...intelFeed, { id: 'red-team-intel', timestamp: Date.now(), message: conflictingIntel, clearanceLevel: 1, priority: 'CRITICAL' as const, source: 'REDTEAM' }] :
-    intelFeed,
+  const displayedIntelFeed = useMemo(() => conflictingIntel
+    ? [...intelFeed, { id: 'red-team-intel', timestamp: Date.now(), message: conflictingIntel, clearanceLevel: 1, priority: 'CRITICAL' as const, source: 'REDTEAM' }]
+    : intelFeed,
   [conflictingIntel, intelFeed]);
 
+  const hostileThreatCount = useMemo(
+    () => displayedThreatIndicators.filter((threat) => threat.type === 'hostile').length,
+    [displayedThreatIndicators],
+  );
+
+  const mission = useMemo(() => deriveMissionUx({
+    phase: acclimatizationLevel,
+    simulationMode,
+    isRedTeamModeActive,
+    cognitiveStressIndex,
+    cohesionScore,
+    threatCount: displayedThreatIndicators.length,
+    hostileThreatCount,
+    audioEnabled,
+    microphoneConnected,
+    audioError,
+    conflictingIntel,
+    bioResonanceFrequency,
+  }), [
+    acclimatizationLevel,
+    simulationMode,
+    isRedTeamModeActive,
+    cognitiveStressIndex,
+    cohesionScore,
+    displayedThreatIndicators.length,
+    hostileThreatCount,
+    audioEnabled,
+    microphoneConnected,
+    audioError,
+    conflictingIntel,
+    bioResonanceFrequency,
+  ]);
+
+  useEffect(() => {
+    setDismissedAlertIds((previous) => previous.filter((id) => mission.alerts.some((alert) => alert.id === id)));
+  }, [mission.alerts, setDismissedAlertIds]);
+
+  const handleRequestBiofeedback = useCallback(() => {
+    if (!appConfig.features.enableAudioBiofeedback) {
+      return;
+    }
+    setBiofeedbackDialogOpen(true);
+  }, []);
+
+  const handleConfirmBiofeedback = useCallback(() => {
+    setVolume(Math.min(volume, 0.2));
+    setAudioEnabled(true);
+    setBiofeedbackDialogOpen(false);
+    logOperatorEvent('Biofeedback Enabled', 'Live biofeedback requested with low-volume support tones.', 'watch');
+  }, [logOperatorEvent, setAudioEnabled, setVolume, volume]);
+
+  const handleDisableBiofeedback = useCallback(() => {
+    setAudioEnabled(false);
+    logOperatorEvent('Biofeedback Disabled', 'Microphone analysis and support tones stopped.', 'nominal');
+  }, [logOperatorEvent, setAudioEnabled]);
+
+  const handleToggleNeuroSim = useCallback(() => {
+    setShowElectrokineticLayer((previous) => {
+      const next = !previous;
+      logOperatorEvent(next ? 'NeuroSim Enabled' : 'NeuroSim Hidden', next ? '3D neuro-emulation layer is active.' : 'Primary display returned to tactical surface.', 'nominal');
+      return next;
+    });
+  }, [logOperatorEvent, setShowElectrokineticLayer]);
+
+  const handleToggleRedTeam = useCallback(() => {
+    toggleRedTeamMode();
+    logOperatorEvent(
+      isRedTeamModeActive ? 'Red Team Disabled' : 'Red Team Enabled',
+      isRedTeamModeActive ? 'Adversarial simulation feed paused.' : 'Adversarial simulation feed activated.',
+      isRedTeamModeActive ? 'nominal' : 'critical',
+    );
+  }, [isRedTeamModeActive, logOperatorEvent, toggleRedTeamMode]);
+
+  const handleDismissAlert = useCallback((alertId: string) => {
+    setDismissedAlertIds((previous) => Array.from(new Set([...previous, alertId])));
+  }, [setDismissedAlertIds]);
+  const handleOperatorTouch = useCallback((event: Parameters<typeof addInteractionEvent>[0]) => {
+    addInteractionEvent(event);
+    logOperatorEvent(
+      'Touch Input',
+      `Operator touch at ${event.x.toFixed(0)}, ${event.y.toFixed(0)} with ${(event.intensity * 100).toFixed(0)}% intensity.`,
+      event.intensity > 0.85 ? 'watch' : 'nominal',
+    );
+  }, [addInteractionEvent, logOperatorEvent]);
+
+  const renderModeToolbar = () => (
+    <ModeToolbar
+      audioEnabled={audioEnabled}
+      showNeuroSim={showElectrokineticLayer}
+      redTeamActive={isRedTeamModeActive}
+      redTeamAvailable={simulationMode}
+      onRequestBiofeedback={handleRequestBiofeedback}
+      onDisableBiofeedback={handleDisableBiofeedback}
+      onToggleNeuroSim={handleToggleNeuroSim}
+      onToggleRedTeam={handleToggleRedTeam}
+    />
+  );
+
   const renderNeuroEmSimulator = () => (
-    <Suspense
-      fallback={
-        <div className="h-full w-full border border-current/30 bg-black/40 backdrop-blur-sm p-4 flex items-center justify-center text-sm opacity-80">
-          Loading NeuroSim module...
-        </div>
-      }
-    >
+    <Suspense fallback={<NeuroSimFallback />}>
       <NeuroEmSimulator bioResonanceFrequency={bioResonanceFrequency} />
     </Suspense>
   );
 
-  return (
-    <div className={`min-h-screen ${getAcclimatizationStyles()} transition-all duration-1000 relative overflow-hidden`}>
-      {/* Control Toggles - Desktop only */}
-      {!isMobile && (
-        <div className="absolute top-4 right-4 z-20 flex gap-2">
-          {appConfig.features.enableAudioBiofeedback && (
-            <Button
-              onClick={() => setAudioEnabled(prev => !prev)}
-              variant={audioEnabled ? "secondary" : "outline"}
-            >
-              {audioEnabled ? "Disable Biofeedback" : "Enable Biofeedback"}
-            </Button>
-          )}
-          <Button
-            onClick={() => setShowElectrokineticLayer(prev => !prev)}
-            variant={showElectrokineticLayer ? "secondary" : "default"}
-          >
-            {showElectrokineticLayer ? "NeuroSim Off" : "NeuroSim On"}
-          </Button>
-          {simulationMode && (
-            <Button
-              onClick={toggleRedTeamMode}
-              variant={isRedTeamModeActive ? "destructive" : "default"}
-            >
-              {isRedTeamModeActive ? "Deactivate Red Team" : "Activate Red Team"}
-            </Button>
-          )}
-        </div>
-      )}
-
-      {/* Status Indicators */}
-      <StatusIndicators 
-        audioError={audioError}
-        microphoneConnected={microphoneConnected}
-        audioEnabled={audioEnabled}
+  const renderPrimarySurface = () => (
+    showElectrokineticLayer ? (
+      renderNeuroEmSimulator()
+    ) : simulationMode ? (
+      <DecisionMatrixSimulator
+        decisionPoints={EMPTY_DECISION_POINTS}
+        onOutcomeSelect={NO_OP}
       />
+    ) : (
+      <TacticalDataDisplay
+        threatIndicators={displayedThreatIndicators}
+        optimalPathing={optimalPath}
+        squadPositions={squadPositions}
+      />
+    )
+  );
 
-      {/* Desktop Layout */}
+  const renderVitalsPanel = () => (
+    <OperatorVitalsCognitiveLoadMonitor
+      hrv={realtimeVitals.hrv}
+      respiratoryRate={realtimeVitals.respiratoryRate}
+      cognitiveStressIndex={cognitiveStressIndex}
+      previousCognitiveStressIndex={previousStressRef.current}
+      bioResonanceSupportFrequency={bioResonanceFrequency}
+      setBioResonanceSupportFrequency={setBioResonanceFrequency}
+      volume={volume}
+      setVolume={setVolume}
+    />
+  );
+
+  const renderIntelPanel = () => (
+    <SitRepIntelFeed
+      intelFeed={displayedIntelFeed}
+      currentClearance={acclimatizationLevel}
+    />
+  );
+
+  const renderTemporalPanel = () => (
+    <TemporalArchive
+      phase={acclimatizationLevel}
+      currentTimeline={currentTimeline}
+      temporalMoment={temporalMoment}
+      audioLevel={audioLevel}
+    />
+  );
+
+  return (
+    <div className={`min-h-screen ${getAcclimatizationStyles()} transition-colors duration-500 relative overflow-hidden`}>
       {!isMobile ? (
-        <div className="relative z-10 h-screen grid grid-cols-12 grid-rows-8 gap-2 p-4">
-          {/* Header Status Bar */}
-          <HeaderStatusBar
-            phase={acclimatizationLevel}
-            temporalMode={simulationMode}
-            microphoneConnected={microphoneConnected}
+        <div className="relative z-10 h-screen grid grid-cols-12 grid-rows-[auto_repeat(7,minmax(0,1fr))] gap-2 p-4">
+          <MissionCommandStrip
+            mission={mission}
+            pulseRate={pulseRate}
             coherenceLevel={cohesionScore}
             activeFrequency={bioResonanceFrequency}
-            pulseRate={pulseRate}
-            currentTimeline={currentTimeline}
-            temporalMoment={temporalMoment}
           />
 
-          {/* Left Panel - Operator Vitals */}
-          <div className="col-span-3 row-span-4">
-            <OperatorVitalsCognitiveLoadMonitor
-              hrv={realtimeVitals.hrv}
-              respiratoryRate={realtimeVitals.respiratoryRate}
-              cognitiveStressIndex={cognitiveStressIndex}
-              bioResonanceSupportFrequency={bioResonanceFrequency}
-              setBioResonanceSupportFrequency={setBioResonanceFrequency}
-              volume={volume}
-              setVolume={setVolume}
+          <div className="col-start-1 col-span-3 row-start-2 row-span-3 min-h-0">
+            {renderVitalsPanel()}
+          </div>
+
+          <div className="col-start-1 col-span-3 row-start-5 row-span-2 min-h-0 overflow-hidden">
+            <MissionAlertQueue
+              alerts={mission.alerts}
+              dismissedAlertIds={dismissedAlertIds}
+              onDismiss={handleDismissAlert}
             />
           </div>
 
-          {/* Left Panel Bottom - Squad Cohesion */}
-          <div className="col-span-3 row-span-3">
+          <div className="col-start-1 col-span-3 row-start-7 row-span-2 min-h-0">
             <SquadCohesionIndex
               squadVitals={squadVitals}
               communicationEfficiency={communicationEfficiency}
@@ -280,218 +413,109 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
             />
           </div>
 
-          {/* Center Top - Decision Matrix Simulator or Tactical Data Display */}
-          <div className="col-span-6 row-span-3">
-            {showElectrokineticLayer ? (
-              renderNeuroEmSimulator()
-            ) : simulationMode ? (
-              <DecisionMatrixSimulator
-                decisionPoints={EMPTY_DECISION_POINTS}
-                onOutcomeSelect={NO_OP}
-              />
-            ) : (
-              <TacticalDataDisplay
-                threatIndicators={displayedThreatIndicators}
-                optimalPathing={optimalPath}
-                squadPositions={squadPositions}
-              />
-            )}
+          <div className="col-start-4 col-span-6 row-start-2 row-span-4 min-h-0">
+            {renderPrimarySurface()}
           </div>
 
-          {/* Center Bottom - Temporal Archive or SitRep/Intel Feed */}
-          <div className="col-span-6 row-span-2">
-            {simulationMode ? (
-              <TemporalArchive
-                phase={acclimatizationLevel}
-                currentTimeline={currentTimeline}
-                temporalMoment={temporalMoment}
-                audioLevel={audioLevel}
-              />
-            ) : (
-              <SitRepIntelFeed
-                intelFeed={displayedIntelFeed}
-                currentClearance={acclimatizationLevel}
-              />
-            )}
+          <div className="col-start-4 col-span-6 row-start-6 row-span-3 min-h-0">
+            {simulationMode ? renderTemporalPanel() : renderIntelPanel()}
           </div>
 
-          {/* Right Panel Top - Touch Interface */}
-          <div className="col-span-3 row-span-4">
-            <TouchInterface 
+          <div className="col-start-10 col-span-3 row-start-2 row-span-1 min-h-0">
+            {renderModeToolbar()}
+          </div>
+
+          <div className="col-start-10 col-span-3 row-start-3 row-span-3 min-h-0">
+            <TouchInterface
               phase={acclimatizationLevel}
-              onTouch={addInteractionEvent}
+              onTouch={handleOperatorTouch}
               onFrequencyChange={setBioResonanceFrequency}
             />
           </div>
 
-          {/* Right Panel Bottom - Mission Critical Event Recorder */}
-          <div className="col-span-3 row-span-3">
-            <MissionCriticalEventRecorder
-              snapshots={EMPTY_SNAPSHOTS}
-              onSnapshotSelect={NO_OP}
-            />
+          <div className="col-start-10 col-span-3 row-start-6 row-span-3 min-h-0">
+            <OperatorEventTimeline events={operatorEvents} />
           </div>
-
-          {/* Bottom Panel - SitRep/Intel Feed when simulation mode active */}
-          {simulationMode && (
-            <div className="col-span-12 row-span-2">
-              <SitRepIntelFeed
-                intelFeed={displayedIntelFeed}
-                currentClearance={acclimatizationLevel}
-              />
-            </div>
-          )}
         </div>
       ) : (
-        /* Mobile Layout */
-        <div className="relative z-10 min-h-screen flex flex-col gap-2 p-2 pb-6">
-          {/* Mobile Header with embedded controls */}
-          <MobileHeader
-            phase={acclimatizationLevel}
-            temporalMode={simulationMode}
-            microphoneConnected={microphoneConnected}
-            coherenceLevel={cohesionScore}
+        <div className="relative z-10 flex min-h-screen flex-col gap-2 p-2 pb-4">
+          <MissionCommandStrip
+            mission={mission}
             pulseRate={pulseRate}
-            currentTimeline={currentTimeline}
-            temporalMoment={temporalMoment}
-            controls={
-              <>
-                {appConfig.features.enableAudioBiofeedback && (
-                  <Button
-                    size="sm"
-                    onClick={() => setAudioEnabled(prev => !prev)}
-                    variant={audioEnabled ? "secondary" : "outline"}
-                    className="text-[10px] h-7 touch-manipulation"
-                  >
-                    {audioEnabled ? "Bio Off" : "Bio On"}
-                  </Button>
-                )}
-                <Button
-                  size="sm"
-                  onClick={() => setShowElectrokineticLayer(prev => !prev)}
-                  variant={showElectrokineticLayer ? "secondary" : "default"}
-                  className="text-[10px] h-7 touch-manipulation"
-                >
-                  {showElectrokineticLayer ? "NeuroSim Off" : "NeuroSim On"}
-                </Button>
-                {simulationMode && (
-                  <Button
-                    size="sm"
-                    onClick={toggleRedTeamMode}
-                    variant={isRedTeamModeActive ? "destructive" : "default"}
-                    className="text-[10px] h-7 touch-manipulation"
-                  >
-                    {isRedTeamModeActive ? "Red Team Off" : "Red Team On"}
-                  </Button>
-                )}
-              </>
-            }
+            coherenceLevel={cohesionScore}
+            activeFrequency={bioResonanceFrequency}
           />
 
-          {/* Mobile Main Visualizer */}
-          <div className="min-h-[35vh] max-h-[45vh]">
-            {showElectrokineticLayer ? (
-              renderNeuroEmSimulator()
-            ) : simulationMode ? (
-              <DecisionMatrixSimulator
-                decisionPoints={EMPTY_DECISION_POINTS}
-                onOutcomeSelect={NO_OP}
-              />
-            ) : (
-              <TacticalDataDisplay
-                threatIndicators={displayedThreatIndicators}
-                optimalPathing={optimalPath}
-                squadPositions={squadPositions}
-              />
-            )}
-          </div>
+          {renderModeToolbar()}
 
-          {/* Collapsible panels */}
-          <CollapsiblePanel
-            title="Operator Vitals"
-            defaultOpen={true}
-            statusBadge={
-              <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded-sm ${
-                cognitiveStressIndex > 0.7 ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'
-              }`}>
-                {cognitiveStressIndex > 0.7 ? 'HIGH' : 'NOMINAL'}
-              </span>
-            }
-          >
-            <div className="h-48">
-              <OperatorVitalsCognitiveLoadMonitor
-                hrv={realtimeVitals.hrv}
-                respiratoryRate={realtimeVitals.respiratoryRate}
-                cognitiveStressIndex={cognitiveStressIndex}
-                bioResonanceSupportFrequency={bioResonanceFrequency}
-                setBioResonanceSupportFrequency={setBioResonanceFrequency}
-                volume={volume}
-                setVolume={setVolume}
-              />
-            </div>
-          </CollapsiblePanel>
+          <MissionAlertQueue
+            alerts={mission.alerts}
+            dismissedAlertIds={dismissedAlertIds}
+            onDismiss={handleDismissAlert}
+          />
 
-          <CollapsiblePanel
-            title="Squad Cohesion"
-            statusBadge={
-              <span className="text-[9px] font-mono px-1.5 py-0.5 bg-cyan-500/20 text-cyan-400 rounded-sm">
-                {(cohesionScore * 100).toFixed(0)}%
-              </span>
-            }
-          >
-            <div className="h-48">
-              <SquadCohesionIndex
-                squadVitals={squadVitals}
-                communicationEfficiency={communicationEfficiency}
-                onCohesionChange={setCohesionScore}
-              />
-            </div>
-          </CollapsiblePanel>
+          <Tabs value={mobileTab} onValueChange={setMobileTab} className="flex min-h-0 flex-1 flex-col">
+            <TabsList className="grid h-auto w-full grid-cols-5 rounded-none border border-current/15 bg-black/50 p-1 text-[10px]">
+              <TabsTrigger value="map" className="px-1 py-2 text-[10px]">Map</TabsTrigger>
+              <TabsTrigger value="vitals" className="px-1 py-2 text-[10px]">Vitals</TabsTrigger>
+              <TabsTrigger value="intel" className="px-1 py-2 text-[10px]">Intel</TabsTrigger>
+              <TabsTrigger value="sim" className="px-1 py-2 text-[10px]">Sim</TabsTrigger>
+              <TabsTrigger value="events" className="px-1 py-2 text-[10px]">Events</TabsTrigger>
+            </TabsList>
 
-          <CollapsiblePanel title="Touch Interface" defaultOpen={true}>
-            <div className="h-48">
-              <TouchInterface 
-                phase={acclimatizationLevel}
-                onTouch={addInteractionEvent}
-                onFrequencyChange={setBioResonanceFrequency}
-              />
-            </div>
-          </CollapsiblePanel>
+            <TabsContent value="map" className="mt-2 min-h-[58vh] flex-1">
+              <div className="h-[58vh]">{renderPrimarySurface()}</div>
+            </TabsContent>
 
-          <CollapsiblePanel title="Event Recorder">
-            <div className="h-48">
-              <MissionCriticalEventRecorder
-                snapshots={EMPTY_SNAPSHOTS}
-                onSnapshotSelect={NO_OP}
-              />
-            </div>
-          </CollapsiblePanel>
-
-          {simulationMode && (
-            <CollapsiblePanel title="Temporal Archive" defaultOpen={true}>
-              <div className="h-32">
-                <TemporalArchive
-                  phase={acclimatizationLevel}
-                  currentTimeline={currentTimeline}
-                  temporalMoment={temporalMoment}
-                  audioLevel={audioLevel}
+            <TabsContent value="vitals" className="mt-2 space-y-2">
+              <div className="h-[42vh]">{renderVitalsPanel()}</div>
+              <div className="h-[34vh]">
+                <SquadCohesionIndex
+                  squadVitals={squadVitals}
+                  communicationEfficiency={communicationEfficiency}
+                  onCohesionChange={setCohesionScore}
                 />
               </div>
-            </CollapsiblePanel>
-          )}
+            </TabsContent>
 
-          <CollapsiblePanel title="Intel Feed" defaultOpen={true}>
-            <div className="h-48">
-              <SitRepIntelFeed
-                intelFeed={displayedIntelFeed}
-                currentClearance={acclimatizationLevel}
-              />
-            </div>
-          </CollapsiblePanel>
+            <TabsContent value="intel" className="mt-2 space-y-2">
+              <div className="h-[46vh]">{renderIntelPanel()}</div>
+              {simulationMode && <div className="h-[30vh]">{renderTemporalPanel()}</div>}
+            </TabsContent>
+
+            <TabsContent value="sim" className="mt-2 space-y-2">
+              <div className="h-[36vh]">
+                <TouchInterface
+                  phase={acclimatizationLevel}
+                  onTouch={handleOperatorTouch}
+                  onFrequencyChange={setBioResonanceFrequency}
+                />
+              </div>
+              <div className="h-[40vh]">
+                {showElectrokineticLayer ? renderNeuroEmSimulator() : (
+                  <DecisionMatrixSimulator
+                    decisionPoints={EMPTY_DECISION_POINTS}
+                    onOutcomeSelect={NO_OP}
+                  />
+                )}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="events" className="mt-2">
+              <div className="h-[66vh]">
+                <OperatorEventTimeline events={operatorEvents} />
+              </div>
+            </TabsContent>
+          </Tabs>
         </div>
       )}
 
-      {/* Visual Overlays */}
+      <BiofeedbackConsentDialog
+        open={biofeedbackDialogOpen}
+        onOpenChange={setBiofeedbackDialogOpen}
+        onConfirm={handleConfirmBiofeedback}
+      />
+
       <VisualOverlays phase={acclimatizationLevel} coherenceLevel={cohesionScore} redTeamIntensity={redTeamIntensity} />
     </div>
   );

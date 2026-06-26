@@ -5,6 +5,8 @@ interface CollapsiblePanelProps {
   title: string;
   icon?: React.ReactNode;
   defaultOpen?: boolean;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
   children: React.ReactNode;
   statusBadge?: React.ReactNode;
 }
@@ -13,15 +15,24 @@ export const CollapsiblePanel: React.FC<CollapsiblePanelProps> = React.memo(({
   title,
   icon,
   defaultOpen = false,
+  open,
+  onOpenChange,
   children,
   statusBadge,
 }) => {
-  const [isOpen, setIsOpen] = useState(defaultOpen);
+  const [internalOpen, setInternalOpen] = useState(defaultOpen);
+  const isOpen = open ?? internalOpen;
+
+  const handleToggle = () => {
+    const nextOpen = !isOpen;
+    setInternalOpen(nextOpen);
+    onOpenChange?.(nextOpen);
+  };
 
   return (
     <div className="border border-current/20 bg-black/40 backdrop-blur-sm rounded-sm overflow-hidden transition-all duration-300">
       <button
-        onClick={() => setIsOpen(prev => !prev)}
+        onClick={handleToggle}
         className="w-full flex items-center justify-between px-3 py-2.5 active:bg-white/5 touch-manipulation select-none"
         style={{ WebkitTapHighlightColor: 'transparent' }}
       >

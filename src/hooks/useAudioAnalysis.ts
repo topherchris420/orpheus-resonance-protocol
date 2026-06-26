@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { usePersistentState } from "./usePersistentState";
 
 interface AudioAnalysisResult {
   audioLevel: number;
@@ -30,6 +31,9 @@ const BREATH_EMA_ALPHA = 0.08;
 const BEAT_EMA_ALPHA = 0.2;
 const MAX_BEAT_STEP_PER_FRAME = 0.08;
 const UI_FREQUENCY_UPDATE_DELTA = 0.03;
+
+const DEFAULT_VOLUME = 0.15;
+const AUDIO_VOLUME_STORAGE_KEY = "orpheus.audio.volume";
 
 const DEFAULT_ANALYSIS_STATE: AnalysisState = {
   audioLevel: 0,
@@ -66,7 +70,7 @@ export const useAudioAnalysis = (enabled: boolean = true): AudioAnalysisResult =
   const [activeFrequency, setActiveFrequency] = useState(DEFAULT_BEAT_FREQUENCY);
   const [microphoneConnected, setMicrophoneConnected] = useState(false);
   const [audioError, setAudioError] = useState<string | null>(null);
-  const [volume, setVolume] = useState(0.5);
+  const [volume, setVolume] = usePersistentState(AUDIO_VOLUME_STORAGE_KEY, DEFAULT_VOLUME);
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);

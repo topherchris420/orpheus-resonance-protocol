@@ -13,42 +13,36 @@ export const VisualOverlays: React.FC<VisualOverlaysProps> = ({
 }) => {
   return (
     <>
-      {/* Red Team Interference Overlay */}
       {redTeamIntensity > 0 && (
-        <div className="absolute inset-0 pointer-events-none z-50">
+        <div className="absolute inset-0 pointer-events-none z-40">
           <div
-            className="absolute inset-0 bg-red-900/20"
+            className="absolute inset-0 bg-red-950/15"
             style={{
-              opacity: redTeamIntensity * 0.5,
-              animation: `static 0.1s infinite`,
+              opacity: redTeamIntensity * 0.35,
+              animation: 'static 0.16s infinite',
             }}
           />
           <div
-            className="absolute inset-0"
-            style={{
-              border: `${redTeamIntensity * 4}px solid rgba(255,0,0,0.5)`,
-              animation: `pulse 1s infinite`,
-            }}
+            className="absolute inset-3 border border-red-400/40"
+            style={{ opacity: 0.3 + redTeamIntensity * 0.35 }}
           />
         </div>
       )}
 
-      {/* Temporal Integration Overlay */}
       {phase >= 4 && (
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute inset-0 bg-gradient-radial from-transparent via-yellow-500/10 to-transparent animate-pulse" />
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-6xl animate-bounce opacity-20">
-            ◊
+        <div className="absolute inset-0 pointer-events-none z-20">
+          <div className="absolute inset-0 bg-gradient-radial from-transparent via-amber-400/5 to-transparent" />
+          <div className="absolute bottom-5 left-1/2 -translate-x-1/2 border border-amber-300/20 bg-black/40 px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-amber-100/60">
+            Temporal sync
           </div>
         </div>
       )}
 
-      {/* Cohesion Overlay */}
       {coherenceLevel > 0.9 && (
-        <div className="absolute inset-0 pointer-events-none z-40">
-          <div className="absolute inset-0 bg-gradient-conic from-cyan-500/5 via-purple-500/5 to-yellow-500/5 animate-spin-slow" />
-          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-8xl text-cyan-400/20 animate-pulse">
-            ∞
+        <div className="absolute inset-0 pointer-events-none z-30">
+          <div className="absolute inset-0 bg-cyan-400/[0.03]" />
+          <div className="absolute right-5 bottom-5 border border-cyan-300/20 bg-black/40 px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-cyan-100/60">
+            Cohesion lock
           </div>
         </div>
       )}
