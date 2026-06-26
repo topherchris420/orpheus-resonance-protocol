@@ -18,7 +18,7 @@ This repository is for exploring:
 - **Explicit microphone-consent flow** so audio biofeedback remains opt-in.
 - **Access-gate hardening controls** with configurable attempt limits and temporary lockouts.
 - **Node-first test tooling** through Vitest (no Bun dependency required).
-- **CI-friendly scripts** for linting, build, preview, and test workflows.
+- **CI-friendly scripts** for linting, typechecking, build, preview, and test workflows.
 
 
 ## Project structure 
@@ -78,6 +78,7 @@ Use `.env.example` as the baseline.
 | `npm run build:dev` | Build using development mode flags. |
 | `npm run preview` | Preview production build locally. |
 | `npm run lint` | Run ESLint across the project. |
+| `npm run typecheck` | Run TypeScript without emitting build output. |
 | `npm run test` | Run the Vitest suite once. |
 | `npm run test:watch` | Run Vitest in watch mode. |
 | `npm run test:coverage` | Run tests with coverage output. |
@@ -87,7 +88,9 @@ Use `.env.example` as the baseline.
 Run these before opening a PR:
 
 ```bash
+npm ci
 npm run lint
+npm run typecheck
 npm run test
 npm run build
 ```
@@ -97,6 +100,7 @@ npm run build
 - The access terminal is a **client-side interaction gate**, not authentication.
 - For production deployment, enforce identity, authorization, and audit logging at an API/server layer.
 - Avoid processing sensitive biometric or regulated data exclusively in the frontend; use compliant backend controls and explicit consent workflows.
+- The Vite dev server binds to localhost by default. Use `npm run dev -- --host 0.0.0.0` only when intentionally testing on another device.
 
 ## Troubleshooting
 
