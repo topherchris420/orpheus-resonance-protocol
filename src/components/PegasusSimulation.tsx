@@ -17,6 +17,8 @@ import { useAudioAnalysis } from '../hooks/useAudioAnalysis';
 import { usePhaseProgression } from '../hooks/usePhaseProgression';
 import { useInteractionState } from '../hooks/useInteractionState';
 import { useRedTeamSimulation } from '../hooks/useRedTeamSimulation';
+import { useBreathPulseModulation } from '../hooks/useBreathPulseModulation';
+import { BreathPulseControls } from './BreathPulseControls';
 import { usePersistentState } from '../hooks/usePersistentState';
 import { dataGenerator } from '../data/realisticData';
 import { appConfig } from '@/config/appConfig';
@@ -96,14 +98,29 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
   }, []);
 
   const {
+    controls: breathPulseControls,
+    modulationRef: breathModulationRef,
+    surfaceRef,
+    liveSignalsRef,
+  } = useBreathPulseModulation();
+
+  const {
     audioLevel,
+    breathPattern,
     pulseRate,
     activeFrequency: audioFrequency,
     microphoneConnected,
     audioError,
     volume,
     setVolume,
-  } = useAudioAnalysis(audioEnabled && appConfig.features.enableAudioBiofeedback);
+  } = useAudioAnalysis(audioEnabled && appConfig.features.enableAudioBiofeedback, breathModulationRef);
+
+  liveSignalsRef.current = {
+    livePulseRate: pulseRate,
+    liveBreathSignal: breathPattern,
+    liveAvailable: microphoneConnected,
+  };
+
 
   const { acclimatizationLevel, simulationMode } = usePhaseProgression(onAccessLevelChange);
 
