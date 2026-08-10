@@ -454,10 +454,29 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
     />
   );
 
+  const renderBreathPulsePanel = () => (
+    <BreathPulseControls
+      controls={breathPulseControls}
+      liveAvailable={microphoneConnected}
+      livePulseRate={pulseRate}
+    />
+  );
+
   return (
-    <div className={`min-h-screen ${getAcclimatizationStyles()} transition-colors duration-500 relative overflow-hidden`}>
+    <div
+      ref={surfaceRef}
+      className={`min-h-screen ${getAcclimatizationStyles()} transition-colors duration-500 relative overflow-hidden`}
+    >
       {!isMobile ? (
-        <div className="relative z-10 h-screen grid grid-cols-12 grid-rows-[auto_repeat(7,minmax(0,1fr))] gap-2 p-4">
+        <div
+          className="relative z-10 h-screen grid grid-cols-12 grid-rows-[auto_repeat(7,minmax(0,1fr))] gap-2 p-4"
+          style={{
+            transform: 'scale(var(--breath-scale, 1)) translateY(var(--breath-lift, 0px))',
+            filter: 'blur(var(--breath-blur, 0px))',
+            willChange: 'transform, filter',
+          }}
+        >
+
           <MissionCommandStrip
             mission={mission}
             pulseRate={pulseRate}
