@@ -3,7 +3,7 @@ import { TacticalDataDisplay } from './TacticalDataDisplay';
 import { OperatorVitalsCognitiveLoadMonitor } from './OperatorVitalsCognitiveLoadMonitor';
 import { SitRepIntelFeed } from './SitRepIntelFeed';
 import { TouchInterface } from './TouchInterface';
-import { DecisionMatrixSimulator, DecisionPoint } from './DecisionMatrixSimulator';
+import { DecisionMatrixSimulator } from './DecisionMatrixSimulator';
 import { TemporalArchive } from './TemporalArchive';
 import { SquadCohesionIndex } from './SquadCohesionIndex';
 import { VisualOverlays } from './VisualOverlays';
@@ -70,6 +70,13 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
   const [realtimeVitals, setRealtimeVitals] = useState(dataGenerator.generateRealisticVitals(78, 16.2, 0.3));
   const previousStressRef = useRef(realtimeVitals.cognitiveStressIndex);
   const previousPhaseRef = useRef(1);
+  const threatIndicatorsRef = useRef(threatIndicators);
+  const hostilePressureRef = useRef(0.3);
+  const stressModifierRef = useRef(0);
+
+  useEffect(() => {
+    threatIndicatorsRef.current = threatIndicators;
+  }, [threatIndicators]);
 
   const [audioEnabled, setAudioEnabled] = usePersistentState(
     AUDIO_PREFERENCE_STORAGE_KEY,
@@ -240,12 +247,56 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
     [displayedThreatIndicators],
   );
 
+  const {
+    decisionPoints,
+    objectives,
+    hostilePressure,
+    stressModifier,
+    cohesionModifier,
+    resolveOutcome,
+  } = useMissionScenario({
+    phase: acclimatizationLevel,
+    hostileThreatCount,
+    cohesionScore,
+    cognitiveStressIndex,
+    redTeamActive: isRedTeamModeActive,
+  });
+
+  const effectiveCohesion = clamp01(cohesionScore + cohesionModifier);
+
+  useEffect(() => {
+    hostilePressureRef.current = hostilePressure;
+  }, [hostilePressure]);
+
+  useEffect(() => {
+    stressModifierRef.current = stressModifier;
+  }, [stressModifier]);
+
+  const handleOutcomeSelect = useCallback((pointId: string, outcome: ScenarioOutcome) => {
+    resolveOutcome(pointId, outcome);
+    setIntelFeed((previous) => {
+      const historyWindow = Math.max(1, appConfig.limits.maxIntelFeedItems - 1);
+      return [
+        ...previous.slice(-historyWindow),
+        {
+          id: `decision-${outcome.id}-${Date.now()}`,
+          timestamp: Date.now(),
+          message: outcome.effects.intel,
+          clearanceLevel: 1,
+          priority: outcome.risk === 'HIGH' ? ('CRITICAL' as const) : ('HIGH' as const),
+          source: 'COMMAND',
+        },
+      ];
+    });
+    logOperatorEvent('Course Committed', `${outcome.title} — ${outcome.consequences}`, outcome.effects.severity);
+  }, [logOperatorEvent, resolveOutcome]);
+
   const mission = useMemo(() => deriveMissionUx({
     phase: acclimatizationLevel,
     simulationMode,
     isRedTeamModeActive,
     cognitiveStressIndex,
-    cohesionScore,
+    cohesionScore: effectiveCohesion,
     threatCount: displayedThreatIndicators.length,
     hostileThreatCount,
     audioEnabled,
@@ -258,7 +309,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
     simulationMode,
     isRedTeamModeActive,
     cognitiveStressIndex,
-    cohesionScore,
+    effectiveCohesion,
     displayedThreatIndicators.length,
     hostileThreatCount,
     audioEnabled,
@@ -344,8 +395,9 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
       renderNeuroEmSimulator()
     ) : simulationMode ? (
       <DecisionMatrixSimulator
-        decisionPoints={EMPTY_DECISION_POINTS}
-        onOutcomeSelect={NO_OP}
+        decisionPoints={decisionPoints}
+        objectives={objectives}
+        onOutcomeSelect={handleOutcomeSelect}
       />
     ) : (
       <TacticalDataDisplay
@@ -392,7 +444,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
           <MissionCommandStrip
             mission={mission}
             pulseRate={pulseRate}
-            coherenceLevel={cohesionScore}
+            coherenceLevel={effectiveCohesion}
             activeFrequency={bioResonanceFrequency}
           />
 
@@ -445,7 +497,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
           <MissionCommandStrip
             mission={mission}
             pulseRate={pulseRate}
-            coherenceLevel={cohesionScore}
+            coherenceLevel={effectiveCohesion}
             activeFrequency={bioResonanceFrequency}
           />
 
@@ -497,8 +549,9 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
               <div className="h-[40vh]">
                 {showElectrokineticLayer ? renderNeuroEmSimulator() : (
                   <DecisionMatrixSimulator
-                    decisionPoints={EMPTY_DECISION_POINTS}
-                    onOutcomeSelect={NO_OP}
+                    decisionPoints={decisionPoints}
+                    objectives={objectives}
+                    onOutcomeSelect={handleOutcomeSelect}
                   />
                 )}
               </div>
@@ -519,7 +572,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
         onConfirm={handleConfirmBiofeedback}
       />
 
-      <VisualOverlays phase={acclimatizationLevel} coherenceLevel={cohesionScore} redTeamIntensity={redTeamIntensity} />
+      <VisualOverlays phase={acclimatizationLevel} coherenceLevel={effectiveCohesion} redTeamIntensity={redTeamIntensity} />
     </div>
   );
 };
