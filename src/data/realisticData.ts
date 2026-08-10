@@ -146,6 +146,82 @@ export class RealisticDataGenerator {
     return squad;
   }
 
+  /**
+   * Moves existing contacts instead of regenerating them, so the tactical picture
+   * evolves as a continuous track. Hostile pressure biases spawns and confidence.
+   */
+  advanceThreatIndicators(previous: ThreatIndicator[], hostilePressure: number = 0.3): ThreatIndicator[] {
+    const drift = 6 + hostilePressure * 18;
+
+    const moved = previous
+      .map((threat) => {
+        const decay = threat.type === 'hostile' ? 1.5 : 3;
+        return {
+          ...threat,
+          position: {
+            x: Math.max(10, Math.min(390, threat.position.x + (Math.random() - 0.5) * drift * 2)),
+            y: Math.max(10, Math.min(390, threat.position.y + (Math.random() - 0.5) * drift * 2)),
+          },
+          confidence: Math.max(35, Math.min(99, threat.confidence + (Math.random() - 0.45) * 10 - decay)),
+          lastUpdated: Date.now(),
+        };
+      })
+      // Contacts fade from the picture once confidence collapses.
+      .filter((threat) => threat.confidence > 40 || Math.random() > 0.4);
+
+    const spawnChance = 0.25 + hostilePressure * 0.5;
+    if (moved.length < 8 && Math.random() < spawnChance) {
+      const type: ThreatIndicator['type'] =
+        Math.random() < 0.35 + hostilePressure * 0.4 ? 'hostile' : Math.random() > 0.5 ? 'unknown' : 'friendly';
+      moved.push({
+        id: `threat-${++this.lastThreatId}`,
+        position: { x: Math.floor(Math.random() * 380) + 10, y: Math.floor(Math.random() * 380) + 10 },
+        type,
+        confidence: Math.floor(Math.random() * 25) + 60,
+        lastUpdated: Date.now(),
+      });
+    }
+
+    return moved.length > 0 ? moved : this.generateThreatIndicators(3);
+  }
+
+  /** Advances squad members along their own track, preserving identity and status history. */
+  advanceSquadPositions(previous: SquadMember[], hostilePressure: number = 0.3): SquadMember[] {
+    if (previous.length === 0) {
+      return this.generateSquadPositions(4);
+    }
+
+    return previous.map((member) => {
+      const wounded = member.status === 'wounded';
+      const degrade = Math.random() < 0.03 * (1 + hostilePressure);
+      const recover = wounded && Math.random() < 0.15;
+
+      const status: SquadMember['status'] = recover
+        ? 'active'
+        : degrade && member.status === 'active'
+          ? 'wounded'
+          : member.status;
+
+      return {
+        ...member,
+        position: {
+          x: Math.max(20, Math.min(380, member.position.x + (Math.random() - 0.5) * (wounded ? 6 : 18))),
+          y: Math.max(20, Math.min(380, member.position.y + (Math.random() - 0.5) * (wounded ? 6 : 18))),
+        },
+        status,
+        vitals: {
+          heartRate: Math.round(
+            Math.max(62, Math.min(165, member.vitals.heartRate + (Math.random() - 0.5) * 8 + (status === 'wounded' ? 6 : -1))),
+          ),
+          oxygenSat: Math.round(
+            Math.max(86, Math.min(100, member.vitals.oxygenSat + (status === 'wounded' ? -0.8 : 0.4) + (Math.random() - 0.5))),
+          ),
+          bodyTemp: member.vitals.bodyTemp,
+        },
+      };
+    });
+  }
+
   generateOptimalPath(): Array<{ x: number; y: number }> {
     const path = [];
     let currentX = 50;

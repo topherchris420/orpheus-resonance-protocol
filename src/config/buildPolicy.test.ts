@@ -8,7 +8,7 @@ const repoRoot = path.resolve(__dirname, '..', '..');
 const getManualChunks = () => {
   const output = viteConfig.build?.rollupOptions?.output;
   const normalizedOutput = Array.isArray(output) ? output[0] : output;
-  return normalizedOutput?.manualChunks;
+  return normalizedOutput?.manualChunks as ((id: string) => string | undefined) | undefined;
 };
 
 describe('build policy', () => {
