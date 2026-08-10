@@ -76,8 +76,11 @@ export const useBreathPulseModulation = ({
     gainMultiplier: 1,
   });
 
-  const settingsRef = useRef({ breathRate, breathDepth, pulseTarget, coupling, followLive, livePulseRate, liveBreathSignal, liveAvailable });
-  settingsRef.current = { breathRate, breathDepth, pulseTarget, coupling, followLive, livePulseRate, liveBreathSignal, liveAvailable };
+  /** Live biofeedback signals, updatable after render without re-subscribing the loop. */
+  const liveSignalsRef = useRef({ livePulseRate, liveBreathSignal, liveAvailable });
+  const settingsRef = useRef({ breathRate, breathDepth, pulseTarget, coupling, followLive });
+  settingsRef.current = { breathRate, breathDepth, pulseTarget, coupling, followLive };
+
 
   useEffect(() => {
     let frame = 0;
