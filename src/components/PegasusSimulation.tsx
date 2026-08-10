@@ -516,7 +516,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
             {renderModeToolbar()}
           </div>
 
-          <div className="col-start-10 col-span-3 row-start-3 row-span-3 min-h-0">
+          <div className="col-start-10 col-span-3 row-start-3 row-span-2 min-h-0">
             <TouchInterface
               phase={acclimatizationLevel}
               onTouch={handleOperatorTouch}
@@ -524,7 +524,11 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
             />
           </div>
 
-          <div className="col-start-10 col-span-3 row-start-6 row-span-3 min-h-0">
+          <div className="col-start-10 col-span-3 row-start-5 row-span-2 min-h-0">
+            {renderBreathPulsePanel()}
+          </div>
+
+          <div className="col-start-10 col-span-3 row-start-7 row-span-2 min-h-0">
             <OperatorEventTimeline events={operatorEvents} />
           </div>
         </div>
