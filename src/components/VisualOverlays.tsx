@@ -13,6 +13,23 @@ export const VisualOverlays: React.FC<VisualOverlaysProps> = ({
 }) => {
   return (
     <>
+      {/* Breath/pulse driven ambience — values come from live CSS variables */}
+      <div className="pointer-events-none absolute inset-0 z-10">
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              'radial-gradient(circle at 50% 55%, rgba(34,211,238,0.10), transparent 62%)',
+            opacity: 'calc(0.15 + var(--interface-intensity, 0.2) * 0.6)',
+            transform: 'scale(calc(1 + var(--breath-phase, 0.5) * 0.06))',
+          }}
+        />
+        <div
+          className="absolute inset-0 border border-cyan-300/20"
+          style={{ opacity: 'calc(var(--pulse-glow, 0) * 0.5)' }}
+        />
+      </div>
+
       {redTeamIntensity > 0 && (
         <div className="absolute inset-0 pointer-events-none z-40">
           <div

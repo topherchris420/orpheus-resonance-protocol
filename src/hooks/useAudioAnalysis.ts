@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { MutableRefObject, useCallback, useEffect, useRef, useState } from "react";
 import { usePersistentState } from "./usePersistentState";
+import type { BreathPulseModulationValues } from "./useBreathPulseModulation";
 
 interface AudioAnalysisResult {
   audioLevel: number;
@@ -65,7 +66,13 @@ const mapBreathToBeatFrequency = (smoothedBreath: number): number => {
   return MAX_BEAT_FREQUENCY - normalized * (MAX_BEAT_FREQUENCY - MIN_BEAT_FREQUENCY);
 };
 
-export const useAudioAnalysis = (enabled: boolean = true): AudioAnalysisResult => {
+export const useAudioAnalysis = (
+  enabled: boolean = true,
+  modulationRef?: MutableRefObject<BreathPulseModulationValues>,
+): AudioAnalysisResult => {
+  const modulationSourceRef = useRef(modulationRef);
+  modulationSourceRef.current = modulationRef;
+
   const [analysisState, setAnalysisState] = useState<AnalysisState>(DEFAULT_ANALYSIS_STATE);
   const [activeFrequency, setActiveFrequency] = useState(DEFAULT_BEAT_FREQUENCY);
   const [microphoneConnected, setMicrophoneConnected] = useState(false);
@@ -84,6 +91,9 @@ export const useAudioAnalysis = (enabled: boolean = true): AudioAnalysisResult =
   const sweepFrequencyRef = useRef(DEFAULT_BEAT_FREQUENCY);
   const reportedFrequencyRef = useRef(DEFAULT_BEAT_FREQUENCY);
   const healingToneRef = useRef(DEFAULT_HEALING_TONE);
+  const volumeRef = useRef(volume);
+  volumeRef.current = volume;
+
 
   const cleanupAudio = useCallback(() => {
     if (animationFrameRef.current !== null) {
@@ -200,19 +210,29 @@ export const useAudioAnalysis = (enabled: boolean = true): AudioAnalysisResult =
 
         sweepFrequencyRef.current = beatFrequency;
 
-        if (Math.abs(beatFrequency - reportedFrequencyRef.current) >= UI_FREQUENCY_UPDATE_DELTA) {
-          const roundedBeatFrequency = Number(beatFrequency.toFixed(2));
+        const modulation = modulationSourceRef.current?.current;
+        const effectiveBeatFrequency = modulation ? modulation.beatFrequency : beatFrequency;
+        const effectiveCarrier = modulation ? modulation.carrierTone : healingToneRef.current;
+
+        if (Math.abs(effectiveBeatFrequency - reportedFrequencyRef.current) >= UI_FREQUENCY_UPDATE_DELTA) {
+          const roundedBeatFrequency = Number(effectiveBeatFrequency.toFixed(2));
           reportedFrequencyRef.current = roundedBeatFrequency;
           setActiveFrequency(roundedBeatFrequency);
         }
 
         if (audioContextRef.current) {
           const nowTime = audioContextRef.current.currentTime;
-          const leftFrequency = healingToneRef.current - beatFrequency / 2;
-          const rightFrequency = healingToneRef.current + beatFrequency / 2;
-          leftOscillatorRef.current?.frequency.setValueAtTime(leftFrequency, nowTime);
-          rightOscillatorRef.current?.frequency.setValueAtTime(rightFrequency, nowTime);
+          const leftFrequency = effectiveCarrier - effectiveBeatFrequency / 2;
+          const rightFrequency = effectiveCarrier + effectiveBeatFrequency / 2;
+          leftOscillatorRef.current?.frequency.setTargetAtTime(leftFrequency, nowTime, 0.08);
+          rightOscillatorRef.current?.frequency.setTargetAtTime(rightFrequency, nowTime, 0.08);
+
+          if (gainRef.current) {
+            const targetGain = volumeRef.current * (modulation ? modulation.gainMultiplier : 1);
+            gainRef.current.gain.setTargetAtTime(Math.min(1, Math.max(0, targetGain)), nowTime, 0.12);
+          }
         }
+
 
         let totalSum = 0;
         const len = dataArray.length;

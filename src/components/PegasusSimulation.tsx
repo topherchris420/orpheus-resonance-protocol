@@ -17,6 +17,8 @@ import { useAudioAnalysis } from '../hooks/useAudioAnalysis';
 import { usePhaseProgression } from '../hooks/usePhaseProgression';
 import { useInteractionState } from '../hooks/useInteractionState';
 import { useRedTeamSimulation } from '../hooks/useRedTeamSimulation';
+import { useBreathPulseModulation } from '../hooks/useBreathPulseModulation';
+import { BreathPulseControls } from './BreathPulseControls';
 import { usePersistentState } from '../hooks/usePersistentState';
 import { dataGenerator } from '../data/realisticData';
 import { appConfig } from '@/config/appConfig';
@@ -96,14 +98,29 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
   }, []);
 
   const {
+    controls: breathPulseControls,
+    modulationRef: breathModulationRef,
+    surfaceRef,
+    liveSignalsRef,
+  } = useBreathPulseModulation();
+
+  const {
     audioLevel,
+    breathPattern,
     pulseRate,
     activeFrequency: audioFrequency,
     microphoneConnected,
     audioError,
     volume,
     setVolume,
-  } = useAudioAnalysis(audioEnabled && appConfig.features.enableAudioBiofeedback);
+  } = useAudioAnalysis(audioEnabled && appConfig.features.enableAudioBiofeedback, breathModulationRef);
+
+  liveSignalsRef.current = {
+    livePulseRate: pulseRate,
+    liveBreathSignal: breathPattern,
+    liveAvailable: microphoneConnected,
+  };
+
 
   const { acclimatizationLevel, simulationMode } = usePhaseProgression(onAccessLevelChange);
 
@@ -437,10 +454,29 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
     />
   );
 
+  const renderBreathPulsePanel = () => (
+    <BreathPulseControls
+      controls={breathPulseControls}
+      liveAvailable={microphoneConnected}
+      livePulseRate={pulseRate}
+    />
+  );
+
   return (
-    <div className={`min-h-screen ${getAcclimatizationStyles()} transition-colors duration-500 relative overflow-hidden`}>
+    <div
+      ref={surfaceRef}
+      className={`min-h-screen ${getAcclimatizationStyles()} transition-colors duration-500 relative overflow-hidden`}
+    >
       {!isMobile ? (
-        <div className="relative z-10 h-screen grid grid-cols-12 grid-rows-[auto_repeat(7,minmax(0,1fr))] gap-2 p-4">
+        <div
+          className="relative z-10 h-screen grid grid-cols-12 grid-rows-[auto_repeat(7,minmax(0,1fr))] gap-2 p-4"
+          style={{
+            transform: 'scale(var(--breath-scale, 1)) translateY(var(--breath-lift, 0px))',
+            filter: 'blur(var(--breath-blur, 0px))',
+            willChange: 'transform, filter',
+          }}
+        >
+
           <MissionCommandStrip
             mission={mission}
             pulseRate={pulseRate}
@@ -480,7 +516,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
             {renderModeToolbar()}
           </div>
 
-          <div className="col-start-10 col-span-3 row-start-3 row-span-3 min-h-0">
+          <div className="col-start-10 col-span-3 row-start-3 row-span-2 min-h-0">
             <TouchInterface
               phase={acclimatizationLevel}
               onTouch={handleOperatorTouch}
@@ -488,7 +524,11 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
             />
           </div>
 
-          <div className="col-start-10 col-span-3 row-start-6 row-span-3 min-h-0">
+          <div className="col-start-10 col-span-3 row-start-5 row-span-2 min-h-0">
+            {renderBreathPulsePanel()}
+          </div>
+
+          <div className="col-start-10 col-span-3 row-start-7 row-span-2 min-h-0">
             <OperatorEventTimeline events={operatorEvents} />
           </div>
         </div>
@@ -524,6 +564,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
 
             <TabsContent value="vitals" className="mt-2 space-y-2">
               <div className="h-[42vh]">{renderVitalsPanel()}</div>
+              <div className="h-[52vh]">{renderBreathPulsePanel()}</div>
               <div className="h-[34vh]">
                 <SquadCohesionIndex
                   squadVitals={squadVitals}
