@@ -22,9 +22,10 @@ import { dataGenerator } from '../data/realisticData';
 import { appConfig } from '@/config/appConfig';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { appendOperatorEvent, deriveMissionUx, MissionSeverity, OperatorEvent } from '@/lib/missionUx';
+import { useMissionScenario } from '../hooks/useMissionScenario';
+import { ScenarioOutcome } from '../data/decisionScenarios';
 
-const EMPTY_DECISION_POINTS: DecisionPoint[] = [];
-const NO_OP = () => {};
+const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
 const AUDIO_PREFERENCE_STORAGE_KEY = 'orpheus.audio.enabled';
 const NEUROSIM_PREFERENCE_STORAGE_KEY = 'orpheus.preference.neurosim';
 const ALERT_ACK_STORAGE_KEY = 'orpheus.preference.acknowledgedAlerts';
@@ -164,9 +165,9 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
 
   useEffect(() => {
     const tacticalTimer = setInterval(() => {
-      const nextThreats = dataGenerator.generateThreatIndicators(Math.floor(Math.random() * 5) + 2);
+      const nextThreats = dataGenerator.advanceThreatIndicators(threatIndicatorsRef.current, hostilePressureRef.current);
       setThreatIndicators(nextThreats);
-      setSquadPositions(dataGenerator.generateSquadPositions(4));
+      setSquadPositions((previous) => dataGenerator.advanceSquadPositions(previous, hostilePressureRef.current));
       if (Math.random() > 0.7) {
         setOptimalPath(dataGenerator.generateOptimalPath());
       }
@@ -176,14 +177,16 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
         `${nextThreats.length} indicators refreshed; ${hostileCount} hostile.`,
         hostileCount >= 3 ? 'critical' : hostileCount > 0 ? 'watch' : 'nominal',
       );
-    }, 20000 + Math.random() * 40000);
+    }, 9000);
 
     return () => clearInterval(tacticalTimer);
   }, [logOperatorEvent]);
 
   useEffect(() => {
     const vitalsTimer = setInterval(() => {
-      setRealtimeVitals(dataGenerator.generateRealisticVitals(78, 16.2, 0.3 + redTeamIntensity * 0.5));
+      setRealtimeVitals(
+        dataGenerator.generateRealisticVitals(78, 16.2, clamp01(0.3 + redTeamIntensity * 0.5 + stressModifierRef.current)),
+      );
     }, 2500);
 
     return () => clearInterval(vitalsTimer);
