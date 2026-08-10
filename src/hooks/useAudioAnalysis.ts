@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { MutableRefObject, useCallback, useEffect, useRef, useState } from "react";
 import { usePersistentState } from "./usePersistentState";
+import type { BreathPulseModulationValues } from "./useBreathPulseModulation";
 
 interface AudioAnalysisResult {
   audioLevel: number;
@@ -65,7 +66,13 @@ const mapBreathToBeatFrequency = (smoothedBreath: number): number => {
   return MAX_BEAT_FREQUENCY - normalized * (MAX_BEAT_FREQUENCY - MIN_BEAT_FREQUENCY);
 };
 
-export const useAudioAnalysis = (enabled: boolean = true): AudioAnalysisResult => {
+export const useAudioAnalysis = (
+  enabled: boolean = true,
+  modulationRef?: MutableRefObject<BreathPulseModulationValues>,
+): AudioAnalysisResult => {
+  const modulationSourceRef = useRef(modulationRef);
+  modulationSourceRef.current = modulationRef;
+
   const [analysisState, setAnalysisState] = useState<AnalysisState>(DEFAULT_ANALYSIS_STATE);
   const [activeFrequency, setActiveFrequency] = useState(DEFAULT_BEAT_FREQUENCY);
   const [microphoneConnected, setMicrophoneConnected] = useState(false);
