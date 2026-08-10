@@ -93,12 +93,13 @@ export const useBreathPulseModulation = ({
       last = now;
 
       const settings = settingsRef.current;
-      const useLive = settings.followLive && settings.liveAvailable;
+      const live = liveSignalsRef.current;
+      const useLive = settings.followLive && live.liveAvailable;
 
       const effectiveBreathRate = useLive
-        ? clamp(4 + settings.liveBreathSignal * 12, 3, 20)
+        ? clamp(4 + live.liveBreathSignal * 12, 3, 20)
         : settings.breathRate;
-      const effectivePulse = useLive ? settings.livePulseRate : settings.pulseTarget;
+      const effectivePulse = useLive ? live.livePulseRate : settings.pulseTarget;
 
       breathAngle = (breathAngle + deltaSeconds * (effectiveBreathRate / 60) * Math.PI * 2) % (Math.PI * 2);
       pulseAngle = (pulseAngle + deltaSeconds * (effectivePulse / 60) * Math.PI * 2) % (Math.PI * 2);
