@@ -1,10 +1,10 @@
-# Reentry Interface
+# Orpheus
 
-Reentry Interface is a tactical dashboard prototype for simulation-heavy operations workflows. It combines real-time visual telemetry, interactive mission modules, and operator-state monitoring into a single browser-based command surface.
+Tactical dashboard prototype for simulation-heavy operations workflows. It combines real-time visual telemetry, interactive mission modules, and operator-state monitoring into a single browser-based command surface.
 
 ## Why this exists
 
-This repository is for exploring:
+This is for exploring:
 
 - high-density control-room UIs
 - simulation-oriented interaction patterns
@@ -97,7 +97,6 @@ npm run build
 
 ## Production and security notes
 
-- The access terminal is a **client-side interaction gate**, not authentication.
 - For production deployment, enforce identity, authorization, and audit logging at an API/server layer.
 - Avoid processing sensitive biometric or regulated data exclusively in the frontend; use compliant backend controls and explicit consent workflows.
 - The Vite dev server binds to localhost by default. Use `npm run dev -- --host 0.0.0.0` only when intentionally testing on another device.
