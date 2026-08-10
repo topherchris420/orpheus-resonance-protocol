@@ -564,6 +564,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
 
             <TabsContent value="vitals" className="mt-2 space-y-2">
               <div className="h-[42vh]">{renderVitalsPanel()}</div>
+              <div className="h-[52vh]">{renderBreathPulsePanel()}</div>
               <div className="h-[34vh]">
                 <SquadCohesionIndex
                   squadVitals={squadVitals}
