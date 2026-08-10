@@ -170,7 +170,7 @@ export const useBreathPulseModulation = ({
     applyPreset,
   }), [applyPreset, breathDepth, breathRate, coupling, followLive, pulseTarget, setBreathDepth, setBreathRate, setCoupling, setFollowLive, setPulseTarget]);
 
-  return { controls, modulationRef, surfaceRef };
+  return { controls, modulationRef, surfaceRef, liveSignalsRef };
 };
 
 export type BreathPulseControlsState = ReturnType<typeof useBreathPulseModulation>['controls'];
