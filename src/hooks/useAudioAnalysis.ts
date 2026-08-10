@@ -91,6 +91,9 @@ export const useAudioAnalysis = (
   const sweepFrequencyRef = useRef(DEFAULT_BEAT_FREQUENCY);
   const reportedFrequencyRef = useRef(DEFAULT_BEAT_FREQUENCY);
   const healingToneRef = useRef(DEFAULT_HEALING_TONE);
+  const volumeRef = useRef(volume);
+  volumeRef.current = volume;
+
 
   const cleanupAudio = useCallback(() => {
     if (animationFrameRef.current !== null) {
