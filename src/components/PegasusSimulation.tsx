@@ -28,6 +28,8 @@ import { useMissionScenario } from '../hooks/useMissionScenario';
 import { ScenarioOutcome } from '../data/decisionScenarios';
 import { OperatorMetricsDashboard } from './OperatorMetricsDashboard';
 import { useMetricsHistory } from '../hooks/useMetricsHistory';
+import { useOperatorBaseline } from '../hooks/useOperatorBaseline';
+import { BaselineCalibrationPanel } from './BaselineCalibrationPanel';
 
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
 const AUDIO_PREFERENCE_STORAGE_KEY = 'orpheus.audio.enabled';
@@ -321,6 +323,16 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
     intelAccuracy,
   });
 
+  const {
+    baseline,
+    isCalibrating,
+    progress: calibrationProgress,
+    startCalibration,
+    cancelCalibration,
+    clearBaseline,
+    adjustBaseline,
+  } = useOperatorBaseline({ stress: cognitiveStressIndex, cohesion: effectiveCohesion });
+
   const mission = useMemo(() => deriveMissionUx({
     phase: acclimatizationLevel,
     simulationMode,
@@ -467,7 +479,33 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
     />
   );
 
-  const renderMetricsPanel = () => <OperatorMetricsDashboard history={metricsHistory} />;
+  const renderCalibrationPanel = () => (
+    <BaselineCalibrationPanel
+      baseline={baseline}
+      isCalibrating={isCalibrating}
+      progress={calibrationProgress}
+      liveStress={cognitiveStressIndex}
+      liveCohesion={effectiveCohesion}
+      onStart={() => {
+        startCalibration();
+        logOperatorEvent('Calibration Started', 'Capturing personal stress and cohesion baselines.', 'nominal');
+      }}
+      onCancel={cancelCalibration}
+      onClear={() => {
+        clearBaseline();
+        logOperatorEvent('Baseline Cleared', 'Dashboard reverted to raw biometric scaling.', 'nominal');
+      }}
+      onAdjust={adjustBaseline}
+    />
+  );
+
+  const renderMetricsPanel = () => (
+    <OperatorMetricsDashboard
+      history={metricsHistory}
+      baseline={baseline}
+      calibrationSlot={renderCalibrationPanel()}
+    />
+  );
 
   const renderBreathPulsePanel = () => (
     <BreathPulseControls
