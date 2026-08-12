@@ -26,6 +26,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { appendOperatorEvent, deriveMissionUx, MissionSeverity, OperatorEvent } from '@/lib/missionUx';
 import { useMissionScenario } from '../hooks/useMissionScenario';
 import { ScenarioOutcome } from '../data/decisionScenarios';
+import { OperatorMetricsDashboard } from './OperatorMetricsDashboard';
+import { useMetricsHistory } from '../hooks/useMetricsHistory';
 
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
 const AUDIO_PREFERENCE_STORAGE_KEY = 'orpheus.audio.enabled';
@@ -308,6 +310,17 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
     logOperatorEvent('Course Committed', `${outcome.title} — ${outcome.consequences}`, outcome.effects.severity);
   }, [logOperatorEvent, resolveOutcome]);
 
+  const intelAccuracy = clamp01(
+    1 - redTeamIntensity * 0.55 - (conflictingIntel ? 0.18 : 0) - hostilePressure * 0.12,
+  );
+
+  const metricsHistory = useMetricsHistory({
+    stress: cognitiveStressIndex,
+    cohesion: effectiveCohesion,
+    hostilePressure,
+    intelAccuracy,
+  });
+
   const mission = useMemo(() => deriveMissionUx({
     phase: acclimatizationLevel,
     simulationMode,
@@ -454,6 +467,8 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
     />
   );
 
+  const renderMetricsPanel = () => <OperatorMetricsDashboard history={metricsHistory} />;
+
   const renderBreathPulsePanel = () => (
     <BreathPulseControls
       controls={breathPulseControls}
@@ -528,8 +543,12 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
             {renderBreathPulsePanel()}
           </div>
 
-          <div className="col-start-10 col-span-3 row-start-7 row-span-2 min-h-0">
+          <div className="col-start-10 col-span-3 row-start-7 row-span-1 min-h-0">
             <OperatorEventTimeline events={operatorEvents} />
+          </div>
+
+          <div className="col-start-10 col-span-3 row-start-8 row-span-1 min-h-0">
+            {renderMetricsPanel()}
           </div>
         </div>
       ) : (
@@ -598,8 +617,11 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
               </div>
             </TabsContent>
 
-            <TabsContent value="events" className="mt-2">
-              <div className="h-[66vh]">
+            <TabsContent value="events" className="mt-2 space-y-2">
+              <div className="h-[60vh]">
+                {renderMetricsPanel()}
+              </div>
+              <div className="h-[56vh]">
                 <OperatorEventTimeline events={operatorEvents} />
               </div>
             </TabsContent>
