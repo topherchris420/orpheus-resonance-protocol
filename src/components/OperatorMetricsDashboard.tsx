@@ -81,7 +81,7 @@ export const OperatorMetricsDashboard: React.FC<OperatorMetricsDashboardProps> =
     : 0;
 
   return (
-    <div className="h-full overflow-hidden border border-current/20 bg-black/60 p-3 font-mono text-xs">
+    <div className="flex h-full flex-col overflow-y-auto border border-current/20 bg-black/60 p-3 font-mono text-xs">
       <div className="mb-2 flex items-center justify-between border-b border-current/15 pb-1">
         <h3 className="text-[11px] uppercase tracking-widest opacity-90">Operator Metrics</h3>
         <div className="flex items-center gap-2">
@@ -101,7 +101,7 @@ export const OperatorMetricsDashboard: React.FC<OperatorMetricsDashboardProps> =
 
       {calibrationSlot && <div className="mb-2">{calibrationSlot}</div>}
 
-      <div className="grid h-[calc(100%-2rem)] min-h-0 grid-cols-1 gap-2 overflow-y-auto sm:grid-cols-2">
+      <div className="grid min-h-0 flex-1 grid-cols-1 gap-2 sm:grid-cols-2">
         {series.map(({ metric, line, area, current, delta, average, good, bad }) => (
           <div key={metric.key} className="border border-current/10 bg-black/40 p-2">
             <div className="flex items-baseline justify-between">
