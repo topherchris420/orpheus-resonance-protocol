@@ -30,9 +30,9 @@ import { OperatorMetricsDashboard } from './OperatorMetricsDashboard';
 import { useMetricsHistory } from '../hooks/useMetricsHistory';
 import { useOperatorBaseline } from '../hooks/useOperatorBaseline';
 import { BaselineCalibrationPanel } from './BaselineCalibrationPanel';
+import { createSessionRecord } from '@/lib/sessionRecord';
 
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
-const AUDIO_PREFERENCE_STORAGE_KEY = 'orpheus.audio.enabled';
 const NEUROSIM_PREFERENCE_STORAGE_KEY = 'orpheus.preference.neurosim';
 const ALERT_ACK_STORAGE_KEY = 'orpheus.preference.acknowledgedAlerts';
 const MOBILE_TAB_STORAGE_KEY = 'orpheus.preference.mobileTab';
@@ -69,6 +69,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
       severity: 'nominal',
     },
   ]);
+  const sessionStartedAt = useRef(Date.now());
   const [intelFeed, setIntelFeed] = useState(dataGenerator.getIntelFeed());
   const [threatIndicators, setThreatIndicators] = useState(dataGenerator.generateThreatIndicators());
   const [squadPositions, setSquadPositions] = useState(dataGenerator.generateSquadPositions());
@@ -84,10 +85,8 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
     threatIndicatorsRef.current = threatIndicators;
   }, [threatIndicators]);
 
-  const [audioEnabled, setAudioEnabled] = usePersistentState(
-    AUDIO_PREFERENCE_STORAGE_KEY,
-    appConfig.features.enableAudioBiofeedback ? false : false,
-  );
+  // Permission must be requested again on every visit, even when the browser remembers its grant.
+  const [audioEnabled, setAudioEnabled] = useState(false);
 
   const logOperatorEvent = useCallback((label: string, detail: string, severity: MissionSeverity = 'nominal') => {
     setOperatorEvents((previous) =>
@@ -97,7 +96,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
         label,
         detail,
         severity,
-      }),
+      }, 120),
     );
   }, []);
 
@@ -110,8 +109,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
 
   const {
     audioLevel,
-    breathPattern,
-    pulseRate,
+    audioEnvelope,
     activeFrequency: audioFrequency,
     microphoneConnected,
     audioError,
@@ -120,8 +118,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
   } = useAudioAnalysis(audioEnabled && appConfig.features.enableAudioBiofeedback, breathModulationRef);
 
   liveSignalsRef.current = {
-    livePulseRate: pulseRate,
-    liveBreathSignal: breathPattern,
+    liveAudioEnvelope: audioEnvelope,
     liveAvailable: microphoneConnected,
   };
 
@@ -152,12 +149,6 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
   useEffect(() => {
     previousStressRef.current = realtimeVitals.cognitiveStressIndex;
   }, [realtimeVitals.cognitiveStressIndex]);
-
-  useEffect(() => {
-    if (!appConfig.features.enableAudioBiofeedback && audioEnabled) {
-      setAudioEnabled(false);
-    }
-  }, [audioEnabled, setAudioEnabled]);
 
   useEffect(() => {
     if (previousPhaseRef.current !== acclimatizationLevel) {
@@ -376,12 +367,12 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
     setVolume(Math.min(volume, 0.2));
     setAudioEnabled(true);
     setBiofeedbackDialogOpen(false);
-    logOperatorEvent('Biofeedback Enabled', 'Live biofeedback requested with low-volume support tones.', 'watch');
+    logOperatorEvent('Microphone Enabled', 'Local audio envelope analysis requested with low-volume tones.', 'watch');
   }, [logOperatorEvent, setAudioEnabled, setVolume, volume]);
 
   const handleDisableBiofeedback = useCallback(() => {
     setAudioEnabled(false);
-    logOperatorEvent('Biofeedback Disabled', 'Microphone analysis and support tones stopped.', 'nominal');
+    logOperatorEvent('Microphone Disabled', 'Audio analysis and tones stopped.', 'nominal');
   }, [logOperatorEvent, setAudioEnabled]);
 
   const handleToggleNeuroSim = useCallback(() => {
@@ -413,6 +404,25 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
     );
   }, [addInteractionEvent, logOperatorEvent]);
 
+  const handleExport = useCallback(() => {
+    const exportedAt = Date.now();
+    const record = createSessionRecord({
+      startedAt: sessionStartedAt.current,
+      exportedAt,
+      phase: acclimatizationLevel,
+      microphoneActive: microphoneConnected,
+      events: operatorEvents,
+      metrics: metricsHistory,
+    });
+    const url = URL.createObjectURL(new Blob([JSON.stringify(record, null, 2)], { type: 'application/json' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `orpheus-simulation-${new Date(exportedAt).toISOString().replace(/[:.]/g, '-')}.json`;
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    logOperatorEvent('Record Exported', 'Simulation record downloaded; no microphone samples included.');
+  }, [acclimatizationLevel, microphoneConnected, operatorEvents, metricsHistory, logOperatorEvent]);
+
   const renderModeToolbar = () => (
     <ModeToolbar
       audioEnabled={audioEnabled}
@@ -423,6 +433,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
       onDisableBiofeedback={handleDisableBiofeedback}
       onToggleNeuroSim={handleToggleNeuroSim}
       onToggleRedTeam={handleToggleRedTeam}
+      onExport={handleExport}
     />
   );
 
@@ -488,12 +499,12 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
       liveCohesion={effectiveCohesion}
       onStart={() => {
         startCalibration();
-        logOperatorEvent('Calibration Started', 'Capturing personal stress and cohesion baselines.', 'nominal');
+        logOperatorEvent('Calibration Started', 'Capturing baselines for generated simulation values.', 'nominal');
       }}
       onCancel={cancelCalibration}
       onClear={() => {
         clearBaseline();
-        logOperatorEvent('Baseline Cleared', 'Dashboard reverted to raw biometric scaling.', 'nominal');
+        logOperatorEvent('Baseline Cleared', 'Dashboard reverted to generated simulation values.', 'nominal');
       }}
       onAdjust={adjustBaseline}
     />
@@ -511,7 +522,6 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
     <BreathPulseControls
       controls={breathPulseControls}
       liveAvailable={microphoneConnected}
-      livePulseRate={pulseRate}
     />
   );
 
@@ -532,7 +542,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
 
           <MissionCommandStrip
             mission={mission}
-            pulseRate={pulseRate}
+            pulseRate={squadPositions[0]?.vitals.heartRate ?? 72}
             coherenceLevel={effectiveCohesion}
             activeFrequency={bioResonanceFrequency}
           />
@@ -593,7 +603,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
         <div className="relative z-10 flex min-h-screen flex-col gap-2 p-2 pb-4">
           <MissionCommandStrip
             mission={mission}
-            pulseRate={pulseRate}
+            pulseRate={squadPositions[0]?.vitals.heartRate ?? 72}
             coherenceLevel={effectiveCohesion}
             activeFrequency={bioResonanceFrequency}
           />

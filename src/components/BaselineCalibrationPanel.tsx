@@ -57,8 +57,8 @@ export const BaselineCalibrationPanel: React.FC<BaselineCalibrationPanelProps> =
       {expanded && (
         <div className="mt-2 space-y-2">
           <p className="opacity-60">
-            Stay in your normal working state for {Math.round(CALIBRATION_DURATION_MS / 1000)}s. Captured averages
-            become the 50% midpoint of the dashboard, so readings show deviation from your personal normal.
+            Sample generated stress and cohesion for {Math.round(CALIBRATION_DURATION_MS / 1000)}s. Their averages
+            become the 50% midpoint of the chart. This is a simulation baseline, not a personal or physiological calibration.
           </p>
 
           <div className="flex flex-wrap gap-2">

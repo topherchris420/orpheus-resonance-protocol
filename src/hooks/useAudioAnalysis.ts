@@ -4,8 +4,7 @@ import type { BreathPulseModulationValues } from "./useBreathPulseModulation";
 
 interface AudioAnalysisResult {
   audioLevel: number;
-  breathPattern: number;
-  pulseRate: number;
+  audioEnvelope: number;
   activeFrequency: number;
   microphoneConnected: boolean;
   audioError: string | null;
@@ -17,8 +16,7 @@ interface AudioAnalysisResult {
 
 interface AnalysisState {
   audioLevel: number;
-  breathPattern: number;
-  pulseRate: number;
+  audioEnvelope: number;
   healingTone: number;
 }
 
@@ -26,20 +24,24 @@ const DEFAULT_HEALING_TONE = 220;
 const DEFAULT_BEAT_FREQUENCY = 8;
 const MIN_BEAT_FREQUENCY = 5;
 const MAX_BEAT_FREQUENCY = 11;
-const BREATH_SIGNAL_MIN = 0.18;
-const BREATH_SIGNAL_MAX = 0.78;
-const BREATH_EMA_ALPHA = 0.08;
+const AUDIO_ENERGY_MIN = 0.18;
+const AUDIO_ENERGY_MAX = 0.78;
+const AUDIO_EMA_ALPHA = 0.08;
 const BEAT_EMA_ALPHA = 0.2;
 const MAX_BEAT_STEP_PER_FRAME = 0.08;
 const UI_FREQUENCY_UPDATE_DELTA = 0.03;
 
-const DEFAULT_VOLUME = 0.15;
+const DEFAULT_VOLUME = 0.08;
+export const MAX_TONE_GAIN = 0.2;
+export const limitToneGain = (volume: number, multiplier = 1): number =>
+  Number.isFinite(volume) && Number.isFinite(multiplier)
+    ? clamp(volume * multiplier, 0, MAX_TONE_GAIN)
+    : 0;
 const AUDIO_VOLUME_STORAGE_KEY = "orpheus.audio.volume";
 
 const DEFAULT_ANALYSIS_STATE: AnalysisState = {
   audioLevel: 0,
-  breathPattern: 0,
-  pulseRate: 72,
+  audioEnvelope: 0,
   healingTone: DEFAULT_HEALING_TONE,
 };
 
@@ -57,9 +59,9 @@ const clamp = (value: number, min: number, max: number): number => {
   return Math.min(max, Math.max(min, value));
 };
 
-const mapBreathToBeatFrequency = (smoothedBreath: number): number => {
+const mapAudioEnergyToBeatFrequency = (smoothedAudio: number): number => {
   const normalized = clamp(
-    (smoothedBreath - BREATH_SIGNAL_MIN) / (BREATH_SIGNAL_MAX - BREATH_SIGNAL_MIN),
+    (smoothedAudio - AUDIO_ENERGY_MIN) / (AUDIO_ENERGY_MAX - AUDIO_ENERGY_MIN),
     0,
     1,
   );
@@ -77,7 +79,9 @@ export const useAudioAnalysis = (
   const [activeFrequency, setActiveFrequency] = useState(DEFAULT_BEAT_FREQUENCY);
   const [microphoneConnected, setMicrophoneConnected] = useState(false);
   const [audioError, setAudioError] = useState<string | null>(null);
-  const [volume, setVolume] = usePersistentState(AUDIO_VOLUME_STORAGE_KEY, DEFAULT_VOLUME);
+  const [storedVolume, setStoredVolume] = usePersistentState(AUDIO_VOLUME_STORAGE_KEY, DEFAULT_VOLUME);
+  const volume = limitToneGain(storedVolume);
+  const setVolume = useCallback((next: number) => setStoredVolume(limitToneGain(next)), [setStoredVolume]);
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
@@ -87,7 +91,7 @@ export const useAudioAnalysis = (
   const rightOscillatorRef = useRef<OscillatorNode | null>(null);
   const gainRef = useRef<GainNode | null>(null);
   const lastUpdateRef = useRef(0);
-  const smoothedBreathRef = useRef(0.5);
+  const smoothedAudioRef = useRef(0.5);
   const sweepFrequencyRef = useRef(DEFAULT_BEAT_FREQUENCY);
   const reportedFrequencyRef = useRef(DEFAULT_BEAT_FREQUENCY);
   const healingToneRef = useRef(DEFAULT_HEALING_TONE);
@@ -141,7 +145,7 @@ export const useAudioAnalysis = (
       setAudioError(null);
       setAnalysisState(DEFAULT_ANALYSIS_STATE);
       setActiveFrequency(DEFAULT_BEAT_FREQUENCY);
-      smoothedBreathRef.current = 0.5;
+      smoothedAudioRef.current = 0.5;
       sweepFrequencyRef.current = DEFAULT_BEAT_FREQUENCY;
       reportedFrequencyRef.current = DEFAULT_BEAT_FREQUENCY;
       healingToneRef.current = DEFAULT_HEALING_TONE;
@@ -173,27 +177,21 @@ export const useAudioAnalysis = (
 
         analyser.getByteFrequencyData(dataArray);
 
-        const breathFrequencyRange = [0, 100];
+        const lowFrequencyRange = [0, 100];
         const sampleRate = audioContextRef.current!.sampleRate;
         const fftSize = analyser.fftSize;
         const binSize = sampleRate / fftSize;
 
-        const breathEndIndex = Math.round(breathFrequencyRange[1] / binSize);
-        const breathEnergy = sumRange(dataArray, 0, breathEndIndex);
-        const rawBreathState = breathEnergy / (breathFrequencyRange[1] * 2);
-        const clampedBreathState = clamp(rawBreathState, 0, 1);
-        const smoothedBreathState =
-          smoothedBreathRef.current +
-          BREATH_EMA_ALPHA * (clampedBreathState - smoothedBreathRef.current);
-        smoothedBreathRef.current = smoothedBreathState;
+        const lowEndIndex = Math.round(lowFrequencyRange[1] / binSize);
+        const lowFrequencyEnergy = sumRange(dataArray, 0, lowEndIndex);
+        const rawAudioEnergy = lowFrequencyEnergy / (lowFrequencyRange[1] * 2);
+        const clampedAudioEnergy = clamp(rawAudioEnergy, 0, 1);
+        const smoothedAudioEnergy =
+          smoothedAudioRef.current +
+          AUDIO_EMA_ALPHA * (clampedAudioEnergy - smoothedAudioRef.current);
+        smoothedAudioRef.current = smoothedAudioEnergy;
 
-        const valenceFrequencyRange = [100, 1000];
-        const valenceStartIndex = Math.round(valenceFrequencyRange[0] / binSize);
-        const valenceEndIndex = Math.round(valenceFrequencyRange[1] / binSize);
-        const valenceEnergy = sumRange(dataArray, valenceStartIndex, valenceEndIndex);
-        const valenceState = valenceEnergy / (valenceFrequencyRange[1] * 2);
-
-        const targetBeatFrequency = mapBreathToBeatFrequency(smoothedBreathState);
+        const targetBeatFrequency = mapAudioEnergyToBeatFrequency(smoothedAudioEnergy);
         const emaBeatFrequency =
           sweepFrequencyRef.current +
           BEAT_EMA_ALPHA * (targetBeatFrequency - sweepFrequencyRef.current);
@@ -211,7 +209,9 @@ export const useAudioAnalysis = (
         sweepFrequencyRef.current = beatFrequency;
 
         const modulation = modulationSourceRef.current?.current;
-        const effectiveBeatFrequency = modulation ? modulation.beatFrequency : beatFrequency;
+        const effectiveBeatFrequency = modulation
+          ? clamp(modulation.beatFrequency + (beatFrequency - DEFAULT_BEAT_FREQUENCY) * 0.25, MIN_BEAT_FREQUENCY, MAX_BEAT_FREQUENCY)
+          : beatFrequency;
         const effectiveCarrier = modulation ? modulation.carrierTone : healingToneRef.current;
 
         if (Math.abs(effectiveBeatFrequency - reportedFrequencyRef.current) >= UI_FREQUENCY_UPDATE_DELTA) {
@@ -228,8 +228,8 @@ export const useAudioAnalysis = (
           rightOscillatorRef.current?.frequency.setTargetAtTime(rightFrequency, nowTime, 0.08);
 
           if (gainRef.current) {
-            const targetGain = volumeRef.current * (modulation ? modulation.gainMultiplier : 1);
-            gainRef.current.gain.setTargetAtTime(Math.min(1, Math.max(0, targetGain)), nowTime, 0.12);
+            const targetGain = limitToneGain(volumeRef.current, modulation ? modulation.gainMultiplier : 1);
+            gainRef.current.gain.setTargetAtTime(targetGain, nowTime, 0.12);
           }
         }
 
@@ -241,14 +241,12 @@ export const useAudioAnalysis = (
         }
         const newAudioLevel = totalSum / len / 255;
 
-        const newBreathPattern = smoothedBreathState;
-        const newPulseRate = 60 + valenceState * 40;
+        const newAudioEnvelope = smoothedAudioEnergy;
 
         setAnalysisState((prev) => ({
           ...prev,
           audioLevel: newAudioLevel,
-          breathPattern: newBreathPattern,
-          pulseRate: newPulseRate,
+          audioEnvelope: newAudioEnvelope,
         }));
 
         animationFrameRef.current = requestAnimationFrame(analyze);
@@ -291,6 +289,12 @@ export const useAudioAnalysis = (
 
         const gain = context.createGain();
         gainRef.current = gain;
+        // A new GainNode starts at unity. Silence the graph before connecting oscillators.
+        gain.gain.setValueAtTime(0, context.currentTime);
+        const initialCarrier = modulationSourceRef.current?.current.carrierTone ?? DEFAULT_HEALING_TONE;
+        const initialBeat = modulationSourceRef.current?.current.beatFrequency ?? DEFAULT_BEAT_FREQUENCY;
+        leftOscillator.frequency.setValueAtTime(initialCarrier - initialBeat / 2, context.currentTime);
+        rightOscillator.frequency.setValueAtTime(initialCarrier + initialBeat / 2, context.currentTime);
 
         leftOscillator.connect(leftPanner);
         rightOscillator.connect(rightPanner);
@@ -305,8 +309,9 @@ export const useAudioAnalysis = (
         startAnalysis();
       } catch {
         if (!cancelled) {
+          cleanupAudio();
           setMicrophoneConnected(false);
-          setAudioError("Microphone access was denied. Enable it to use live biofeedback.");
+          setAudioError("Microphone processing could not start. Check browser permission or stop audio mode.");
         }
       }
     };
@@ -320,24 +325,8 @@ export const useAudioAnalysis = (
   }, [cleanupAudio, enabled]);
 
   useEffect(() => {
-    if (!audioContextRef.current) {
-      return;
-    }
-
-    const nowTime = audioContextRef.current.currentTime;
-    leftOscillatorRef.current?.frequency.setValueAtTime(
-      analysisState.healingTone - activeFrequency / 2,
-      nowTime,
-    );
-    rightOscillatorRef.current?.frequency.setValueAtTime(
-      analysisState.healingTone + activeFrequency / 2,
-      nowTime,
-    );
-  }, [analysisState.healingTone, activeFrequency]);
-
-  useEffect(() => {
     if (gainRef.current && audioContextRef.current) {
-      gainRef.current.gain.setValueAtTime(volume, audioContextRef.current.currentTime);
+      gainRef.current.gain.setTargetAtTime(limitToneGain(volume), audioContextRef.current.currentTime, 0.12);
     }
   }, [volume]);
 

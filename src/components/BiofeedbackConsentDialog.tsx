@@ -27,21 +27,21 @@ export const BiofeedbackConsentDialog: React.FC<BiofeedbackConsentDialogProps> =
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Mic className="h-5 w-5 text-cyan-300" />
-            Enable live biofeedback
+            Enable local audio response
           </DialogTitle>
           <DialogDescription className="text-slate-300">
-            The browser will ask for microphone access. Audio tones start at low volume, and you can stop the feed at any time from the mode toolbar.
+            The browser will ask for microphone access. Generated tones start at low volume, and you can stop audio from the mode toolbar.
           </DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-3 text-sm text-slate-300">
           <div className="flex gap-3 border border-slate-700 bg-slate-900/70 p-3">
             <Mic className="mt-0.5 h-4 w-4 text-cyan-300" />
-            <span>Microphone input is analyzed locally for demo telemetry.</span>
+            <span>Only audio energy is analyzed in the browser. This does not measure pulse, respiration, HRV, stress, or cognitive state. The other dashboard values are generated.</span>
           </div>
           <div className="flex gap-3 border border-slate-700 bg-slate-900/70 p-3">
             <Volume2 className="mt-0.5 h-4 w-4 text-cyan-300" />
-            <span>Support tone volume defaults low and remains adjustable in Operator Vitals.</span>
+            <span>Use headphones at a comfortable level if you enable tones. Audio stops when you leave this page; the choice is requested again next visit.</span>
           </div>
         </div>
 

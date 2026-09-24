@@ -45,16 +45,16 @@ export const OperatorVitalsCognitiveLoadMonitor: React.FC<OperatorVitalsCognitiv
   });
 
   const bioHarmonicFrequencies = [
-    { name: 'Focus', freq: 40 },
-    { name: 'Calm', freq: 10 },
-    { name: 'Alertness', freq: 15 },
-    { name: 'Stress Inoculation', freq: 4 },
+    { name: '40 Hz', freq: 40 },
+    { name: '10 Hz', freq: 10 },
+    { name: '15 Hz', freq: 15 },
+    { name: '4 Hz', freq: 4 },
   ];
 
   return (
     <div className="h-full border border-current/25 bg-black/45 backdrop-blur-sm p-4 space-y-4">
       <div className="flex items-start justify-between gap-3 border-b border-current/25 pb-2">
-        <div className="font-bold uppercase leading-tight">Operator Vitals</div>
+        <div className="font-bold uppercase leading-tight">Simulated Operator Vitals</div>
         <div className={`flex items-center gap-1 border px-2 py-1 text-[10px] uppercase ${severityClass[assessment.severity]}`}>
           {trendIcon[assessment.trend]}
           {assessment.stressLabel}
@@ -80,13 +80,13 @@ export const OperatorVitalsCognitiveLoadMonitor: React.FC<OperatorVitalsCognitiv
       </div>
 
       <div className={`border px-3 py-2 text-xs ${severityClass[assessment.severity]}`}>
-        <div className="font-semibold uppercase">Recommended Response</div>
+        <div className="font-semibold uppercase">Scenario Guidance</div>
         <div className="mt-1 text-current/75">{assessment.recommendation}</div>
       </div>
 
       <div className="space-y-2">
         <div className="flex items-center justify-between text-xs uppercase text-current/60">
-          <span>Bio-resonance Support</span>
+          <span>Visual frequency marker</span>
           <span className="text-cyan-200">{bioResonanceSupportFrequency} Hz</span>
         </div>
         <div className="grid grid-cols-2 gap-2">
@@ -109,7 +109,7 @@ export const OperatorVitalsCognitiveLoadMonitor: React.FC<OperatorVitalsCognitiv
           <span>Tone Volume</span>
           <span>{Math.round(volume * 100)}%</span>
         </div>
-        <Slider value={[volume * 100]} max={100} step={1} onValueChange={(value) => setVolume(value[0] / 100)} />
+        <Slider value={[volume * 100]} max={20} step={1} onValueChange={(value) => setVolume(value[0] / 100)} />
       </div>
     </div>
   );

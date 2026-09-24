@@ -32,7 +32,7 @@ const spreadOf = (values: number[]) => {
   return Math.max(MIN_SPREAD, Math.sqrt(variance) * 2);
 };
 
-/** Applies a personal baseline so a metric reads as deviation from the operator's normal. */
+/** Applies a reference window to simulated metric values. */
 export const applyBaseline = (value: number, baseline: number, spread: number): number =>
   Math.min(1, Math.max(0, 0.5 + (value - baseline) / (2 * Math.max(MIN_SPREAD, spread))));
 
@@ -46,7 +46,7 @@ interface UseOperatorBaselineResult {
   adjustBaseline: (patch: Partial<OperatorBaseline>) => void;
 }
 
-/** Captures personal resting baselines for stress and cohesion, persisted between sessions. */
+/** Captures a local reference window for generated stress and cohesion values. */
 export const useOperatorBaseline = (signals: BaselineSignals): UseOperatorBaselineResult => {
   const [baseline, setBaseline] = usePersistentState<OperatorBaseline | null>(BASELINE_STORAGE_KEY, null);
   const [isCalibrating, setIsCalibrating] = useState(false);

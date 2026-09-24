@@ -29,10 +29,10 @@ export interface BreathPulsePreset {
 }
 
 export const BREATH_PULSE_PRESETS: BreathPulsePreset[] = [
-  { id: 'box', name: 'Box 4-4', detail: 'Steady regulation', breathRate: 7.5, breathDepth: 0.6, pulseTarget: 68, coupling: 0.6 },
-  { id: 'coherent', name: 'Coherent 5.5', detail: 'HRV coherence', breathRate: 5.5, breathDepth: 0.75, pulseTarget: 62, coupling: 0.75 },
-  { id: 'tactical', name: 'Tactical', detail: 'Alert readiness', breathRate: 12, breathDepth: 0.4, pulseTarget: 88, coupling: 0.45 },
-  { id: 'downshift', name: 'Downshift', detail: 'Post-contact recovery', breathRate: 4.5, breathDepth: 0.9, pulseTarget: 56, coupling: 0.9 },
+  { id: 'box', name: 'Box 4-4', detail: 'Visual pacing preset', breathRate: 7.5, breathDepth: 0.6, pulseTarget: 68, coupling: 0.6 },
+  { id: 'coherent', name: 'Slow 5.5', detail: 'Visual pacing preset', breathRate: 5.5, breathDepth: 0.75, pulseTarget: 62, coupling: 0.75 },
+  { id: 'tactical', name: 'Fast', detail: 'Visual pacing preset', breathRate: 12, breathDepth: 0.4, pulseTarget: 88, coupling: 0.45 },
+  { id: 'downshift', name: 'Slow 4.5', detail: 'Visual pacing preset', breathRate: 4.5, breathDepth: 0.9, pulseTarget: 56, coupling: 0.9 },
 ];
 
 const STORAGE = {
@@ -46,17 +46,14 @@ const STORAGE = {
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
 interface UseBreathPulseModulationOptions {
-  /** Live measured pulse from biofeedback, used when follow-live is enabled */
-  livePulseRate?: number;
-  /** Live measured breath signal (0..1) */
-  liveBreathSignal?: number;
-  /** Whether live biofeedback is actually running */
+  /** Microphone-derived audio energy proxy (0..1), not measured respiration. */
+  liveAudioEnvelope?: number;
+  /** Whether local microphone processing is running. */
   liveAvailable?: boolean;
 }
 
 export const useBreathPulseModulation = ({
-  livePulseRate = 72,
-  liveBreathSignal = 0.5,
+  liveAudioEnvelope = 0.5,
   liveAvailable = false,
 }: UseBreathPulseModulationOptions = {}) => {
   const [breathRate, setBreathRate] = usePersistentState(STORAGE.rate, 5.5);
@@ -76,8 +73,8 @@ export const useBreathPulseModulation = ({
     gainMultiplier: 1,
   });
 
-  /** Live biofeedback signals, updatable after render without re-subscribing the loop. */
-  const liveSignalsRef = useRef({ livePulseRate, liveBreathSignal, liveAvailable });
+  /** Local audio envelope, updated after render without re-subscribing the loop. */
+  const liveSignalsRef = useRef({ liveAudioEnvelope, liveAvailable });
   const settingsRef = useRef({ breathRate, breathDepth, pulseTarget, coupling, followLive });
   settingsRef.current = { breathRate, breathDepth, pulseTarget, coupling, followLive };
 
@@ -96,10 +93,9 @@ export const useBreathPulseModulation = ({
       const live = liveSignalsRef.current;
       const useLive = settings.followLive && live.liveAvailable;
 
-      const effectiveBreathRate = useLive
-        ? clamp(4 + live.liveBreathSignal * 12, 3, 20)
-        : settings.breathRate;
-      const effectivePulse = useLive ? live.livePulseRate : settings.pulseTarget;
+      // Audio energy can drive visual intensity, but cannot establish breathing or pulse rate.
+      const effectiveBreathRate = settings.breathRate;
+      const effectivePulse = settings.pulseTarget;
 
       breathAngle = (breathAngle + deltaSeconds * (effectiveBreathRate / 60) * Math.PI * 2) % (Math.PI * 2);
       pulseAngle = (pulseAngle + deltaSeconds * (effectivePulse / 60) * Math.PI * 2) % (Math.PI * 2);
@@ -108,9 +104,10 @@ export const useBreathPulseModulation = ({
       const pulseWave = Math.pow((Math.sin(pulseAngle) + 1) / 2, 4);
 
       const depthAmount = settings.coupling * settings.breathDepth;
+      const audioResponse = useLive ? clamp(live.liveAudioEnvelope, 0, 1) : 0;
       const depth = clamp(0.25 + breathPhase * depthAmount, 0, 1);
       const intensity = clamp(
-        0.2 + breathPhase * 0.45 * settings.coupling + pulseWave * 0.35 * settings.coupling,
+        0.2 + breathPhase * 0.45 * settings.coupling + pulseWave * 0.25 * settings.coupling + audioResponse * 0.1,
         0,
         1,
       );

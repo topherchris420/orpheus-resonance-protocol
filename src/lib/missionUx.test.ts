@@ -64,7 +64,7 @@ describe('getTelemetryAssessment', () => {
     ).toMatchObject({
       severity: 'watch',
       trend: 'up',
-      recommendation: 'Reduce task load and shift bio-resonance support toward calm.',
+      recommendation: 'Scenario hint: inspect the generated stress and mission variables.',
     });
   });
 });
