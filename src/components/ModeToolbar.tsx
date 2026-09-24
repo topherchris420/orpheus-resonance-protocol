@@ -1,5 +1,5 @@
 import React from 'react';
-import { Activity, BrainCircuit, Mic, MicOff, ShieldAlert } from 'lucide-react';
+import { Activity, BrainCircuit, Download, Mic, MicOff, ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Tooltip,
@@ -16,6 +16,7 @@ interface ModeToolbarProps {
   onDisableBiofeedback: () => void;
   onToggleNeuroSim: () => void;
   onToggleRedTeam: () => void;
+  onExport: () => void;
 }
 
 export const ModeToolbar: React.FC<ModeToolbarProps> = React.memo(({
@@ -27,8 +28,9 @@ export const ModeToolbar: React.FC<ModeToolbarProps> = React.memo(({
   onDisableBiofeedback,
   onToggleNeuroSim,
   onToggleRedTeam,
+  onExport,
 }) => {
-  const bioLabel = audioEnabled ? 'Stop biofeedback' : 'Start biofeedback';
+  const bioLabel = audioEnabled ? 'Stop microphone and tones' : 'Start local audio response';
 
   return (
     <div className="flex flex-wrap items-center gap-2 border border-current/15 bg-black/55 p-2 backdrop-blur-md">
@@ -43,11 +45,16 @@ export const ModeToolbar: React.FC<ModeToolbarProps> = React.memo(({
             aria-label={bioLabel}
           >
             {audioEnabled ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-            <span className="hidden sm:inline">{audioEnabled ? 'Stop Bio' : 'Start Bio'}</span>
+            <span className="hidden sm:inline">{audioEnabled ? 'Stop Audio' : 'Start Audio'}</span>
           </Button>
         </TooltipTrigger>
         <TooltipContent>{bioLabel}</TooltipContent>
       </Tooltip>
+
+      <Button type="button" variant="outline" size="sm" onClick={onExport} aria-label="Export simulation record" className="gap-2">
+        <Download className="h-4 w-4" />
+        <span className="hidden sm:inline">Export</span>
+      </Button>
 
       <Tooltip>
         <TooltipTrigger asChild>

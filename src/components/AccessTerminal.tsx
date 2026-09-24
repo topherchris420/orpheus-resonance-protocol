@@ -8,15 +8,15 @@ interface AccessTerminalProps {
 }
 
 const TERMINAL_SEQUENCE = [
-  "CLASSIFIED SYSTEM ACCESS",
+  "ORPHEUS · FICTIONAL SIMULATION",
   "VERS3D+S - R.A.I.N. RESEARCH DIVISION",
-  "WARNING: AUTHORIZED PERSONNEL ONLY",
+  "Local browser demo · no identity verification",
   "",
-  "Scanning for clearance level...",
-  "Biometric signature detected...",
-  "Access granted to SUBPROTOCOL ORPHEUS",
+  "Loading generated mission scenario...",
+  "No biometrics or credentials are checked.",
+  "Ready to enter SUBPROTOCOL ORPHEUS",
   "",
-  "Enter activation phrase to continue:",
+  "Enter demo activation phrase to continue:",
 ];
 
 export const AccessTerminal: React.FC<AccessTerminalProps> = ({ onAccess }) => {
@@ -75,7 +75,7 @@ export const AccessTerminal: React.FC<AccessTerminalProps> = ({ onAccess }) => {
     const normalizedInput = input.trim().toLowerCase();
 
     if (normalizedInput === accessPhrase) {
-      setLines((prev) => [...prev, `> ${input}`, "Access granted. Initializing Subprotocol Orpheus..."]);
+      setLines((prev) => [...prev, "Demo phrase accepted. Initializing Subprotocol Orpheus..."]);
       setTimeout(onAccess, 2000);
       return;
     }
@@ -89,12 +89,11 @@ export const AccessTerminal: React.FC<AccessTerminalProps> = ({ onAccess }) => {
       setFailedAttempts(0);
       setLines((prev) => [
         ...prev,
-        `> ${input}`,
-        `Access denied. Lockout enabled for ${Math.ceil(lockoutMs / 1000)} seconds.`,
+        `Incorrect demo phrase. Retry in ${Math.ceil(lockoutMs / 1000)} seconds.`,
       ]);
     } else {
       setFailedAttempts(nextAttempts);
-      setLines((prev) => [...prev, `> ${input}`, "Access denied."]);
+      setLines((prev) => [...prev, "Incorrect demo phrase."]);
     }
 
     setInput("");
@@ -108,6 +107,7 @@ export const AccessTerminal: React.FC<AccessTerminalProps> = ({ onAccess }) => {
             <div className="text-2xl mb-2 animate-pulse">ORPHEUS ACCESS TERMINAL</div>
             <div className="text-xs opacity-60">R.A.I.N Research Division - Vers3Dynamics Lab</div>
             <div className="text-xs opacity-40 mt-1">The Orpheus Continuum by Vers3Dynamics</div>
+            <p className="mt-3 text-xs text-cyan-200">Simulation only. The phrase and lockout run in this browser and do not secure data.</p>
           </div>
 
           <div className="space-y-2 mb-6 h-96 overflow-y-auto">

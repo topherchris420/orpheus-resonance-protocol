@@ -7,13 +7,11 @@ import { BREATH_PULSE_PRESETS, BreathPulseControlsState } from '@/hooks/useBreat
 interface BreathPulseControlsProps {
   controls: BreathPulseControlsState;
   liveAvailable: boolean;
-  livePulseRate: number;
 }
 
 export const BreathPulseControls: React.FC<BreathPulseControlsProps> = React.memo(({
   controls,
   liveAvailable,
-  livePulseRate,
 }) => {
   const {
     breathRate,
@@ -30,7 +28,7 @@ export const BreathPulseControls: React.FC<BreathPulseControlsProps> = React.mem
   } = controls;
 
   const following = followLive && liveAvailable;
-  const cycleSeconds = 60 / (following ? Math.max(3, livePulseRate / 12) : breathRate);
+  const cycleSeconds = 60 / breathRate;
 
   return (
     <div className="flex h-full flex-col gap-3 overflow-y-auto border border-current/25 bg-black/45 p-4 backdrop-blur-sm">
@@ -46,7 +44,7 @@ export const BreathPulseControls: React.FC<BreathPulseControlsProps> = React.mem
           onClick={() => setFollowLive(!followLive)}
           className="h-7 px-2 text-[10px] uppercase"
         >
-          {following ? 'Live' : 'Manual'}
+          {following ? 'Audio reactive' : 'Manual'}
         </Button>
       </div>
 
@@ -68,8 +66,8 @@ export const BreathPulseControls: React.FC<BreathPulseControlsProps> = React.mem
             <span className="text-cyan-200">{cycleSeconds.toFixed(1)} s</span>
           </div>
           <div className="flex justify-between">
-            <span className="flex items-center gap-1"><Activity className="h-3 w-3" />Pulse</span>
-            <span className="text-cyan-200">{Math.round(following ? livePulseRate : pulseTarget)} bpm</span>
+            <span className="flex items-center gap-1"><Activity className="h-3 w-3" />Visual pulse target</span>
+            <span className="text-cyan-200">{Math.round(pulseTarget)} /min</span>
           </div>
           <div className="flex justify-between">
             <span>Modulation</span>
@@ -103,7 +101,6 @@ export const BreathPulseControls: React.FC<BreathPulseControlsProps> = React.mem
             min={3}
             max={20}
             step={0.5}
-            disabled={following}
             onValueChange={(value) => setBreathRate(value[0])}
           />
         </div>
@@ -118,7 +115,7 @@ export const BreathPulseControls: React.FC<BreathPulseControlsProps> = React.mem
 
         <div className="space-y-1">
           <div className="flex justify-between text-[11px] uppercase text-current/60">
-            <span>Pulse target</span>
+            <span>Visual pulse target</span>
             <span className="text-cyan-200">{Math.round(pulseTarget)} bpm</span>
           </div>
           <Slider
@@ -126,7 +123,6 @@ export const BreathPulseControls: React.FC<BreathPulseControlsProps> = React.mem
             min={45}
             max={120}
             step={1}
-            disabled={following}
             onValueChange={(value) => setPulseTarget(value[0])}
           />
         </div>
@@ -141,7 +137,7 @@ export const BreathPulseControls: React.FC<BreathPulseControlsProps> = React.mem
       </div>
 
       <p className="text-[10px] leading-snug text-current/45">
-        Breath drives interface depth and tone frequency; pulse drives glow intensity and carrier pitch.
+        Manual rates pace the animation. Audio reactive mode adds a small microphone-energy response to the glow; it does not measure breathing or heart rate.
       </p>
     </div>
   );
