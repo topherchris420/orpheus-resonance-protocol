@@ -104,13 +104,18 @@ export const AccessTerminal: React.FC<AccessTerminalProps> = ({ onAccess }) => {
       <div className="max-w-4xl mx-auto">
         <div className="border border-green-400 p-6 bg-black/50 backdrop-blur-sm">
           <div className="mb-6 text-center">
-            <div className="text-2xl mb-2 animate-pulse">ORPHEUS ACCESS TERMINAL</div>
+            <div className="text-2xl mb-2 animate-pulse">ORPHEUS</div>
             <div className="text-xs opacity-60">R.A.I.N Research Division - Vers3Dynamics Lab</div>
-            <div className="text-xs opacity-40 mt-1">The Orpheus Continuum by Vers3Dynamics</div>
+            <div className="text-xs opacity-40 mt-1">Observe. Choose. Trace the consequences.</div>
             <p className="mt-3 text-xs text-cyan-200">Simulation only. The phrase and lockout run in this browser and do not secure data.</p>
           </div>
 
-          <div className="space-y-2 mb-6 h-96 overflow-y-auto">
+          <div className="mb-6 flex flex-col items-center gap-3">
+            <Button type="button" onClick={onAccess} className="bg-emerald-300 px-8 py-6 text-black hover:bg-emerald-200">Enter simulation</Button>
+            <p className="max-w-lg text-center text-xs opacity-70">Explore the situation map, choose a course of action, then inspect its consequences in your after-action review. No microphone required.</p>
+            <p className="text-xs opacity-50">Or use the theatrical terminal below · demo phrase: {appConfig.accessPhrase}</p>
+          </div>
+          <div className="space-y-2 mb-6 h-48 overflow-y-auto">
             {lines.map((line, index) => (
               <div
                 key={index}

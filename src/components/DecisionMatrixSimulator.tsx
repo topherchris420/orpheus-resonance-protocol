@@ -11,6 +11,7 @@ export interface DecisionPoint {
 interface DecisionMatrixSimulatorProps {
   decisionPoints: DecisionPoint[];
   objectives?: MissionObjective[];
+  committedCount?: number;
   onOutcomeSelect: (pointId: string, outcome: ScenarioOutcome) => void;
 }
 
@@ -23,10 +24,10 @@ const riskStyles: Record<ScenarioOutcome['risk'], string> = {
 export const DecisionMatrixSimulator: React.FC<DecisionMatrixSimulatorProps> = React.memo(({
   decisionPoints,
   objectives = [],
+  committedCount = 0,
   onOutcomeSelect,
 }) => {
   const [selectedPointId, setSelectedPointId] = useState<string | null>(decisionPoints[0]?.id ?? null);
-  const [committedOutcomes, setCommittedOutcomes] = useState<string[]>([]);
 
   useEffect(() => {
     if (!decisionPoints.some((point) => point.id === selectedPointId)) {
@@ -37,10 +38,9 @@ export const DecisionMatrixSimulator: React.FC<DecisionMatrixSimulatorProps> = R
   const selectedPoint = decisionPoints.find((point) => point.id === selectedPointId) ?? null;
 
   const handleCommit = (outcome: ScenarioOutcome) => {
-    if (!selectedPoint || committedOutcomes.includes(outcome.id)) {
+    if (!selectedPoint) {
       return;
     }
-    setCommittedOutcomes((previous) => [...previous, outcome.id]);
     onOutcomeSelect(selectedPoint.id, outcome);
   };
 
@@ -48,7 +48,7 @@ export const DecisionMatrixSimulator: React.FC<DecisionMatrixSimulatorProps> = R
     <div className="flex h-full flex-col border border-current/30 bg-black/40 p-3 backdrop-blur-sm">
       <div className="mb-2 flex items-center justify-between border-b border-current/30 pb-2 text-xs font-bold tracking-widest">
         <span>DECISION MATRIX SIMULATOR</span>
-        <span className="opacity-70">{committedOutcomes.length} COMMITTED</span>
+        <span className="opacity-70">{committedCount} COMMITTED</span>
       </div>
 
       {objectives.length > 0 && (
@@ -67,8 +67,8 @@ export const DecisionMatrixSimulator: React.FC<DecisionMatrixSimulatorProps> = R
         </div>
       )}
 
-      <div className="flex min-h-0 flex-1 gap-3">
-        <div className="w-1/3 min-w-0 overflow-y-auto pr-1">
+      <div className="flex min-h-0 flex-1 flex-col gap-3 sm:flex-row">
+        <div className="max-h-28 min-w-0 overflow-y-auto pr-1 sm:max-h-none sm:w-1/3">
           <h3 className="mb-2 text-[10px] font-semibold tracking-widest opacity-70">CRITICAL DECISION POINTS</h3>
           <div className="space-y-2">
             {decisionPoints.map((point) => (
@@ -84,7 +84,7 @@ export const DecisionMatrixSimulator: React.FC<DecisionMatrixSimulatorProps> = R
               </button>
             ))}
             {decisionPoints.length === 0 && (
-              <div className="text-xs opacity-60">No decision points active for this phase.</div>
+              <div className="text-xs opacity-60">All available decisions reviewed. Advance the phase for more, or open the after-action review.</div>
             )}
           </div>
         </div>
@@ -97,13 +97,12 @@ export const DecisionMatrixSimulator: React.FC<DecisionMatrixSimulatorProps> = R
               <h4 className="mb-2 text-[10px] font-semibold tracking-widest opacity-70">COURSES OF ACTION</h4>
               <div className="space-y-2">
                 {selectedPoint.outcomes.map((outcome) => {
-                  const committed = committedOutcomes.includes(outcome.id);
                   return (
                     <div key={outcome.id} className={`border p-2 ${riskStyles[outcome.risk]}`}>
-                      <div className="flex items-center justify-between gap-2">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
                         <span className="text-xs font-bold">{outcome.title}</span>
                         <span className="whitespace-nowrap text-[10px] opacity-70">
-                          {outcome.risk} · P {(outcome.probability * 100).toFixed(0)}%
+                          {outcome.risk} · Authored weight {(outcome.probability * 100).toFixed(0)}%
                         </span>
                       </div>
                       <p className="mt-1 text-[11px] opacity-80">{outcome.consequences}</p>
@@ -115,10 +114,9 @@ export const DecisionMatrixSimulator: React.FC<DecisionMatrixSimulatorProps> = R
                       <button
                         type="button"
                         onClick={() => handleCommit(outcome)}
-                        disabled={committed}
                         className="mt-2 border border-current/40 px-2 py-1 text-[10px] tracking-widest disabled:opacity-50"
                       >
-                        {committed ? 'COMMITTED' : 'COMMIT COURSE'}
+                        COMMIT COURSE
                       </button>
                     </div>
                   );

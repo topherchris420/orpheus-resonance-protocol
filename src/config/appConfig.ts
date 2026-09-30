@@ -34,7 +34,7 @@ const clamp = (value: number, min: number, max: number): number => {
 const accessPhrase = import.meta.env.VITE_ACCESS_PASSPHRASE?.trim() || "1912";
 
 export const appConfig = {
-  appName: import.meta.env.VITE_APP_NAME?.trim() || "Reentry Interface",
+  appName: import.meta.env.VITE_APP_NAME?.trim() || "Orpheus",
   supportEmail: import.meta.env.VITE_SUPPORT_EMAIL?.trim() || "support@example.com",
   features: {
     requireAccessGate: toBoolean(import.meta.env.VITE_REQUIRE_ACCESS_GATE, true),

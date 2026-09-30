@@ -30,6 +30,7 @@ import { OperatorMetricsDashboard } from './OperatorMetricsDashboard';
 import { useMetricsHistory } from '../hooks/useMetricsHistory';
 import { useOperatorBaseline } from '../hooks/useOperatorBaseline';
 import { BaselineCalibrationPanel } from './BaselineCalibrationPanel';
+import { SessionReview } from './SessionReview';
 import { createSessionRecord } from '@/lib/sessionRecord';
 
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
@@ -53,6 +54,8 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
   onAccessLevelChange,
 }) => {
   const [isMobile, setIsMobile] = useState(false);
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [primaryView, setPrimaryView] = useState<'map' | 'decisions'>('map');
   const [showElectrokineticLayer, setShowElectrokineticLayer] = usePersistentState(
     NEUROSIM_PREFERENCE_STORAGE_KEY,
     false,
@@ -123,7 +126,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
   };
 
 
-  const { acclimatizationLevel, simulationMode } = usePhaseProgression(onAccessLevelChange);
+  const { acclimatizationLevel, simulationMode, handleAcclimatizationAdvance, autoAdvance, setAutoAdvance } = usePhaseProgression(onAccessLevelChange);
 
   const {
     currentTimeline,
@@ -174,8 +177,8 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
   useEffect(() => {
     const intelTimer = setInterval(() => {
       const newIntel = dataGenerator.generateIntelUpdate(acclimatizationLevel);
-      const historyWindow = Math.max(1, appConfig.limits.maxIntelFeedItems - 1);
-      setIntelFeed((prev) => [...prev.slice(-historyWindow), newIntel]);
+      const historyWindow = Math.max(0, appConfig.limits.maxIntelFeedItems - 1);
+      setIntelFeed((prev) => [...(historyWindow ? prev.slice(-historyWindow) : []), newIntel]);
       logOperatorEvent('Intel Updated', newIntel.message, newIntel.priority === 'HIGH' ? 'watch' : 'nominal');
     }, 15000 + Math.random() * 30000);
 
@@ -261,6 +264,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
 
   const {
     decisionPoints,
+    resolvedDecisions,
     objectives,
     hostilePressure,
     stressModifier,
@@ -285,11 +289,11 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
   }, [stressModifier]);
 
   const handleOutcomeSelect = useCallback((pointId: string, outcome: ScenarioOutcome) => {
-    resolveOutcome(pointId, outcome);
+    if (!resolveOutcome(pointId, outcome)) return;
     setIntelFeed((previous) => {
-      const historyWindow = Math.max(1, appConfig.limits.maxIntelFeedItems - 1);
+      const historyWindow = Math.max(0, appConfig.limits.maxIntelFeedItems - 1);
       return [
-        ...previous.slice(-historyWindow),
+        ...(historyWindow ? previous.slice(-historyWindow) : []),
         {
           id: `decision-${outcome.id}-${Date.now()}`,
           timestamp: Date.now(),
@@ -413,6 +417,8 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
       microphoneActive: microphoneConnected,
       events: operatorEvents,
       metrics: metricsHistory,
+      decisions: resolvedDecisions,
+      objectives,
     });
     const url = URL.createObjectURL(new Blob([JSON.stringify(record, null, 2)], { type: 'application/json' }));
     const link = document.createElement('a');
@@ -421,7 +427,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
     link.click();
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
     logOperatorEvent('Record Exported', 'Simulation record downloaded; no microphone samples included.');
-  }, [acclimatizationLevel, microphoneConnected, operatorEvents, metricsHistory, logOperatorEvent]);
+  }, [acclimatizationLevel, microphoneConnected, operatorEvents, metricsHistory, resolvedDecisions, objectives, logOperatorEvent]);
 
   const renderModeToolbar = () => (
     <ModeToolbar
@@ -446,9 +452,10 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
   const renderPrimarySurface = () => (
     showElectrokineticLayer ? (
       renderNeuroEmSimulator()
-    ) : simulationMode ? (
+    ) : primaryView === 'decisions' ? (
       <DecisionMatrixSimulator
         decisionPoints={decisionPoints}
+        committedCount={resolvedDecisions.length}
         objectives={objectives}
         onOutcomeSelect={handleOutcomeSelect}
       />
@@ -530,9 +537,21 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
       ref={surfaceRef}
       className={`min-h-screen ${getAcclimatizationStyles()} transition-colors duration-500 relative overflow-hidden`}
     >
+      <section className="relative z-10 border-b border-emerald-300/20 bg-neutral-950 px-4 py-3" aria-label="Session controls">
+        <div className="mx-auto flex max-w-screen-2xl flex-wrap items-center gap-3">
+          <div className="mr-auto"><h1 className="text-lg font-semibold tracking-[0.2em]">ORPHEUS</h1>
+            <p className="text-xs opacity-70">Observe. Choose. Trace the consequences. · Fictional simulation</p></div>
+          <button type="button" className="border border-current/30 px-3 py-2 text-xs" onClick={() => { setShowElectrokineticLayer(false); setPrimaryView('map'); setMobileTab('map'); }} aria-pressed={primaryView === 'map' && !showElectrokineticLayer}>Situation map</button>
+          <button type="button" className="border border-current/30 px-3 py-2 text-xs" onClick={() => { setShowElectrokineticLayer(false); setPrimaryView('decisions'); setMobileTab('map'); }} aria-pressed={primaryView === 'decisions' && !showElectrokineticLayer}>Decisions · {decisionPoints.length}</button>
+          <button type="button" className="border border-current/30 px-3 py-2 text-xs" onClick={() => setReviewOpen(true)}>After-action · {resolvedDecisions.length}</button>
+          <button type="button" disabled={acclimatizationLevel >= 4} className="border border-current/30 px-3 py-2 text-xs disabled:opacity-40" onClick={handleAcclimatizationAdvance}>{acclimatizationLevel >= 4 ? 'Final phase · 4 / 4' : `Advance phase · ${acclimatizationLevel} / 4`}</button>
+          <label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={autoAdvance} onChange={(event) => setAutoAdvance(event.target.checked)} />Auto advance · 30s</label>
+        </div>
+      </section>
+      <SessionReview open={reviewOpen} onOpenChange={setReviewOpen} decisions={resolvedDecisions} objectives={objectives} onExport={handleExport} />
       {!isMobile ? (
         <div
-          className="relative z-10 h-screen grid grid-cols-12 grid-rows-[auto_repeat(7,minmax(0,1fr))] gap-2 p-4"
+          className="relative z-10 min-h-[850px] h-[calc(100vh-100px)] grid grid-cols-12 grid-rows-[auto_repeat(7,minmax(0,1fr))] gap-2 p-4"
           style={{
             transform: 'scale(var(--breath-scale, 1)) translateY(var(--breath-lift, 0px))',
             filter: 'blur(var(--breath-blur, 0px))',
@@ -658,6 +677,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
                 {showElectrokineticLayer ? renderNeuroEmSimulator() : (
                   <DecisionMatrixSimulator
                     decisionPoints={decisionPoints}
+                    committedCount={resolvedDecisions.length}
                     objectives={objectives}
                     onOutcomeSelect={handleOutcomeSelect}
                   />

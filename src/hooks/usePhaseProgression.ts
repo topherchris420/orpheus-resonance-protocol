@@ -1,44 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
-interface AcclimatizationProgressionResult {
-  acclimatizationLevel: number;
-  simulationMode: boolean;
-  handleAcclimatizationAdvance: () => void;
-}
-
-export const usePhaseProgression = (onAccessLevelChange: (level: number) => void): AcclimatizationProgressionResult => {
+export const usePhaseProgression = (onAccessLevelChange: (level: number) => void) => {
   const [acclimatizationLevel, setAcclimatizationLevel] = useState(1);
-  const [simulationMode, setSimulationMode] = useState(false);
+  const [autoAdvance, setAutoAdvance] = useState(false);
+  const handleAcclimatizationAdvance = useCallback(() => {
+    setAcclimatizationLevel((previous) => Math.min(4, previous + 1));
+  }, []);
 
-  // Acclimatization progression logic
+  useEffect(() => { onAccessLevelChange(acclimatizationLevel); }, [acclimatizationLevel, onAccessLevelChange]);
   useEffect(() => {
-    const acclimatizationTimer = setInterval(() => {
-      if (acclimatizationLevel < 4) {
-        setAcclimatizationLevel(prev => prev + 1);
-        onAccessLevelChange(acclimatizationLevel + 1);
-      }
-    }, 30000);
+    if (!autoAdvance || acclimatizationLevel >= 4) return;
+    const timer = window.setTimeout(handleAcclimatizationAdvance, 30000);
+    return () => window.clearTimeout(timer);
+  }, [autoAdvance, acclimatizationLevel, handleAcclimatizationAdvance]);
 
-    return () => clearInterval(acclimatizationTimer);
-  }, [acclimatizationLevel, onAccessLevelChange]);
-
-  // Activate simulation mode in acclimatization level 2+
-  useEffect(() => {
-    if (acclimatizationLevel >= 2) {
-      setSimulationMode(true);
-    }
-  }, [acclimatizationLevel]);
-
-  const handleAcclimatizationAdvance = () => {
-    if (acclimatizationLevel < 4) {
-      setAcclimatizationLevel(prev => prev + 1);
-      onAccessLevelChange(acclimatizationLevel + 1);
-    }
-  };
-
-  return {
-    acclimatizationLevel,
-    simulationMode,
-    handleAcclimatizationAdvance
-  };
+  return { acclimatizationLevel, simulationMode: acclimatizationLevel >= 2,
+    handleAcclimatizationAdvance, autoAdvance, setAutoAdvance };
 };

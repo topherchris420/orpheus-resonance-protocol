@@ -4,26 +4,29 @@ Browser-based tactical simulation with generated mission events, squad state, vi
 
 **What is real:** When explicitly enabled for the current visit, the browser reads microphone audio energy locally and uses it to vary a visual glow and generated tones. **What is generated:** Threats, intel, pulse, respiration, HRV, stress, cohesion, and recommendations. Audio energy cannot establish those physiological values. This app is not a medical, biometric, or operational decision system.
 
-## Why this exists
+## A command room where every choice leaves a trace
 
-This is for exploring:
+Orpheus puts you inside a changing fictional situation. Read the map, weigh competing courses of action, and see how your choices change modeled pressure, cohesion, and objective progress. Then open the after-action review: each committed choice has a phase, a timestamp, and an explicit set of consequences.
 
-- high-density control-room UIs
-- simulation-oriented interaction patterns
-- resilient UX behavior under noisy runtime conditions
-- configurable feature toggles for gated demos and staged rollouts
+### Try a complete session
 
-## Prototype capabilities
+1. Choose **Enter simulation**. The theatrical terminal is optional; no account, API key, or microphone is required.
+2. Open **Decisions**. Inspect the tradeoffs and commit one course for an event. Its alternatives close for this visit, even if you switch views.
+3. Use **Advance phase** to reveal later events and unlock the red-team controls. Phases stay under your control by default; **Auto advance** optionally advances every 30 seconds.
+4. Switch back to **Situation map** whenever you want. Opening decisions no longer replaces the map permanently.
+5. Open **After-action** to review your decisions and objective progress. **Download session JSON** preserves the record before you refresh.
 
-- **Global runtime safety net** via an application error boundary with incident IDs and support contact fallback.
-- **Environment-driven runtime configuration** (`.env`) for feature flags and operational thresholds.
-- **Per-visit microphone opt-in** with an explicit stop control and local audio processing.
-- **Safe tone startup** at zero gain, with a fixed output cap and clean shutdown of microphone tracks.
-- **Downloadable simulation record** with source labels, recent events, and chart samples; no raw microphone data or activation phrase is included.
-- **Theatrical activation phrase** with configurable attempt limits and temporary local lockouts. This is not authentication: the phrase and enforcement ship in the browser bundle.
-- **Node-first test tooling** through Vitest (no Bun dependency required).
-- **CI-friendly scripts** for linting, application and build-config typechecking, build, preview, and test workflows.
+### What makes the loop work
 
+- **One authoritative decision ledger.** The model accepts only available event/outcome pairs, resolves effects from its own catalog, and rejects repeated or conflicting commitments. Pending events replenish the shortlist.
+- **Inspectable consequences.** Choices apply deterministic, bounded changes to simulated pressure, stress, cohesion, and objectives. Displayed authored weights are metadata, not calibrated success probabilities; no probability draw is performed.
+- **Reviewable sessions.** Exports include the decision ledger, objective snapshot, up to 120 recent events, and 48 chart samples with source labels. No raw microphone data or activation phrase is included.
+- **Optional sensory layer.** Explicit per-visit microphone consent enables local audio-energy response. Generated tones start at zero gain, have a fixed output cap, and stop with the microphone control.
+- **Desktop and mobile surfaces.** A persistent session bar provides map, decisions, phase controls, and review. Mobile tabs keep the dense panels navigable.
+
+### Boundaries of the model
+
+The tactical world and telemetry use random generators; a full session is **not deterministically replayable**. Only the catalog decision transition is deterministic for a given state and choice. The review remains live while the world advances. Objective percentages are authored scenario bookkeeping, not validated measures of success or operator performance. Refresh starts a fresh decision session; preferences may persist locally. Exports are snapshots, not authenticated audit logs.
 
 ## Project structure 
 
@@ -39,14 +42,14 @@ src/
 
 ## Prerequisites
 
-- **Node.js 18+** (Node 20+ recommended)
+- **Node.js 24** (matches CI)
 - **npm** (ships with Node)
 
 ## Quick start
 
 1. Install dependencies:
    ```bash
-   npm install
+   npm ci
    ```
 2. Create a local environment file:
    ```bash
@@ -64,7 +67,7 @@ Use `.env.example` as the baseline.
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `VITE_APP_NAME` | `Reentry Interface` | Display name shown in the UI. |
+| `VITE_APP_NAME` | `Orpheus` | Display name shown in the UI. |
 | `VITE_SUPPORT_EMAIL` | `support@example.com` | Contact shown in fatal-error fallback states. |
 | `VITE_REQUIRE_ACCESS_GATE` | `true` | Enables/disables the theatrical activation screen. |
 | `VITE_ENABLE_AUDIO_BIOFEEDBACK` | `true` | Enables local microphone audio-energy analysis. |
@@ -104,7 +107,7 @@ npm run build
 - The activation screen provides no access control. For a protected deployment, enforce identity, authorization, and audit logging on a server.
 - Microphone permission is requested per visit and audio samples are analyzed in browser memory. The app does not record or transmit the microphone stream. Browser permission and local preferences are under the visitor's control.
 - A low-frequency audio FFT envelope is an audio proxy, not breath or pulse sensing. All physiological-looking dashboard numbers come from simulation generators. Do not use them to assess a person.
-- The **Export** button downloads a JSON snapshot of this visit's recent simulated events and metrics. The schema includes explicit provenance for each signal family; it is a demo record, not a verified audit log.
+- The **Export** button downloads a JSON snapshot of this visit's decisions, objectives, recent simulated events, and metrics. The schema includes explicit provenance for each signal family; it is a demo record, not a verified audit log.
 - Tones are generated by local Web Audio oscillators. Gain starts at zero and is capped, but visitors should set a comfortable device volume before enabling audio.
 - The Vite dev server binds to localhost by default. Use `npm run dev -- --host 0.0.0.0` only when intentionally testing on another device.
 
