@@ -115,3 +115,43 @@
   transform: scale(1.02);
   opacity: 0.8;
 }
+
+.orpheus-welcome {
+  background: radial-gradient(ellipse at 75% 20%, rgba(11, 93, 99, .22), transparent 55%), #080f13;
+}
+
+@layer components {
+  .session-button {
+    @apply inline-flex min-h-11 items-center gap-2 rounded-lg border border-white/15 bg-white/[0.03] px-2.5 py-2 text-xs text-slate-300 sm:px-3 sm:text-sm transition-colors hover:border-emerald-300/40 hover:bg-emerald-300/10 hover:text-emerald-100 disabled:cursor-not-allowed disabled:opacity-40;
+  }
+  .session-button[aria-pressed="true"] {
+    @apply border-emerald-300/40 bg-emerald-300/10 text-emerald-200;
+  }
+}
+
+button:focus-visible, a:focus-visible, summary:focus-visible, input:focus-visible, [tabindex]:focus-visible {
+  outline: 2px solid #6ee7b7;
+  outline-offset: 4px;
+}
+
+.skip-link {
+  position: fixed;
+  top: -100px;
+  left: 16px;
+  z-index: 100;
+  padding: 12px 16px;
+  background: #6ee7b7;
+  color: #080f13;
+}
+.skip-link:focus { top: 12px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+  .ambient-overlays { display: none; }
+  #session-workspace > div { transform: none !important; filter: none !important; }
+}
+
+.mission-progress { appearance: none; border: 0; background: #263237; border-radius: 4px; overflow: hidden; }
+.mission-progress::-webkit-progress-bar { background: #263237; }
+.mission-progress::-webkit-progress-value { background: #6ee7b7; }
+.mission-progress::-moz-progress-bar { background: #6ee7b7; }

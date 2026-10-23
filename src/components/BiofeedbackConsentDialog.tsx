@@ -23,7 +23,7 @@ export const BiofeedbackConsentDialog: React.FC<BiofeedbackConsentDialogProps> =
 }) => {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="border-cyan-500/30 bg-slate-950 text-slate-100">
+      <DialogContent className="dark max-h-[85vh] overflow-y-auto border-cyan-500/30 bg-slate-950 text-slate-100">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Mic className="h-5 w-5 text-cyan-300" />

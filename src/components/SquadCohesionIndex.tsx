@@ -1,32 +1,26 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { calculateSquadCohesion } from '@/lib/sessionGuidance';
 
 interface SquadCohesionIndexProps {
   squadVitals: Array<{ hrv: number; respiratoryRate: number; cognitiveStressIndex: number }>;
   communicationEfficiency: number;
-  onCohesionChange: (cohesion: number) => void;
 }
 
 export const SquadCohesionIndex: React.FC<SquadCohesionIndexProps> = React.memo(({
   squadVitals,
   communicationEfficiency,
-  onCohesionChange,
 }) => {
-  const [cohesionScore, setCohesionScore] = useState(0);
+  const cohesionScore = calculateSquadCohesion(squadVitals.map(member => member.cognitiveStressIndex), communicationEfficiency);
   const [squadField, setSquadField] = useState<Array<{ x: number; y: number; energy: number }>>([]);
   const [cohesionHistory, setCohesionHistory] = useState<number[]>([]);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number>();
 
-  const avgStress = squadVitals.reduce((acc, val) => acc + val.cognitiveStressIndex, 0) / squadVitals.length;
+  const avgStress = squadVitals.reduce((acc, val) => acc + val.cognitiveStressIndex, 0) / (squadVitals.length || 1);
 
   useEffect(() => {
-    const stressCohesion = 1 - avgStress;
-    const finalCohesion = (stressCohesion + communicationEfficiency) / 2;
-
-    setCohesionScore(finalCohesion);
-    onCohesionChange(finalCohesion);
-    setCohesionHistory((prev) => [...prev.slice(-99), finalCohesion]);
-  }, [avgStress, communicationEfficiency, onCohesionChange]);
+    setCohesionHistory((prev) => [...prev.slice(-99), cohesionScore]);
+  }, [cohesionScore]);
 
   useEffect(() => {
     const fieldPoints = Array.from({ length: squadVitals.length }, (_, i) => ({

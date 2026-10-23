@@ -1,6 +1,7 @@
 import React from 'react';
 import { Activity, BrainCircuit, Download, Mic, MicOff, ShieldAlert } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { appConfig } from '@/config/appConfig';
 import {
   Tooltip,
   TooltipContent,
@@ -30,7 +31,7 @@ export const ModeToolbar: React.FC<ModeToolbarProps> = React.memo(({
   onToggleRedTeam,
   onExport,
 }) => {
-  const bioLabel = audioEnabled ? 'Stop microphone and tones' : 'Start local audio response';
+  const bioLabel = !appConfig.features.enableAudioBiofeedback ? 'Audio response unavailable in this deployment' : audioEnabled ? 'Stop microphone and tones' : 'Start local audio response';
 
   return (
     <div className="flex flex-wrap items-center gap-2 border border-current/15 bg-black/55 p-2 backdrop-blur-md">
@@ -43,6 +44,7 @@ export const ModeToolbar: React.FC<ModeToolbarProps> = React.memo(({
             className="gap-2"
             onClick={audioEnabled ? onDisableBiofeedback : onRequestBiofeedback}
             aria-label={bioLabel}
+            disabled={!appConfig.features.enableAudioBiofeedback}
           >
             {audioEnabled ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
             <span className="hidden sm:inline">{audioEnabled ? 'Stop Audio' : 'Start Audio'}</span>
