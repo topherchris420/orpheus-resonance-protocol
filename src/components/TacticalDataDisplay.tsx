@@ -27,19 +27,23 @@ export const TacticalDataDisplay: React.FC<TacticalDataDisplayProps> = React.mem
     if (!ctx) return;
 
     const draw = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const size = Math.max(1, Math.round(Math.min(canvas.clientWidth, canvas.clientHeight) * Math.min(window.devicePixelRatio || 1, 2)));
+      canvas.width = size;
+      canvas.height = size;
+      ctx.setTransform(size / 400, 0, 0, size / 400, 0, 0);
+      ctx.clearRect(0, 0, 400, 400);
 
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
-      for (let i = 0; i < canvas.width; i += 20) {
+      for (let i = 0; i < 400; i += 20) {
         ctx.beginPath();
         ctx.moveTo(i, 0);
-        ctx.lineTo(i, canvas.height);
+        ctx.lineTo(i, 400);
         ctx.stroke();
       }
-      for (let i = 0; i < canvas.height; i += 20) {
+      for (let i = 0; i < 400; i += 20) {
         ctx.beginPath();
         ctx.moveTo(0, i);
-        ctx.lineTo(canvas.width, i);
+        ctx.lineTo(400, i);
         ctx.stroke();
       }
 
@@ -82,19 +86,22 @@ export const TacticalDataDisplay: React.FC<TacticalDataDisplayProps> = React.mem
     };
 
     draw();
+    const observer = new ResizeObserver(draw);
+    observer.observe(canvas);
+    return () => observer.disconnect();
   }, [threatIndicators, optimalPathing, squadPositions]);
 
   return (
-    <div className="relative w-full h-full border border-current/25 bg-black/45 backdrop-blur-sm overflow-hidden">
-      <canvas ref={canvasRef} className="w-full h-full" width="400" height="400" />
+    <div className="relative w-full h-full rounded-xl border border-current/20 bg-black/30 overflow-hidden">
+      <canvas ref={canvasRef} role="img" aria-label={`Generated situation map: ${hostileCount} hostile contacts, ${unknownCount} unknown contacts, ${squadPositions.length} squad members. Cyan line shows the modeled route.`} className="w-full h-full object-contain" width="400" height="400" />
       <div className="absolute top-2 left-2 border border-current/20 bg-black/70 px-3 py-2 text-xs backdrop-blur-sm">
-        <div className="font-bold uppercase">Tactical Map</div>
+        <div className="font-bold uppercase">Situation map</div>
         <div className="mt-1 text-current/65">{mapRecommendation}</div>
       </div>
       <div className="absolute bottom-2 right-2 grid grid-cols-3 gap-1 text-[10px] uppercase">
-        <span className="border border-red-400/30 bg-red-500/10 px-2 py-1 text-red-200">H {hostileCount}</span>
-        <span className="border border-amber-400/30 bg-amber-500/10 px-2 py-1 text-amber-200">U {unknownCount}</span>
-        <span className="border border-emerald-400/30 bg-emerald-500/10 px-2 py-1 text-emerald-200">S {squadPositions.length}</span>
+        <span className="border border-red-400/30 bg-red-500/10 px-2 py-1 text-red-200">Hostile {hostileCount}</span>
+        <span className="border border-amber-400/30 bg-amber-500/10 px-2 py-1 text-amber-200">Unknown {unknownCount}</span>
+        <span className="border border-emerald-400/30 bg-emerald-500/10 px-2 py-1 text-emerald-200">Squad {squadPositions.length}</span>
       </div>
     </div>
   );

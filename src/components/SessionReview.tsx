@@ -13,7 +13,7 @@ const delta = (value: number) => `${value >= 0 ? '+' : ''}${Math.round(value * 1
 
 export const SessionReview = ({ open, onOpenChange, decisions, objectives, onExport }: Props) => (
   <Dialog open={open} onOpenChange={onOpenChange}>
-    <DialogContent className="max-h-[85vh] max-w-3xl overflow-y-auto border-emerald-300/30 bg-neutral-950 text-emerald-100">
+    <DialogContent className="dark max-h-[85vh] max-w-3xl overflow-y-auto border-emerald-300/30 bg-neutral-950 text-emerald-100">
       <DialogHeader>
         <DialogTitle>After-action review</DialogTitle>
         <DialogDescription className="text-emerald-100/60">Your choices and their authored simulation effects. The live world continues while you review. These values do not measure human performance.</DialogDescription>

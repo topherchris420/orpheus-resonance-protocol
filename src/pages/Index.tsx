@@ -6,6 +6,7 @@ import { appConfig } from '@/config/appConfig';
 
 const Index = () => {
   const [isAccessed, setIsAccessed] = useState(!appConfig.features.requireAccessGate);
+  const [sessionKey, setSessionKey] = useState(0);
   const [accessLevel, setAccessLevel] = useState(0);
 
   return (
@@ -13,7 +14,9 @@ const Index = () => {
       {!isAccessed ? (
         <AccessTerminal onAccess={() => setIsAccessed(true)} />
       ) : (
-        <PegasusSimulation 
+        <PegasusSimulation
+          key={sessionKey}
+          onRestart={() => setSessionKey(previous => previous + 1)}
           accessLevel={accessLevel}
           onAccessLevelChange={setAccessLevel}
         />

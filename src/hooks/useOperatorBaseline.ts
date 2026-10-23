@@ -48,7 +48,17 @@ interface UseOperatorBaselineResult {
 
 /** Captures a local reference window for generated stress and cohesion values. */
 export const useOperatorBaseline = (signals: BaselineSignals): UseOperatorBaselineResult => {
-  const [baseline, setBaseline] = usePersistentState<OperatorBaseline | null>(BASELINE_STORAGE_KEY, null);
+  const [baseline, setBaseline] = usePersistentState<OperatorBaseline | null>(
+    BASELINE_STORAGE_KEY,
+    null,
+    (value) =>
+      value === null ||
+      (typeof value === 'object' &&
+        !Array.isArray(value) &&
+        ['stress', 'cohesion', 'stressSpread', 'cohesionSpread', 'capturedAt', 'samples'].every(
+          (key) => typeof value[key] === 'number' && Number.isFinite(value[key]),
+        )),
+  );
   const [isCalibrating, setIsCalibrating] = useState(false);
   const [progress, setProgress] = useState(0);
 
@@ -104,19 +114,30 @@ export const useOperatorBaseline = (signals: BaselineSignals): UseOperatorBaseli
     setProgress(0);
   }, [setBaseline]);
 
-  const adjustBaseline = useCallback((patch: Partial<OperatorBaseline>) => {
-    setBaseline((previous) => {
-      const base: OperatorBaseline = previous ?? {
-        stress: 0.5,
-        cohesion: 0.5,
-        stressSpread: 0.2,
-        cohesionSpread: 0.2,
-        capturedAt: Date.now(),
-        samples: 0,
-      };
-      return { ...base, ...patch, capturedAt: Date.now() };
-    });
-  }, [setBaseline]);
+  const adjustBaseline = useCallback(
+    (patch: Partial<OperatorBaseline>) => {
+      setBaseline((previous) => {
+        const base: OperatorBaseline = previous ?? {
+          stress: 0.5,
+          cohesion: 0.5,
+          stressSpread: 0.2,
+          cohesionSpread: 0.2,
+          capturedAt: Date.now(),
+          samples: 0,
+        };
+        return { ...base, ...patch, capturedAt: Date.now() };
+      });
+    },
+    [setBaseline],
+  );
 
-  return { baseline, isCalibrating, progress, startCalibration, cancelCalibration, clearBaseline, adjustBaseline };
+  return {
+    baseline,
+    isCalibrating,
+    progress,
+    startCalibration,
+    cancelCalibration,
+    clearBaseline,
+    adjustBaseline,
+  };
 };

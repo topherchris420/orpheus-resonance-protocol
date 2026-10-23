@@ -10,11 +10,14 @@ Orpheus puts you inside a changing fictional situation. Read the map, weigh comp
 
 ### Try a complete session
 
-1. Choose **Enter simulation**. The theatrical terminal is optional; no account, API key, or microphone is required.
-2. Open **Decisions**. Inspect the tradeoffs and commit one course for an event. Its alternatives close for this visit, even if you switch views.
+1. Choose **Enter simulation** to open the focused workspace with a situation map, current objectives, and latest reports. The theatrical terminal is optional; no account, API key, or microphone is required.
+2. Open **Decisions**. Inspect the tradeoffs, choose **Review course**, then **Confirm choice** to commit one course for an event. **Keep comparing** closes the confirmation without changing the record. Its alternatives close for this visit, even if you switch views.
 3. Use **Advance phase** to reveal later events and unlock the red-team controls. Phases stay under your control by default; **Auto advance** optionally advances every 30 seconds.
 4. Switch back to **Situation map** whenever you want. Opening decisions no longer replaces the map permanently.
-5. Open **After-action** to review your decisions and objective progress. **Download session JSON** preserves the record before you refresh.
+5. Open **After-action** to review your decisions and objective progress. **Download session JSON** or **Save record** preserves the record before you refresh.
+
+6. Use **New session** to start over without reloading the page. The confirmation offers a download before clearing your decisions and stopping audio.
+7. Open the **full control room** for generated vitals, charts, pacing controls, and the touch surface. **Guide** is always available. Ambient effects start off; reduced-motion preferences suppress interface movement and overlays.
 
 ### What makes the loop work
 
@@ -22,7 +25,8 @@ Orpheus puts you inside a changing fictional situation. Read the map, weigh comp
 - **Inspectable consequences.** Choices apply deterministic, bounded changes to simulated pressure, stress, cohesion, and objectives. Displayed authored weights are metadata, not calibrated success probabilities; no probability draw is performed.
 - **Reviewable sessions.** Exports include the decision ledger, objective snapshot, up to 120 recent events, and 48 chart samples with source labels. No raw microphone data or activation phrase is included.
 - **Optional sensory layer.** Explicit per-visit microphone consent enables local audio-energy response. Generated tones start at zero gain, have a fixed output cap, and stop with the microphone control.
-- **Desktop and mobile surfaces.** A persistent session bar provides map, decisions, phase controls, and review. Mobile tabs keep the dense panels navigable.
+- **A guided, responsive workspace.** Contextual next steps lead from the first decision through the complete catalog. The focused view keeps the map, readable choices, objectives, and reports together; the optional full control room exposes deeper tools. Layout changes do not alter the cohesion model.
+- **Deliberate session controls.** Confirm a course before recording it, export at any time, and restart with an explicit confirmation. Microphone permission is requested again for each new session. Display preferences persist locally; dismissed alerts belong only to the current session.
 
 ### Boundaries of the model
 

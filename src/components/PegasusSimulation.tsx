@@ -32,10 +32,12 @@ import { useOperatorBaseline } from '../hooks/useOperatorBaseline';
 import { BaselineCalibrationPanel } from './BaselineCalibrationPanel';
 import { SessionReview } from './SessionReview';
 import { createSessionRecord } from '@/lib/sessionRecord';
+import { SessionControls } from './SessionControls';
+import { calculateSquadCohesion, getSessionGuidance, sessionDecisionCount } from '@/lib/sessionGuidance';
+import { toast } from 'sonner';
 
 const clamp01 = (value: number) => Math.min(1, Math.max(0, value));
 const NEUROSIM_PREFERENCE_STORAGE_KEY = 'orpheus.preference.neurosim';
-const ALERT_ACK_STORAGE_KEY = 'orpheus.preference.acknowledgedAlerts';
 const MOBILE_TAB_STORAGE_KEY = 'orpheus.preference.mobileTab';
 
 const NeuroEmSimulator = lazy(() =>
@@ -44,6 +46,7 @@ const NeuroEmSimulator = lazy(() =>
 
 interface PegasusSimulationProps {
   accessLevel: number;
+  onRestart: () => void;
   onAccessLevelChange: (level: number) => void;
 }
 
@@ -51,17 +54,20 @@ const createEventId = (label: string) => `${label.toLowerCase().replace(/[^a-z0-
 
 export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
   accessLevel,
+  onRestart,
   onAccessLevelChange,
 }) => {
   const [isMobile, setIsMobile] = useState(false);
+  const [fullWorkspace, setFullWorkspace] = usePersistentState('orpheus.preference.fullWorkspace', false);
+  const [ambient, setAmbient] = usePersistentState('orpheus.preference.ambient', false);
   const [reviewOpen, setReviewOpen] = useState(false);
   const [primaryView, setPrimaryView] = useState<'map' | 'decisions'>('map');
   const [showElectrokineticLayer, setShowElectrokineticLayer] = usePersistentState(
     NEUROSIM_PREFERENCE_STORAGE_KEY,
     false,
   );
-  const [mobileTab, setMobileTab] = usePersistentState(MOBILE_TAB_STORAGE_KEY, 'map');
-  const [dismissedAlertIds, setDismissedAlertIds] = usePersistentState<string[]>(ALERT_ACK_STORAGE_KEY, []);
+  const [mobileTab, setMobileTab] = usePersistentState(MOBILE_TAB_STORAGE_KEY, 'map', value => typeof value === 'string' && ['map', 'vitals', 'intel', 'sim', 'events'].includes(value));
+  const [dismissedAlertIds, setDismissedAlertIds] = useState<string[]>([]);
   const [biofeedbackDialogOpen, setBiofeedbackDialogOpen] = useState(false);
   const [operatorEvents, setOperatorEvents] = useState<OperatorEvent[]>([
     {
@@ -73,11 +79,11 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
     },
   ]);
   const sessionStartedAt = useRef(Date.now());
-  const [intelFeed, setIntelFeed] = useState(dataGenerator.getIntelFeed());
-  const [threatIndicators, setThreatIndicators] = useState(dataGenerator.generateThreatIndicators());
-  const [squadPositions, setSquadPositions] = useState(dataGenerator.generateSquadPositions());
-  const [optimalPath, setOptimalPath] = useState(dataGenerator.generateOptimalPath());
-  const [realtimeVitals, setRealtimeVitals] = useState(dataGenerator.generateRealisticVitals(78, 16.2, 0.3));
+  const [intelFeed, setIntelFeed] = useState(() => dataGenerator.getIntelFeed());
+  const [threatIndicators, setThreatIndicators] = useState(() => dataGenerator.generateThreatIndicators());
+  const [squadPositions, setSquadPositions] = useState(() => dataGenerator.generateSquadPositions());
+  const [optimalPath, setOptimalPath] = useState(() => dataGenerator.generateOptimalPath());
+  const [realtimeVitals, setRealtimeVitals] = useState(() => dataGenerator.generateRealisticVitals(78, 16.2, 0.3));
   const previousStressRef = useRef(realtimeVitals.cognitiveStressIndex);
   const previousPhaseRef = useRef(1);
   const threatIndicatorsRef = useRef(threatIndicators);
@@ -131,10 +137,8 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
   const {
     currentTimeline,
     temporalMoment,
-    cohesionScore,
     bioResonanceFrequency,
     addInteractionEvent,
-    setCohesionScore,
     setBioResonanceFrequency,
   } = useInteractionState();
 
@@ -166,7 +170,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
 
   useEffect(() => {
     const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
+      setIsMobile(window.innerWidth < 1100);
     };
 
     checkMobile();
@@ -247,6 +251,8 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
     cognitiveStressIndex: member.status === 'wounded' ? 0.8 : cognitiveStressIndex,
   })), [squadPositions, cognitiveStressIndex]);
 
+  const cohesionScore = calculateSquadCohesion(squadVitals.map(member => member.cognitiveStressIndex), communicationEfficiency);
+
   const displayedThreatIndicators = useMemo(() => conflictingIntel
     ? [...threatIndicators, { id: 'red-team-threat', position: { x: 200, y: 200 }, type: 'hostile' as const, confidence: 90, lastUpdated: Date.now() }]
     : threatIndicators,
@@ -289,7 +295,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
   }, [stressModifier]);
 
   const handleOutcomeSelect = useCallback((pointId: string, outcome: ScenarioOutcome) => {
-    if (!resolveOutcome(pointId, outcome)) return;
+    if (!resolveOutcome(pointId, outcome)) { toast.error('This decision is no longer available. Choose another event.'); return; }
     setIntelFeed((previous) => {
       const historyWindow = Math.max(0, appConfig.limits.maxIntelFeedItems - 1);
       return [
@@ -304,6 +310,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
         },
       ];
     });
+    toast.success('Choice recorded', { description: outcome.title });
     logOperatorEvent('Course Committed', `${outcome.title} — ${outcome.consequences}`, outcome.effects.severity);
   }, [logOperatorEvent, resolveOutcome]);
 
@@ -426,6 +433,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
     link.download = `orpheus-simulation-${new Date(exportedAt).toISOString().replace(/[:.]/g, '-')}.json`;
     link.click();
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    toast.success('Session snapshot prepared', { description: 'Check your browser downloads for the JSON record.' });
     logOperatorEvent('Record Exported', 'Simulation record downloaded; no microphone samples included.');
   }, [acclimatizationLevel, microphoneConnected, operatorEvents, metricsHistory, resolvedDecisions, objectives, logOperatorEvent]);
 
@@ -454,6 +462,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
       renderNeuroEmSimulator()
     ) : primaryView === 'decisions' ? (
       <DecisionMatrixSimulator
+        expanded={!fullWorkspace}
         decisionPoints={decisionPoints}
         committedCount={resolvedDecisions.length}
         objectives={objectives}
@@ -532,91 +541,72 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
     />
   );
 
+  const guidance = getSessionGuidance(acclimatizationLevel, decisionPoints.length, resolvedDecisions.length);
+  const navigate = (view: 'map' | 'decisions') => {
+    setShowElectrokineticLayer(false);
+    setPrimaryView(view);
+    setMobileTab('map');
+  };
+
   return (
     <div
       ref={surfaceRef}
-      className={`min-h-screen ${getAcclimatizationStyles()} transition-colors duration-500 relative overflow-hidden`}
+      className={`dark font-sans min-h-screen ${getAcclimatizationStyles()} transition-colors duration-500 relative overflow-hidden`}
     >
-      <section className="relative z-10 border-b border-emerald-300/20 bg-neutral-950 px-4 py-3" aria-label="Session controls">
-        <div className="mx-auto flex max-w-screen-2xl flex-wrap items-center gap-3">
-          <div className="mr-auto"><h1 className="text-lg font-semibold tracking-[0.2em]">ORPHEUS</h1>
-            <p className="text-xs opacity-70">Observe. Choose. Trace the consequences. · Fictional simulation</p></div>
-          <button type="button" className="border border-current/30 px-3 py-2 text-xs" onClick={() => { setShowElectrokineticLayer(false); setPrimaryView('map'); setMobileTab('map'); }} aria-pressed={primaryView === 'map' && !showElectrokineticLayer}>Situation map</button>
-          <button type="button" className="border border-current/30 px-3 py-2 text-xs" onClick={() => { setShowElectrokineticLayer(false); setPrimaryView('decisions'); setMobileTab('map'); }} aria-pressed={primaryView === 'decisions' && !showElectrokineticLayer}>Decisions · {decisionPoints.length}</button>
-          <button type="button" className="border border-current/30 px-3 py-2 text-xs" onClick={() => setReviewOpen(true)}>After-action · {resolvedDecisions.length}</button>
-          <button type="button" disabled={acclimatizationLevel >= 4} className="border border-current/30 px-3 py-2 text-xs disabled:opacity-40" onClick={handleAcclimatizationAdvance}>{acclimatizationLevel >= 4 ? 'Final phase · 4 / 4' : `Advance phase · ${acclimatizationLevel} / 4`}</button>
-          <label className="flex items-center gap-2 text-xs"><input type="checkbox" checked={autoAdvance} onChange={(event) => setAutoAdvance(event.target.checked)} />Auto advance · 30s</label>
-        </div>
-      </section>
+      <SessionControls
+        phase={acclimatizationLevel} pending={decisionPoints.length} committed={resolvedDecisions.length}
+        primaryView={primaryView} showNeuroSim={showElectrokineticLayer} fullWorkspace={fullWorkspace}
+        ambient={ambient} autoAdvance={autoAdvance}
+        onNavigate={navigate} onReview={() => setReviewOpen(true)} onAdvance={handleAcclimatizationAdvance}
+        onWorkspaceChange={() => setFullWorkspace(previous => !previous)} onAmbientChange={() => setAmbient(previous => !previous)}
+        onAutoAdvance={setAutoAdvance} onExport={handleExport} onRestart={onRestart}
+      />
       <SessionReview open={reviewOpen} onOpenChange={setReviewOpen} decisions={resolvedDecisions} objectives={objectives} onExport={handleExport} />
-      {!isMobile ? (
+      <main id="session-workspace" tabIndex={-1}>
+      {!fullWorkspace ? (
+        <div className="relative z-10 mx-auto max-w-[1500px] space-y-6 px-4 py-6 sm:px-6">
+          <section className="flex flex-wrap items-center justify-between gap-5 rounded-xl border border-emerald-300/20 bg-emerald-300/[0.04] p-5 sm:p-6" aria-label="Session progress">
+            <div className="max-w-2xl"><p className="text-xs uppercase tracking-widest text-emerald-300">{resolvedDecisions.length} of {sessionDecisionCount} decisions recorded</p><h2 className="mt-2 text-2xl font-medium text-slate-100">{guidance.title}</h2><p className="mt-2 text-sm leading-relaxed text-slate-400">{guidance.detail}</p></div>
+            <button className="session-button !border-emerald-300/50 !text-emerald-200" onClick={() => {
+              if (guidance.action === 'review') setReviewOpen(true);
+              else if (guidance.action === 'advance') { handleAcclimatizationAdvance(); navigate('decisions'); }
+              else navigate('decisions');
+            }}>{guidance.label} →</button>
+          </section>
+          <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
+            <div className="min-w-0 space-y-4">
+              <div className={primaryView === 'decisions' && !showElectrokineticLayer ? 'min-h-[560px]' : 'h-[min(65vh,640px)] min-h-[350px]'}>{renderPrimarySurface()}</div>
+              <details className="rounded-xl border border-white/10 bg-black/20 p-4"><summary className="cursor-pointer text-sm text-slate-300">Optional tools · audio, 3D view, and red-team simulation</summary><div className="mt-4">{renderModeToolbar()}</div><p className="mt-3 text-xs text-slate-400">Red-team simulation unlocks at phase 2. Audio always requires your permission.</p></details>
+              {audioEnabled && <div className="rounded-lg border border-white/15 p-4"><p role="status" className="mb-3 text-sm text-slate-300">{audioError ? `Microphone unavailable: ${audioError}. You can continue without audio.` : microphoneConnected ? 'Microphone connected. Audio energy is processed locally.' : 'Waiting for microphone permission. You can continue exploring.'}</p><button className="session-button" onClick={handleDisableBiofeedback}>Stop microphone and tones</button></div>}
+            </div>
+            <aside className="min-w-0 space-y-5" aria-label="Session context">
+              <section className="rounded-xl border border-white/10 bg-black/20 p-5"><h2 className="text-sm font-medium text-slate-100">Scenario objectives</h2><p className="mt-1 text-xs text-slate-400">Authored progress, not a performance score.</p><div className="mt-5 space-y-5">{objectives.map(objective => <div key={objective.id}><div className="flex justify-between gap-2 text-sm text-slate-200"><span>{objective.label}</span><span>{Math.round(objective.progress * 100)}%</span></div><progress className="mission-progress mt-2 h-1.5 w-full" aria-label={objective.label} value={objective.progress} max={1} /><p className="mt-2 text-xs text-slate-400">{objective.detail}</p></div>)}</div></section>
+              <div className="h-[360px]">{renderIntelPanel()}</div>
+              {resolvedDecisions.length > 0 && <section className="rounded-xl border border-white/10 p-5"><h2 className="text-xs uppercase tracking-widest text-slate-400">Last recorded choice</h2><p className="mt-3 text-sm text-slate-100">{resolvedDecisions[resolvedDecisions.length - 1].outcome.title}</p><button className="mt-4 text-sm text-emerald-300 underline underline-offset-4" onClick={() => setReviewOpen(true)}>Inspect your decision trail →</button></section>}
+            </aside>
+          </div>
+        </div>
+      ) : !isMobile ? (
         <div
-          className="relative z-10 min-h-[850px] h-[calc(100vh-100px)] grid grid-cols-12 grid-rows-[auto_repeat(7,minmax(0,1fr))] gap-2 p-4"
-          style={{
+          className="relative z-10 mx-auto grid max-w-[1500px] grid-cols-12 items-start gap-4 p-6"
+          style={ambient ? {
             transform: 'scale(var(--breath-scale, 1)) translateY(var(--breath-lift, 0px))',
             filter: 'blur(var(--breath-blur, 0px))',
             willChange: 'transform, filter',
-          }}
+          } : undefined}
         >
-
-          <MissionCommandStrip
-            mission={mission}
-            pulseRate={squadPositions[0]?.vitals.heartRate ?? 72}
-            coherenceLevel={effectiveCohesion}
-            activeFrequency={bioResonanceFrequency}
-          />
-
-          <div className="col-start-1 col-span-3 row-start-2 row-span-3 min-h-0">
-            {renderVitalsPanel()}
-          </div>
-
-          <div className="col-start-1 col-span-3 row-start-5 row-span-2 min-h-0 overflow-hidden">
-            <MissionAlertQueue
-              alerts={mission.alerts}
-              dismissedAlertIds={dismissedAlertIds}
-              onDismiss={handleDismissAlert}
-            />
-          </div>
-
-          <div className="col-start-1 col-span-3 row-start-7 row-span-2 min-h-0">
-            <SquadCohesionIndex
-              squadVitals={squadVitals}
-              communicationEfficiency={communicationEfficiency}
-              onCohesionChange={setCohesionScore}
-            />
-          </div>
-
-          <div className="col-start-4 col-span-6 row-start-2 row-span-4 min-h-0">
-            {renderPrimarySurface()}
-          </div>
-
-          <div className="col-start-4 col-span-6 row-start-6 row-span-3 min-h-0">
-            {simulationMode ? renderTemporalPanel() : renderIntelPanel()}
-          </div>
-
-          <div className="col-start-10 col-span-3 row-start-2 row-span-1 min-h-0">
-            {renderModeToolbar()}
-          </div>
-
-          <div className="col-start-10 col-span-3 row-start-3 row-span-2 min-h-0">
-            <TouchInterface
-              phase={acclimatizationLevel}
-              onTouch={handleOperatorTouch}
-              onFrequencyChange={setBioResonanceFrequency}
-            />
-          </div>
-
-          <div className="col-start-10 col-span-3 row-start-5 row-span-2 min-h-0">
-            {renderBreathPulsePanel()}
-          </div>
-
-          <div className="col-start-10 col-span-3 row-start-7 row-span-1 min-h-0">
-            <OperatorEventTimeline events={operatorEvents} />
-          </div>
-
-          <div className="col-start-10 col-span-3 row-start-8 row-span-1 min-h-0">
-            {renderMetricsPanel()}
-          </div>
+          <MissionCommandStrip mission={mission} pulseRate={squadPositions[0]?.vitals.heartRate ?? 72} coherenceLevel={effectiveCohesion} activeFrequency={bioResonanceFrequency} />
+          <div className="col-span-12">{renderModeToolbar()}</div>
+          <div className="col-span-8 h-[640px] min-w-0">{renderPrimarySurface()}</div>
+          <div className="col-span-4 h-[640px] min-w-0">{renderVitalsPanel()}</div>
+          <div className="col-span-12"><MissionAlertQueue alerts={mission.alerts} dismissedAlertIds={dismissedAlertIds} onDismiss={handleDismissAlert} /></div>
+          <div className="col-span-4 h-[440px] min-w-0">{renderIntelPanel()}</div>
+          <div className="col-span-4 h-[440px] min-w-0"><SquadCohesionIndex squadVitals={squadVitals} communicationEfficiency={communicationEfficiency} /></div>
+          <div className="col-span-4 h-[440px] min-w-0">{renderBreathPulsePanel()}</div>
+          <div className="col-span-4 h-[340px] min-w-0"><TouchInterface phase={acclimatizationLevel} onTouch={handleOperatorTouch} onFrequencyChange={setBioResonanceFrequency} /></div>
+          <div className="col-span-4 h-[340px] min-w-0">{renderTemporalPanel()}</div>
+          <div className="col-span-4 h-[340px] min-w-0"><OperatorEventTimeline events={operatorEvents} /></div>
+          <div className="col-span-12 h-[560px] min-w-0">{renderMetricsPanel()}</div>
         </div>
       ) : (
         <div className="relative z-10 flex min-h-screen flex-col gap-2 p-2 pb-4">
@@ -649,13 +639,12 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
             </TabsContent>
 
             <TabsContent value="vitals" className="mt-2 space-y-2">
-              <div className="h-[42vh]">{renderVitalsPanel()}</div>
-              <div className="h-[52vh]">{renderBreathPulsePanel()}</div>
-              <div className="h-[34vh]">
+              <div className="h-[max(460px,55vh)]">{renderVitalsPanel()}</div>
+              <div className="h-[max(440px,55vh)]">{renderBreathPulsePanel()}</div>
+              <div className="h-[400px]">
                 <SquadCohesionIndex
                   squadVitals={squadVitals}
                   communicationEfficiency={communicationEfficiency}
-                  onCohesionChange={setCohesionScore}
                 />
               </div>
             </TabsContent>
@@ -697,13 +686,15 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
         </div>
       )}
 
+      </main>
+
       <BiofeedbackConsentDialog
         open={biofeedbackDialogOpen}
         onOpenChange={setBiofeedbackDialogOpen}
         onConfirm={handleConfirmBiofeedback}
       />
 
-      <VisualOverlays phase={acclimatizationLevel} coherenceLevel={effectiveCohesion} redTeamIntensity={redTeamIntensity} />
+      {ambient && <div className="ambient-overlays"><VisualOverlays phase={acclimatizationLevel} coherenceLevel={effectiveCohesion} redTeamIntensity={redTeamIntensity} /></div>}
     </div>
   );
 };
