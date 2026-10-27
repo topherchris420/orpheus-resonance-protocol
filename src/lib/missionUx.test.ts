@@ -24,7 +24,7 @@ describe('deriveMissionUx', () => {
     });
 
     expect(state.threatLevel).toBe('critical');
-    expect(state.nextAction).toBe('Resolve conflicting intel before advancing the simulation.');
+    expect(state.nextAction).toBe('Treat this report as unverified; check the evidence before relying on it.');
     expect(state.alerts[0]).toMatchObject({
       id: 'red-team-conflict',
       severity: 'critical',
@@ -65,7 +65,7 @@ describe('getTelemetryAssessment', () => {
     ).toMatchObject({
       severity: 'watch',
       trend: 'up',
-      recommendation: 'Scenario hint: inspect the generated stress and mission variables.',
+      recommendation: 'Simulated values are elevated. They describe the fictional operator, not you.',
     });
   });
 });

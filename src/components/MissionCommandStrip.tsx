@@ -1,5 +1,5 @@
 import React from 'react';
-import { Activity, ArrowRight, RadioTower, ShieldAlert } from 'lucide-react';
+import { Activity, AlertOctagon, AlertTriangle, ArrowRight, CheckCircle2, RadioTower } from 'lucide-react';
 import { MissionSeverity, MissionUxState } from '@/lib/missionUx';
 
 interface MissionCommandStripProps {
@@ -9,71 +9,55 @@ interface MissionCommandStripProps {
   activeFrequency: number;
 }
 
-const severityStyles: Record<MissionSeverity, string> = {
-  nominal: 'border-emerald-400/40 bg-emerald-500/10 text-emerald-200',
-  watch: 'border-amber-400/50 bg-amber-500/10 text-amber-100',
-  critical: 'border-red-400/60 bg-red-500/15 text-red-100',
+const SEVERITY: Record<MissionSeverity, { className: string; label: string; icon: typeof Activity }> = {
+  nominal: { className: 'border-o-teal/50 text-o-teal-strong', label: 'Nominal', icon: CheckCircle2 },
+  watch: { className: 'border-o-amber/60 text-o-amber', label: 'Watch', icon: AlertTriangle },
+  critical: { className: 'border-o-red/60 text-o-red', label: 'Attention', icon: AlertOctagon },
 };
 
-const severityLabel: Record<MissionSeverity, string> = {
-  nominal: 'Nominal',
-  watch: 'Watch',
-  critical: 'Action',
-};
-
-export const MissionCommandStrip: React.FC<MissionCommandStripProps> = React.memo(({
-  mission,
-  pulseRate,
-  coherenceLevel,
-  activeFrequency,
-}) => {
+export const MissionCommandStrip: React.FC<MissionCommandStripProps> = React.memo(({ mission, pulseRate, coherenceLevel, activeFrequency }) => {
+  const severity = SEVERITY[mission.threatLevel];
+  const Icon = severity.icon;
   return (
-    <section className="col-span-12 row-span-1 border border-current/20 bg-black/65 backdrop-blur-md px-4 py-3">
-      <div className="flex h-full min-h-0 flex-col justify-center gap-2 lg:flex-row lg:items-center lg:justify-between">
-        <div className="flex min-w-0 flex-1 items-center gap-3">
-          <div className={`flex h-10 w-10 shrink-0 items-center justify-center border ${severityStyles[mission.threatLevel]}`}>
-            <ShieldAlert className="h-5 w-5" />
+    <section aria-label="Mission status" className="rounded-xl border border-o-line bg-o-s1 px-4 py-3">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2 text-xs text-o-text3">
+            <span>{mission.phaseLabel}</span>
+            <span aria-hidden="true">/</span>
+            <span>{mission.modeLabel}</span>
+            <span className={`o-chip ${severity.className}`}>
+              <Icon aria-hidden="true" className="h-3.5 w-3.5" />
+              {severity.label}
+            </span>
+            <span className="o-chip border-dashed border-o-text3/70 text-o-text2">Simulated · microphone audio only</span>
           </div>
-          <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-wide text-current/70">
-              <span>{mission.phaseLabel}</span>
-              <span className="opacity-40">/</span>
-              <span>{mission.modeLabel}</span>
-              <span className={`border px-1.5 py-0.5 ${severityStyles[mission.threatLevel]}`}>
-                {severityLabel[mission.threatLevel]}
-              </span>
-              <span className="border border-cyan-400/50 px-1.5 py-0.5 text-cyan-200" title="Mission and vital signals are generated. Microphone mode responds to local audio energy only.">
-                Simulated · mic audio only
-              </span>
-            </div>
-            <div className="mt-1 flex min-w-0 items-center gap-2 text-sm font-semibold text-white">
-              <ArrowRight className="h-4 w-4 shrink-0 text-cyan-300" />
-              <span className="truncate">{mission.nextAction}</span>
-            </div>
-          </div>
+          <p className="mt-1 flex items-center gap-2 text-sm font-medium text-o-text">
+            <ArrowRight aria-hidden="true" className="h-4 w-4 shrink-0 text-o-teal" />
+            {mission.nextAction}
+          </p>
         </div>
-
-        <div className="grid shrink-0 grid-cols-3 gap-2 text-[11px] uppercase text-current/75 lg:w-[460px]">
-          <div className="border border-current/15 bg-white/[0.03] px-2 py-1.5">
-            <div className="flex items-center gap-1 text-current/50">
-              <Activity className="h-3.5 w-3.5" />
-              Sim pulse
-            </div>
-            <div className="text-sm text-cyan-200">{Math.round(pulseRate)} bpm</div>
+        <dl className="grid shrink-0 grid-cols-3 gap-2 text-xs text-o-text3 lg:w-[30rem]">
+          <div className="rounded-lg border border-o-line bg-o-s2 px-2 py-1.5">
+            <dt className="flex items-center gap-1">
+              <Activity aria-hidden="true" className="h-3.5 w-3.5" /> Simulated pulse
+            </dt>
+            <dd className="font-mono text-sm text-o-text">{Math.round(pulseRate)} bpm</dd>
           </div>
-          <div className="border border-current/15 bg-white/[0.03] px-2 py-1.5">
-            <div className="text-current/50">Sim cohesion</div>
-            <div className="text-sm text-cyan-200">{(coherenceLevel * 100).toFixed(0)}%</div>
+          <div className="rounded-lg border border-o-line bg-o-s2 px-2 py-1.5">
+            <dt>Modeled cohesion</dt>
+            <dd className="font-mono text-sm text-o-text">{Math.round(coherenceLevel * 100)}%</dd>
           </div>
-          <div className="border border-current/15 bg-white/[0.03] px-2 py-1.5">
-            <div className="flex items-center gap-1 text-current/50">
-              <RadioTower className="h-3.5 w-3.5" />
-              Visual marker
-            </div>
-            <div className="text-sm text-cyan-200">{activeFrequency.toFixed(1)} Hz</div>
+          <div className="rounded-lg border border-o-line bg-o-s2 px-2 py-1.5">
+            <dt className="flex items-center gap-1">
+              <RadioTower aria-hidden="true" className="h-3.5 w-3.5" /> Display marker
+            </dt>
+            <dd className="font-mono text-sm text-o-text">{activeFrequency.toFixed(1)} Hz</dd>
           </div>
-        </div>
+        </dl>
       </div>
     </section>
   );
 });
+
+MissionCommandStrip.displayName = 'MissionCommandStrip';

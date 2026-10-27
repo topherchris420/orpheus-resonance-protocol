@@ -5,9 +5,9 @@ import { AGENTS, agentById, runAgentSession } from './agents';
 import { runBatch, type BatchConfig } from './batch';
 import { assignParticipant, williamsSquare } from './counterbalance';
 import { computeMetrics } from './metrics';
-import { trialRowsToCsv } from './package';
+import { HUMAN_GROUP, trialRowsToCsv } from './package';
 import { HYPOTHESES, METRICS, PROTOCOL, protocolHash } from './protocol';
-import { batchPackage, verifyAndReproduce } from './reproduce';
+import { batchPackage, combineStudyPackages, humanStudyPackage, nonProtocolReason, verifyAndReproduce } from './reproduce';
 import { scoreTrial } from './scoring';
 import { bootstrapMean, holm, pairedDifference, wilson } from './stats';
 import {
@@ -17,7 +17,9 @@ import {
   defaultStudyConfig,
   dispatchStudy,
   planStudy,
+  restoreStudySession,
   scoredResponses,
+  studyProgress,
   verifyStudyReplay,
   studyStateHash,
   type TrialResponse,
@@ -256,5 +258,88 @@ describe('batches and research packages', () => {
     const lines = csv.split('\n');
     expect(lines[0].split(',')).toContain('utility');
     expect(lines).toHaveLength(1 + 4 * 12);
+  });
+});
+
+/** Drives a session that keeps participantKind "human", stopping after `limit` scored responses if given. */
+const driveHuman = (studyConfig: ReturnType<typeof config>, policyId = 'declared-analyst', limit = Number.POSITIVE_INFINITY) => {
+  const policy = agentById(policyId);
+  const agentSession = runAgentSession(studyConfig, policy);
+  let session = createStudySession(studyConfig);
+  for (const entry of agentSession.log) {
+    if (scoredResponses(session.state).length >= limit) break;
+    const result = dispatchStudy(session, entry.command);
+    if (!result.accepted) throw new Error(result.reason);
+    session = result.session;
+  }
+  return session;
+};
+
+describe('human study packages', () => {
+  it('restores an interrupted session exactly from its configuration and log', () => {
+    const session = driveHuman(config(1), 'declared-analyst', 10);
+    const restored = restoreStudySession(session.state.config, session.genesis, session.log);
+    expect(restored.error).toBeNull();
+    expect(studyStateHash(restored.session!.state)).toBe(studyStateHash(session.state));
+    expect(restoreStudySession(config(2), session.genesis, session.log).session).toBeNull();
+    const tampered = session.log.map((entry, index) => (index === 3 ? { ...entry, command: { ...entry.command, confidence: 1 } } : entry));
+    expect(restoreStudySession(session.state.config, session.genesis, tampered as typeof session.log).error).toMatch(/integrity/);
+  });
+
+  it('applies the preregistered exclusion rule and still records the excluded session', () => {
+    const complete = driveHuman(config(0));
+    const partial = dispatchStudy(driveHuman(config(1), 'face-value', 10), { type: 'withdraw' }).session;
+    expect(studyProgress(partial.state)).toEqual({ planned: 48, completed: 10 });
+    const pkg = humanStudyPackage([complete, partial]);
+    expect(pkg.content.kind).toBe('human-study');
+    expect(pkg.content.summary).toHaveLength(1);
+    expect(pkg.content.summary[0]).toMatchObject({ agentId: HUMAN_GROUP, participants: 1 });
+    expect(pkg.content.configuration.exclusions).toEqual([{ participant: 'P-1', completed: 10, planned: 48, reason: 'Fewer than half of the scored trials were answered.' }]);
+    expect(pkg.content.participants.map((participant) => participant.status)).toEqual(['complete', 'withdrawn']);
+    const verification = verifyAndReproduce(JSON.parse(JSON.stringify(pkg)), { rerun: false });
+    expect(verification).toMatchObject({ schemaOk: true, contentHashOk: true, protocolMatches: true, reproduced: null, issues: [] });
+  });
+
+  it('combines participant packages by replay, independent of input order', () => {
+    const first = humanStudyPackage([driveHuman(config(0), 'follow-ai')]);
+    const second = humanStudyPackage([driveHuman(config(1), 'face-value')]);
+    const combined = combineStudyPackages([
+      { name: 'p0.json', raw: JSON.parse(JSON.stringify(first)) },
+      { name: 'p1.json', raw: JSON.parse(JSON.stringify(second)) },
+    ]);
+    expect(combined.pkg?.content.participants.map((participant) => participant.code)).toEqual(['P-0', 'P-1']);
+    expect(combined.pkg?.content.summary[0].participants).toBe(2);
+    expect(combined.inputs.every((input) => input.verification.issues.length === 0)).toBe(true);
+    const reversed = combineStudyPackages([
+      { name: 'p1.json', raw: second },
+      { name: 'p0.json', raw: first },
+    ]);
+    expect(reversed.pkg?.contentHash).toBe(combined.pkg?.contentHash);
+    expect(verifyAndReproduce(JSON.parse(JSON.stringify(combined.pkg)), { rerun: false }).issues).toEqual([]);
+  });
+
+  it('refuses tampered, duplicate, non-protocol and simulated inputs', () => {
+    const valid = humanStudyPackage([driveHuman(config(0))]);
+    const tampered = JSON.parse(JSON.stringify(humanStudyPackage([driveHuman(config(1))])));
+    tampered.content.trials[0].correct = !tampered.content.trials[0].correct;
+    const demoConfig = config(2, { trialsPerBlock: 4 });
+    expect(nonProtocolReason(demoConfig)).toMatch(/Shortened/);
+    expect(nonProtocolReason(config(2))).toBeNull();
+    const demo = humanStudyPackage([driveHuman(demoConfig)]);
+    const simulated = batchPackage({ agentIds: ['majority'], participantsPerAgent: 1, seed: 'combine', trialsPerBlock: 4, showQualityFlags: true, resamples: 200, materials: 'protocol' });
+    const result = combineStudyPackages([
+      { name: 'valid.json', raw: valid },
+      { name: 'again.json', raw: valid },
+      { name: 'tampered.json', raw: tampered },
+      { name: 'demo.json', raw: demo },
+      { name: 'simulated.json', raw: simulated },
+      { name: 'not-json.json', raw: null },
+    ]);
+    expect(result.pkg?.content.participants.map((participant) => participant.code)).toEqual(['P-0']);
+    expect(result.duplicates).toEqual(['P-0']);
+    expect(result.rejected).toEqual([{ participant: 'P-2', reason: 'Shortened session (4 trials per block instead of 12).' }]);
+    expect(result.inputs[2].verification.contentHashOk).toBe(false);
+    expect(result.inputs[4].verification.issues).toContain('Only human-study packages can be combined.');
+    expect(result.inputs[5].verification.schemaOk).toBe(false);
   });
 });

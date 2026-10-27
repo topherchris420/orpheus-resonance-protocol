@@ -25,6 +25,9 @@ export const LIMITATIONS = [
   'Exact replay shows that the software reproduces the same computation. It is not scientific validation of the simulation or of the conclusions.',
 ];
 
+/** Human-study packages summarize their participants as one group with this id. */
+export const HUMAN_GROUP = 'human';
+
 export const PRIVACY = {
   identifiers: 'Participants are identified only by random codes.',
   excluded: ['Raw microphone audio (never recorded)', 'Names, contact details, accounts', 'Free-text responses (none are collected)', 'Device identifiers'],

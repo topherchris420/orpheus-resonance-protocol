@@ -75,3 +75,16 @@ export const assistantFor = (state: MissionState, manifest: ScenarioManifest, po
 export const maxPhase = (manifest: ScenarioManifest): number => Math.max(...manifest.phases.map((phase) => phase.index));
 
 export const remainingDecisions = (state: MissionState): number => state.decisions.filter((runtime) => runtime.status !== 'resolved').length;
+
+export type NextStep = 'review' | 'decide' | 'advance' | 'wait';
+
+/**
+ * What the visitor should do next. A finished catalog goes straight to review (no empty final phase
+ * is required), and the next phase is offered only once no decision is open.
+ */
+export const nextStep = (state: MissionState, manifest: ScenarioManifest): NextStep => {
+  if (remainingDecisions(state) === 0) return 'review';
+  if (state.decisions.some((runtime) => runtime.status === 'open')) return 'decide';
+  if (state.phase < maxPhase(manifest)) return 'advance';
+  return 'wait';
+};

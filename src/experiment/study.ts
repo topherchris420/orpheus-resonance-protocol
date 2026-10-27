@@ -302,4 +302,30 @@ export const verifyStudyReplay = (config: StudyConfig, genesis: string, log: rea
   return { chain, verified: hash === expectedHash, stateHash: hash, error: hash === expectedHash ? null : 'Replayed state differs from the recorded state.' };
 };
 
+/**
+ * Rebuilds a session from its configuration and log, for resuming an interrupted session or for
+ * combining recorded sessions. Returns null with a reason when the log does not replay cleanly.
+ */
+export const restoreStudySession = (
+  config: StudyConfig,
+  genesis: string,
+  log: readonly LogEntry<StudyCommand>[],
+): { session: StudySession; error: null } | { session: null; error: string } => {
+  if (genesisHash(studyHeader(config)) !== genesis) return { session: null, error: 'The log does not belong to this configuration.' };
+  if (!verifyChain(log, genesis).ok) return { session: null, error: 'The log failed its integrity check.' };
+  let state = createStudyState(config);
+  for (const entry of log) {
+    const result = reduceStudy(state, entry.command);
+    if (!result.accepted) return { session: null, error: `Entry ${entry.seq} was rejected on replay: ${result.reason}` };
+    state = result.state;
+  }
+  return { session: { state, genesis, log: [...log] }, error: null };
+};
+
 export const scoredResponses = (state: Pick<StudyState, 'responses'>) => state.responses.filter((response) => !response.practice);
+
+/** Scored trials in the plan, and how many were answered. */
+export const studyProgress = (state: StudyState) => ({
+  planned: state.plan.filter((trial) => trial.block >= 0).length,
+  completed: scoredResponses(state).length,
+});
