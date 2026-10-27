@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { hashValue } from '@/engine/canonical';
 import { DEFAULT_BLOCK_MIX } from '@/scenarios/taskFamily';
 import { AGENTS, agentById, runAgentSession } from './agents';
-import { runBatch, type BatchConfig } from './batch';
+import { batchConfigProblem, DEFAULT_BATCH, runBatch, type BatchConfig } from './batch';
 import { assignParticipant, williamsSquare } from './counterbalance';
 import { computeMetrics } from './metrics';
 import { HUMAN_GROUP, trialRowsToCsv } from './package';
@@ -341,5 +341,59 @@ describe('human study packages', () => {
     expect(result.inputs[2].verification.contentHashOk).toBe(false);
     expect(result.inputs[4].verification.issues).toContain('Only human-study packages can be combined.');
     expect(result.inputs[5].verification.schemaOk).toBe(false);
+  });
+});
+
+describe('custom experiment designs', () => {
+  const custom: BatchConfig = {
+    ...DEFAULT_BATCH,
+    agentIds: ['follow-ai'],
+    participantsPerAgent: 2,
+    resamples: 200,
+    seed: 'custom-design',
+    blockMix: ['conflict', 'missing', 'conflict'],
+    formIds: ['route'],
+    conditions: ['B', 'D'],
+  };
+
+  it('runs only the chosen scenario, information conditions and assistance conditions', () => {
+    const result = runBatch(custom);
+    for (const { session } of result.sessions) {
+      const scored = scoredResponses(session.state);
+      expect(scored).toHaveLength(2 * 3);
+      expect(new Set(scored.map((response) => response.condition))).toEqual(new Set(['B', 'D']));
+      expect(new Set(scored.map((response) => response.formId))).toEqual(new Set(['route']));
+      expect(scored.filter((response) => response.informationCondition === 'conflict')).toHaveLength(4);
+      expect(session.state.stage).toBe('complete');
+      expect(session.state.questionnaires).toHaveLength(2);
+    }
+    const hypotheses = result.groups[0].hypotheses;
+    expect(hypotheses.find((entry) => entry.hypothesis.id === 'H1')?.pairs).toBe(2);
+    expect(hypotheses.find((entry) => entry.hypothesis.id === 'H4')?.pairs).toBe(0);
+  });
+
+  it('records the design in the package and reproduces it exactly', () => {
+    const pkg = batchPackage(custom);
+    expect(pkg.content.configuration.batch).toMatchObject({ blockMix: custom.blockMix, formIds: ['route'], conditions: ['B', 'D'] });
+    expect(verifyAndReproduce(JSON.parse(JSON.stringify(pkg)))).toMatchObject({ contentHashOk: true, reproduced: true, issues: [] });
+  });
+
+  it('keeps protocol packages unchanged when no custom design is set', () => {
+    const plain = batchPackage({ ...DEFAULT_BATCH, agentIds: ['majority'], participantsPerAgent: 1, resamples: 200 });
+    const config = plain.content.replay.sessions[0].config;
+    expect(config).not.toHaveProperty('blockMix');
+    expect(config).not.toHaveProperty('formIds');
+    expect(config).not.toHaveProperty('conditions');
+    expect(nonProtocolReason({ ...config, participantKind: 'human', conditions: ['D'] })).toMatch(/Custom design/);
+  });
+
+  it('rejects impossible configurations before running', () => {
+    expect(batchConfigProblem({ ...custom, agentIds: [] })).toMatch(/policy/);
+    expect(batchConfigProblem({ ...custom, blockMix: [] })).toMatch(/between 1 and/);
+    expect(batchConfigProblem({ ...custom, blockMix: ['nonsense' as never] })).toMatch(/Unknown information condition/);
+    expect(batchConfigProblem({ ...custom, formIds: ['atlantis'] })).toMatch(/scenario/);
+    expect(batchConfigProblem({ ...custom, conditions: [] })).toMatch(/assistance condition/);
+    expect(batchConfigProblem(custom)).toBeNull();
+    expect(() => runBatch({ ...custom, participantsPerAgent: 0 })).toThrow(/between 1 and 500/);
   });
 });

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { AccessTerminal } from '@/components/AccessTerminal';
 import { AppShell } from '@/components/common/AppShell';
 import { appConfig } from '@/config/appConfig';
+import { LANDING_ABSTENTION } from '@/content/landingExample';
 
 const Landing = () => {
   const navigate = useNavigate();
@@ -84,8 +85,8 @@ const Landing = () => {
           </div>
           <figure className="o-panel-raised p-5">
             <p className="o-eyebrow text-o-amber">Assistant · uncertainty-aware</p>
-            <p className="mt-3 text-base font-medium text-o-text">Two reports disagree, and neither has independent confirmation. Orpheus cannot establish which is accurate.</p>
-            <p className="mt-3 text-sm text-o-text2">Recommended next step: seek an independent observation before relying on either report.</p>
+            <p className="mt-3 text-base font-medium text-o-text">{LANDING_ABSTENTION.explanation}</p>
+            <p className="mt-3 text-sm text-o-text2">Recommended next step: {LANDING_ABSTENTION.recommendation}</p>
             <figcaption className="mt-4 text-xs text-o-text3">An actual abstention from the guided scenario. Assistant statements are labeled as AI output and are never treated as evidence.</figcaption>
           </figure>
         </section>

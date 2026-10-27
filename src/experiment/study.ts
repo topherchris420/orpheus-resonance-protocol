@@ -5,6 +5,7 @@ import { appendEntry, genesisHash, verifyChain, type ChainVerification, type Log
 import { deriveSeed, Rng } from '@/engine/rng';
 import { ENGINE_VERSION, SCHEMA } from '@/engine/version';
 import {
+  formById,
   generateStructureSet,
   generateStructure,
   renderTrial,
@@ -35,6 +36,16 @@ export interface StudyConfig {
   trialsPerBlock: number;
   /** Trial materials. Studies use the protocol's fixed materials; simulations may resample them. */
   materialsSeed: string;
+  /**
+   * Optional custom design for simulation experiments. Absent means the protocol design; these fields
+   * are omitted rather than defaulted so that protocol sessions keep their recorded hashes.
+   * - blockMix: information conditions in every block (replaces the protocol mix; one trial each).
+   * - formIds: narrative forms (scenarios) to rotate through, in place of all four.
+   * - conditions: assistance conditions to run; blocks for the others are skipped.
+   */
+  blockMix?: InformationCondition[];
+  formIds?: string[];
+  conditions?: AssistanceCondition[];
 }
 
 export interface PlannedTrial {
@@ -116,8 +127,9 @@ export const defaultStudyConfig = (overrides: Partial<StudyConfig> & Pick<StudyC
 /** Builds the trial plan: practice under condition A, then four blocks in Latin-square order. */
 export const planStudy = (config: StudyConfig, protocol: StudyProtocol = PROTOCOL): { assignment: Assignment; plan: PlannedTrial[] } => {
   const assignment = assignParticipant(config.participantIndex);
-  const mix = protocol.blockMix.slice(0, config.trialsPerBlock);
-  const practiceForm = TASK_FORMS[(assignment.row + 1) % TASK_FORMS.length];
+  const mix = config.blockMix ?? protocol.blockMix.slice(0, config.trialsPerBlock);
+  const forms = config.formIds?.map(formById) ?? TASK_FORMS;
+  const practiceForm = forms[(assignment.row + 1) % forms.length];
   const practice: PlannedTrial[] = protocol.practiceMix.map((condition, index) => ({
     block: -1,
     condition: 'A',
@@ -128,8 +140,9 @@ export const planStudy = (config: StudyConfig, protocol: StudyProtocol = PROTOCO
     ),
   }));
   const blocks = assignment.conditions.flatMap((condition, block) => {
+    if (config.conditions && !config.conditions.includes(condition)) return [];
     const structures = generateStructureSet(config.materialsSeed, assignment.structureSets[block], mix);
-    const form = TASK_FORMS[assignment.forms[block]];
+    const form = forms[assignment.forms[block] % forms.length];
     const order = Rng.fromSeed(deriveSeed(config.seed, 'order', block)).shuffle(structures);
     return order.map((structure, index): PlannedTrial => ({
       block,

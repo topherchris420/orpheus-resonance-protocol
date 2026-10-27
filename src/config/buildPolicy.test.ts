@@ -31,5 +31,6 @@ describe('build policy', () => {
     expect(workflow).toContain('node-version: 24');
     expect(workflow).not.toMatch(/uses: actions\/(?:checkout|setup-node)@v4/);
     expect(workflow).not.toMatch(/node-version:\s*20/);
+    expect(workflow).not.toMatch(/uses: actions\/upload-artifact@v[1-5]\b/);
   });
 });

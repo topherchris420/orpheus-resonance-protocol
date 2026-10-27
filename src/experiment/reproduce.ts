@@ -1,5 +1,5 @@
 import { SCHEMA } from '@/engine/version';
-import { DEFAULT_BATCH, runBatch, summarizeGroup, type BatchConfig } from './batch';
+import { batchConfigProblem, DEFAULT_BATCH, runBatch, summarizeGroup, type BatchConfig } from './batch';
 import { buildResearchPackage, HUMAN_GROUP, verifyResearchPackage, type PackageSession, type PackageVerification, type ResearchPackage } from './package';
 import { PROTOCOL, protocolHash } from './protocol';
 import { restoreStudySession, studyProgress, verifyStudyReplay, type StudySession } from './study';
@@ -24,7 +24,8 @@ export const verifyPackageSession = (session: PackageSession) => {
 const asBatchConfig = (configuration: Record<string, unknown>): BatchConfig | null => {
   const batch = configuration.batch as Partial<BatchConfig> | undefined;
   if (!batch || !Array.isArray(batch.agentIds) || typeof batch.seed !== 'string') return null;
-  return { ...DEFAULT_BATCH, ...batch } as BatchConfig;
+  const config = { ...DEFAULT_BATCH, ...batch } as BatchConfig;
+  return batchConfigProblem(config) ? null : config;
 };
 
 export const verifyAndReproduce = (raw: unknown, { rerun = true } = {}) =>
@@ -83,6 +84,7 @@ export const nonProtocolReason = (config: StudySession['state']['config']): stri
   if (config.protocolHash !== protocolHash()) return 'Recorded under a different protocol version.';
   if (config.trialsPerBlock !== PROTOCOL.trialsPerBlock) return `Shortened session (${config.trialsPerBlock} trials per block instead of ${PROTOCOL.trialsPerBlock}).`;
   if (config.materialsSeed !== PROTOCOL.materialsSeed) return 'Used materials other than the protocol materials.';
+  if (config.blockMix || config.formIds || config.conditions) return 'Custom design (not the protocol design).';
   if (config.participantKind !== 'human') return 'Not a human participant.';
   return null;
 };

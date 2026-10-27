@@ -1,7 +1,8 @@
 import type { AssistanceCondition } from '@/assistant/schema';
 import { deriveSeed } from '@/engine/rng';
-import { INFORMATION_CONDITIONS, type InformationCondition } from '@/scenarios/taskFamily';
-import { agentById, runAgentSession } from './agents';
+import { INFORMATION_CONDITIONS, TASK_FORMS, type InformationCondition } from '@/scenarios/taskFamily';
+import { AGENTS, agentById, runAgentSession } from './agents';
+import { CONDITION_ORDER } from './counterbalance';
 import { assistantBehavior, byCondition, computeMetrics, type AssistantBehavior, type MetricValues } from './metrics';
 import { HYPOTHESES, PROTOCOL, type Hypothesis, type MetricId } from './protocol';
 import { bootstrapMean, bootstrapPValue, holm, wilson, type Interval } from './stats';
@@ -20,7 +21,36 @@ export interface BatchConfig {
    * estimate how a policy behaves across the generator rather than on one fixed test.
    */
   materials: 'protocol' | 'resampled';
+  /**
+   * Optional custom design (omitted = protocol design). `blockMix` lists the information conditions in
+   * every block, one trial each; `formIds` selects the scenarios; `conditions` the assistance conditions.
+   */
+  blockMix?: InformationCondition[];
+  formIds?: string[];
+  conditions?: AssistanceCondition[];
 }
+
+export const MAX_BLOCK_TRIALS = 40;
+
+/** Why a configuration cannot run, or null. Checked before running and when reproducing a package. */
+export const batchConfigProblem = (config: BatchConfig): string | null => {
+  if (config.agentIds.length === 0) return 'Choose at least one policy.';
+  const unknownAgent = config.agentIds.find((id) => !AGENTS.some((agent) => agent.id === id));
+  if (unknownAgent) return `Unknown policy "${unknownAgent}".`;
+  if (!Number.isInteger(config.participantsPerAgent) || config.participantsPerAgent < 1 || config.participantsPerAgent > 500) return 'Participants per policy must be between 1 and 500.';
+  if (!config.seed) return 'Set a seed.';
+  if (config.blockMix) {
+    if (config.blockMix.length === 0 || config.blockMix.length > MAX_BLOCK_TRIALS) return `A block needs between 1 and ${MAX_BLOCK_TRIALS} trials.`;
+    if (config.blockMix.some((condition) => !INFORMATION_CONDITIONS.includes(condition))) return 'Unknown information condition.';
+  } else if (!Number.isInteger(config.trialsPerBlock) || config.trialsPerBlock < 1 || config.trialsPerBlock > PROTOCOL.blockMix.length) {
+    return `Trials per block must be between 1 and ${PROTOCOL.blockMix.length}.`;
+  }
+  if (config.formIds && (config.formIds.length === 0 || config.formIds.some((id) => !TASK_FORMS.some((form) => form.id === id)))) return 'Choose at least one known scenario.';
+  if (config.conditions && (config.conditions.length === 0 || config.conditions.some((condition) => !CONDITION_ORDER.includes(condition)))) {
+    return 'Choose at least one assistance condition.';
+  }
+  return null;
+};
 
 export const DEFAULT_BATCH: BatchConfig = {
   agentIds: ['follow-ai', 'noisy-reliance', 'declared-analyst', 'face-value', 'majority'],
@@ -161,6 +191,8 @@ export interface BatchResult {
 
 /** Runs simulated participants through the full protocol. Deterministic for a given configuration. */
 export const runBatch = (config: BatchConfig): BatchResult => {
+  const problem = batchConfigProblem(config);
+  if (problem) throw new Error(problem);
   const sessions: BatchResult['sessions'] = [];
   for (const agentId of config.agentIds) {
     const policy = agentById(agentId);
@@ -170,8 +202,11 @@ export const runBatch = (config: BatchConfig): BatchResult => {
         participantIndex: index,
         seed: deriveSeed(config.seed, agentId, index),
         showQualityFlags: config.showQualityFlags,
-        trialsPerBlock: config.trialsPerBlock,
+        trialsPerBlock: config.blockMix?.length ?? config.trialsPerBlock,
         ...(config.materials === 'resampled' ? { materialsSeed: deriveSeed(config.seed, 'materials', index) } : {}),
+        ...(config.blockMix ? { blockMix: [...config.blockMix] } : {}),
+        ...(config.formIds ? { formIds: [...config.formIds] } : {}),
+        ...(config.conditions ? { conditions: [...config.conditions] } : {}),
       });
       sessions.push({ agentId, session: runAgentSession(studyConfig, policy) });
     }

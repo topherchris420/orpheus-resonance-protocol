@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 import { captureJson, watchErrors, writeJson } from './helpers';
 
@@ -6,7 +7,10 @@ test.describe('research workbench', () => {
     const errors = watchErrors(page);
     await page.goto('/research?tab=simulate');
     await page.getByLabel('Participants per policy').fill('2');
-    await page.getByLabel('Trials per block').selectOption('4');
+    // A custom design: degraded information only, and no explainable-AI condition.
+    await page.getByRole('button', { name: 'Degraded information only' }).click();
+    await page.getByRole('checkbox', { name: 'C · Explainable AI' }).uncheck();
+    await expect(page.getByText(/Custom design · 240 scored trials/)).toBeVisible();
     await page.getByRole('button', { name: 'Run experiment' }).click();
 
     // Results open automatically, labeled as simulated.
@@ -16,6 +20,7 @@ test.describe('research workbench', () => {
     await expect(results.getByRole('figure', { name: /Mean decision utility per trial by assistance condition/ })).toBeVisible();
     await expect(results.getByRole('region', { name: 'Metrics by condition' }).getByRole('rowheader', { name: 'Decision utility' })).toBeVisible();
     await expect(results.getByRole('heading', { name: 'Preregistered hypotheses' })).toBeVisible();
+    await expect(results.getByText(/conditions A, B, D · custom evidence mix \(8 trials per block: conflict, missing, stale, corrupted\)/)).toBeVisible();
 
     // Error inspection opens the evidence and assistant output behind a wrong conclusion.
     const firstError = results.getByRole('heading', { name: 'Error inspection' }).locator('..').getByRole('button', { name: /truth/ }).first();
@@ -28,7 +33,7 @@ test.describe('research workbench', () => {
       results.getByRole('button', { name: 'Research package (JSON)' }).click(),
     );
     expect(pkg.json.content.kind).toBe('agent-batch');
-    expect(pkg.json.content.trials).toHaveLength(5 * 2 * 4 * 4);
+    expect(pkg.json.content.trials).toHaveLength(5 * 2 * 3 * 8);
 
     // Reproduce: the exported package verifies, and regenerating it gives the same content hash.
     await page.getByRole('tab', { name: 'Reproduce' }).click();
@@ -46,6 +51,19 @@ test.describe('research workbench', () => {
     await expect(verification.getByText('Content hash matches: no')).toBeVisible();
 
     expect(errors).toEqual([]);
+  });
+
+  test('the default design reproduces, in the browser, the package hash generated in Node', async ({ page }) => {
+    test.setTimeout(180_000);
+    const runs = JSON.parse(readFileSync(new URL('../docs/results/baseline-agents.summary.json', import.meta.url), 'utf8')) as Array<{ title: string; contentHash: string }>;
+    const expected = runs.find((run) => run.title === 'Workbench default')!.contentHash;
+    await page.goto('/research?tab=simulate');
+    await expect(page.getByText(/Protocol design · 1,920 scored trials/)).toBeVisible();
+    await page.getByRole('button', { name: 'Run experiment' }).click();
+    const results = page.getByRole('tabpanel', { name: /Results/ });
+    await expect(results.getByText(/content hash/)).toBeVisible({ timeout: 150_000 });
+    const pkg = await captureJson<{ contentHash: string }>(page, () => results.getByRole('button', { name: 'Research package (JSON)' }).click());
+    expect(pkg.json.contentHash).toBe(expected);
   });
 
   test('re-runs the committed calibration evaluation and reproduces it exactly', async ({ page }) => {

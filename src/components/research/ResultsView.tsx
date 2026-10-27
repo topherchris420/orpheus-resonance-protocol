@@ -7,11 +7,11 @@ import { EvidencePanel } from '@/components/evidence/EvidencePanel';
 import { shortHash } from '@/engine/canonical';
 import { assessEvidence } from '@/evidence/engine';
 import { AGENTS } from '@/experiment/agents';
-import type { GroupSummary } from '@/experiment/batch';
+import type { BatchConfig, GroupSummary } from '@/experiment/batch';
 import type { MetricValues } from '@/experiment/metrics';
 import { HUMAN_GROUP, trialRowsToCsv, type ResearchPackage } from '@/experiment/package';
 import { metricDefinition, PROTOCOL, type MetricId } from '@/experiment/protocol';
-import { INFORMATION_CONDITIONS } from '@/scenarios/taskFamily';
+import { INFORMATION_CONDITIONS, TASK_FORMS } from '@/scenarios/taskFamily';
 import { downloadJson, downloadText, timestampSlug } from '@/state/missionStore';
 
 const CONDITIONS: AssistanceCondition[] = ['A', 'B', 'C', 'D'];
@@ -45,6 +45,18 @@ const groupLabel = (agentId: string) => (agentId === HUMAN_GROUP ? 'Participants
 const groupDescription = (agentId: string) =>
   agentId === HUMAN_GROUP ? 'People who completed the protocol in this browser.' : AGENTS.find((agent) => agent.id === agentId)?.description ?? 'Unknown policy.';
 const participantKind = (agentId: string) => (agentId === HUMAN_GROUP ? 'human' : `agent:${agentId}`);
+
+/** One line describing the experimental design recorded in a simulated package. */
+const designSummary = (batch: Partial<BatchConfig>) => {
+  const mix = batch.blockMix
+    ? `custom evidence mix (${batch.blockMix.length} trials per block: ${[...new Set(batch.blockMix)].join(', ')})`
+    : batch.trialsPerBlock !== undefined && batch.trialsPerBlock !== PROTOCOL.trialsPerBlock
+      ? `first ${batch.trialsPerBlock} conditions of the protocol mix`
+      : `protocol evidence mix (${PROTOCOL.trialsPerBlock} trials per block)`;
+  const scenarios = batch.formIds ? batch.formIds.map((id) => TASK_FORMS.find((form) => form.id === id)?.title ?? id).join(', ') : 'all four scenarios';
+  const conditions = batch.conditions ? `conditions ${batch.conditions.join(', ')}` : 'conditions A–D';
+  return `${scenarios} · ${conditions} · ${mix} · ${batch.materials === 'resampled' ? 'resampled' : 'protocol'} materials · seed ${batch.seed}`;
+};
 
 const fmt = (value: number | null | undefined, digits = 2) => (value === null || value === undefined || Number.isNaN(value) ? '—' : value.toFixed(digits));
 
@@ -109,6 +121,11 @@ export const ResultsView = ({ pkg, simulated }: { pkg: ResearchPackage; simulate
           </button>
         </div>
       </div>
+      {simulated && pkg.content.configuration.batch ? (
+        <p className="text-sm text-o-text2">
+          <span className="font-semibold text-o-text">Design:</span> {designSummary(pkg.content.configuration.batch as Partial<BatchConfig>)}
+        </p>
+      ) : null}
       <p className="text-sm text-o-text2">
         {groupDescription(group.agentId)} {group.participants} {simulated ? 'simulated participants' : group.participants === 1 ? 'participant' : 'participants'} · content hash{' '}
         <span className="font-mono">{shortHash(pkg.contentHash)}</span>

@@ -78,6 +78,18 @@ for (const run of runs) {
   lines.push(...section(run.title, run.note, run.config, pkg));
   summaries.push({ title: run.title, contentHash: pkg.contentHash, config: run.config, summary: pkg.content.summary });
 }
+// The workbench's default configuration, so a browser run can be checked against this Node run.
+const workbenchDefault = batchPackage(DEFAULT_BATCH);
+lines.push(
+  '## Workbench default configuration',
+  '',
+  'Running the Simulate tab with its default settings must reproduce this content hash in the browser (checked by an end-to-end test).',
+  '',
+  `Seed \`${DEFAULT_BATCH.seed}\` · ${DEFAULT_BATCH.agentIds.length} policies × ${DEFAULT_BATCH.participantsPerAgent} simulated participants · content hash \`${workbenchDefault.contentHash}\``,
+  '',
+);
+summaries.push({ title: 'Workbench default', contentHash: workbenchDefault.contentHash, config: DEFAULT_BATCH, summary: workbenchDefault.content.summary });
+
 writeFileSync(path.join(outDir, 'baseline-agents.md'), `${lines.join('\n')}\n`);
 writeFileSync(path.join(outDir, 'baseline-agents.summary.json'), `${JSON.stringify(summaries, null, 2)}\n`);
 console.log(lines.join('\n'));

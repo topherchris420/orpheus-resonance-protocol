@@ -136,3 +136,9 @@ Seed `workbench-resampled-1` · 100 simulated participants per policy · content
 | H6 | 100 | -0.02 [-0.04, 0.00] | 0.057 | no |
 | H7 | 0 | — | — | n/a |
 
+## Workbench default configuration
+
+Running the Simulate tab with its default settings must reproduce this content hash in the browser (checked by an end-to-end test).
+
+Seed `workbench-1` · 5 policies × 8 simulated participants · content hash `8a0a273a67f813445acfe584d8691467d370f053dfa639673a3408dc006df64f`
+
