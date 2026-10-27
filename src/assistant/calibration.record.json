@@ -1,0 +1,85 @@
+{
+  "method": "aware-bayes-v1",
+  "engineVersion": "2.0.0",
+  "evaluatedOn": "Declared-model domain sampler: 2 interpretations, equal priors, 1–6 reports graded A–E, ages up to 1.5× freshness, 12% corrupted in transit, 15% relayed.",
+  "seed": "orpheus-calibration-2026",
+  "trials": 20000,
+  "ece": 0.0056,
+  "brier": 0.1115,
+  "selectiveAccuracy": 0.9441,
+  "coverage": 0.6368,
+  "threshold": 0.8,
+  "bins": [
+    {
+      "lower": 0.5,
+      "upper": 0.55,
+      "count": 1362,
+      "meanProbability": 0.5158,
+      "observedFrequency": 0.5228
+    },
+    {
+      "lower": 0.55,
+      "upper": 0.6,
+      "count": 1203,
+      "meanProbability": 0.5648,
+      "observedFrequency": 0.5453
+    },
+    {
+      "lower": 0.6,
+      "upper": 0.65,
+      "count": 835,
+      "meanProbability": 0.6233,
+      "observedFrequency": 0.6096
+    },
+    {
+      "lower": 0.65,
+      "upper": 0.7,
+      "count": 1387,
+      "meanProbability": 0.666,
+      "observedFrequency": 0.6655
+    },
+    {
+      "lower": 0.7,
+      "upper": 0.75,
+      "count": 909,
+      "meanProbability": 0.7248,
+      "observedFrequency": 0.7646
+    },
+    {
+      "lower": 0.75,
+      "upper": 0.8,
+      "count": 1568,
+      "meanProbability": 0.7664,
+      "observedFrequency": 0.7577
+    },
+    {
+      "lower": 0.8,
+      "upper": 0.85,
+      "count": 1715,
+      "meanProbability": 0.8345,
+      "observedFrequency": 0.8391
+    },
+    {
+      "lower": 0.85,
+      "upper": 0.9,
+      "count": 1265,
+      "meanProbability": 0.8761,
+      "observedFrequency": 0.8759
+    },
+    {
+      "lower": 0.9,
+      "upper": 0.95,
+      "count": 2565,
+      "meanProbability": 0.9315,
+      "observedFrequency": 0.9294
+    },
+    {
+      "lower": 0.95,
+      "upper": 1,
+      "count": 7191,
+      "meanProbability": 0.9858,
+      "observedFrequency": 0.9864
+    }
+  ],
+  "generatedBy": "npm run evaluate (src/evidence/evaluation.ts)"
+}

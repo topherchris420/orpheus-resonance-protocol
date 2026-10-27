@@ -17,8 +17,8 @@ describe('build policy', () => {
     const packageJson = JSON.parse(readFileSync(path.join(repoRoot, 'package.json'), 'utf8'));
 
     expect(typeof manualChunks).toBe('function');
-    expect(manualChunks('C:/repo/node_modules/three/build/three.module.js')).toBe('three');
-    expect(manualChunks('C:/repo/node_modules/@react-three/fiber/dist/index.js')).toBe('react-three');
+    expect(manualChunks?.('C:/repo/node_modules/three/build/three.module.js')).toBe('three');
+    expect(manualChunks?.('C:/repo/node_modules/@react-three/fiber/dist/index.js')).toBe('react-three');
     expect(packageJson.dependencies).not.toHaveProperty('@react-three/drei');
     expect(viteConfig.build?.chunkSizeWarningLimit).toBe(650);
   });

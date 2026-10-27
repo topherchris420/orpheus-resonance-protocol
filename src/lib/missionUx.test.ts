@@ -3,6 +3,7 @@ import {
   appendOperatorEvent,
   deriveMissionUx,
   getTelemetryAssessment,
+  type OperatorEvent,
 } from './missionUx';
 
 describe('deriveMissionUx', () => {
@@ -81,7 +82,7 @@ describe('appendOperatorEvent', () => {
       })[0],
     );
 
-    const history = events.reduce(
+    const history = events.reduce<OperatorEvent[]>(
       (current, event) => appendOperatorEvent(current, event, 10),
       [],
     );
