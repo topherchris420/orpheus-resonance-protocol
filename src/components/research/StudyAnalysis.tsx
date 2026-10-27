@@ -97,7 +97,8 @@ export const StudyAnalysis = ({ onPackage }: { onPackage: (pkg: ResearchPackage)
           type="file"
           multiple
           accept="application/json,.json"
-          className="sr-only"
+          className="hidden"
+          aria-label="Participant package files"
           id="study-packages"
           onChange={(event) => {
             const files = Array.from(event.target.files ?? []);

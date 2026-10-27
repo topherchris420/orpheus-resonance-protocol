@@ -103,7 +103,8 @@ export const ReproducePanel = ({ current, onOpen }: { current: ResearchPackage |
             ref={input}
             type="file"
             accept="application/json,.json"
-            className="sr-only"
+            className="hidden"
+            aria-label="Research package file"
             id="package-file"
             onChange={(event) => {
               const file = event.target.files?.[0];

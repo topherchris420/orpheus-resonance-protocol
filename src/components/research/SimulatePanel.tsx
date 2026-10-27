@@ -88,11 +88,11 @@ export const SimulatePanel = ({ onPackage }: { onPackage: (pkg: ResearchPackage)
           </label>
           <fieldset className="text-sm text-o-text2">
             <legend>Materials</legend>
-            <label className="mt-1 flex items-center gap-2">
+            <label className="mt-1 flex min-h-8 items-center gap-2">
               <input type="radio" name="materials" checked={config.materials === 'protocol'} onChange={() => setConfig((previous) => ({ ...previous, materials: 'protocol' }))} />
               Protocol (fixed, as for people)
             </label>
-            <label className="flex items-center gap-2">
+            <label className="flex min-h-8 items-center gap-2">
               <input type="radio" name="materials" checked={config.materials === 'resampled'} onChange={() => setConfig((previous) => ({ ...previous, materials: 'resampled' }))} />
               Resampled per participant
             </label>

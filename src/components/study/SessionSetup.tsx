@@ -11,7 +11,7 @@ export const DEMO_TRIALS_PER_BLOCK = 4;
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
 /** Random participant code. It carries no information about the person. */
-export const newParticipantCode = () => {
+const newParticipantCode = () => {
   const bytes = new Uint8Array(6);
   crypto.getRandomValues(bytes);
   return `P-${Array.from(bytes, (byte) => CODE_ALPHABET[byte % CODE_ALPHABET.length]).join('')}`;
@@ -26,7 +26,7 @@ const randomSeed = () => {
 export type FeedbackFactor = 'off' | 'balanced' | 'on';
 
 /** Balanced assignment of the between-subjects factor: alternates every complete Latin square. */
-export const ambientFor = (factor: FeedbackFactor, participantIndex: number) =>
+const ambientFor = (factor: FeedbackFactor, participantIndex: number) =>
   factor === 'on' ? true : factor === 'off' ? false : Math.floor(participantIndex / 4) % 2 === 1;
 
 const prefersReducedMotion = () => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;

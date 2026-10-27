@@ -67,6 +67,24 @@ export default {
 					400: '#fbbf24',
 					500: '#f59e0b',
 					900: '#78350f'
+				},
+				o: {
+					bg: 'hsl(var(--o-bg) / <alpha-value>)',
+					s1: 'hsl(var(--o-surface-1) / <alpha-value>)',
+					s2: 'hsl(var(--o-surface-2) / <alpha-value>)',
+					s3: 'hsl(var(--o-surface-3) / <alpha-value>)',
+					line: 'hsl(var(--o-line) / <alpha-value>)',
+					'line-strong': 'hsl(var(--o-line-strong) / <alpha-value>)',
+					text: 'hsl(var(--o-text) / <alpha-value>)',
+					text2: 'hsl(var(--o-text-2) / <alpha-value>)',
+					text3: 'hsl(var(--o-text-3) / <alpha-value>)',
+					teal: 'hsl(var(--o-teal) / <alpha-value>)',
+					'teal-strong': 'hsl(var(--o-teal-strong) / <alpha-value>)',
+					'teal-dim': 'hsl(var(--o-teal-dim) / <alpha-value>)',
+					amber: 'hsl(var(--o-amber) / <alpha-value>)',
+					red: 'hsl(var(--o-red) / <alpha-value>)',
+					violet: 'hsl(var(--o-violet) / <alpha-value>)',
+					sky: 'hsl(var(--o-sky) / <alpha-value>)'
 				}
 			},
 			borderRadius: {

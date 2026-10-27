@@ -33,7 +33,8 @@ import { ControlRoom } from './ControlRoom';
 import { DecisionLayer } from './DecisionLayer';
 import { EvidenceLayer, LayerHeading, SituationLayer } from './Layers';
 import { OutcomeDialog, SessionReview } from './Review';
-import { currentTourStep, ORIENTATION_TOUR, TutorialRail, type TourTarget } from './TutorialRail';
+import { currentTourStep, ORIENTATION_TOUR, type TourTarget } from './tour';
+import { TutorialRail } from './TutorialRail';
 
 const NeuroEmSimulator = lazy(() => import('@/components/NeuroEmSimulator').then((module) => ({ default: module.NeuroEmSimulator })));
 

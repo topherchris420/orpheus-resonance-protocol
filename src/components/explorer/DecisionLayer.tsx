@@ -21,7 +21,7 @@ const points = (value: number) => {
   return `${scaled > 0 ? '+' : ''}${scaled}`;
 };
 
-export const stanceDescription = (option: DecisionOption, spec: DecisionSpec, runtime: DecisionRuntime | undefined): string => {
+const stanceDescription = (option: DecisionOption, spec: DecisionSpec, runtime: DecisionRuntime | undefined): string => {
   const label = (id: string) => spec.hypotheses.find((hypothesis) => hypothesis.id === id)?.short ?? id;
   switch (option.stance.kind) {
     case 'commit':

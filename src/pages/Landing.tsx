@@ -72,12 +72,12 @@ const Landing = () => {
                 ['C · Explainable AI', 'A suggestion with the evidence behind it.'],
                 ['D · Uncertainty-aware AI', 'Evidence, alternatives, what is unknown, a probability only when it has been validated — and a refusal to conclude when the evidence is insufficient.'],
               ].map(([term, detail]) => (
-                <div key={term} className="flex gap-3">
-                  <Bot aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-o-amber" />
-                  <div>
-                    <dt className="font-semibold text-o-text">{term}</dt>
-                    <dd className="text-o-text2">{detail}</dd>
-                  </div>
+                <div key={term}>
+                  <dt className="flex items-center gap-3 font-semibold text-o-text">
+                    <Bot aria-hidden="true" className="h-4 w-4 shrink-0 text-o-amber" />
+                    {term}
+                  </dt>
+                  <dd className="pl-7 text-o-text2">{detail}</dd>
                 </div>
               ))}
             </dl>

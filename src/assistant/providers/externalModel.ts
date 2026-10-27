@@ -7,11 +7,15 @@ import type { AssistedCondition } from '../schema';
 
 /**
  * Optional adapter for a language model served by an OpenAI-compatible chat endpoint (for example a
- * local model server). It is experimental, disabled by default, and not part of any evaluated
- * condition. The model only *proposes*; every proposal passes the same guardrails as the
- * deterministic assistant, and any failure — network error, timeout, invalid JSON, schema violation,
- * unsupported conclusion — falls back to the deterministic assessment. Model outputs are not
- * reproducible, so sessions record the displayed output as an external input for replay.
+ * local model server). It is experimental and not part of any evaluated condition. The model only
+ * *proposes*; every proposal passes the same guardrails as the deterministic assistant, and any
+ * failure — network error, timeout, invalid JSON, schema violation, unsupported conclusion — falls
+ * back to the deterministic assessment.
+ *
+ * Status: implemented and tested against simulated responses only; it is not connected to the
+ * interface. Connecting it requires (1) recording each displayed model output as an external input in
+ * the session log, because model outputs are not reproducible, and (2) allowing the endpoint in the
+ * page's Content-Security-Policy `connect-src`. Neither is done yet.
  */
 export interface ExternalModelConfig {
   endpoint: string;

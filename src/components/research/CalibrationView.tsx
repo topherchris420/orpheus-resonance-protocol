@@ -1,7 +1,8 @@
 import { CheckCircle2, Play, XCircle } from 'lucide-react';
 import { useState } from 'react';
 import { committedCalibrationRecord, MAX_DISPLAY_ECE, type CalibrationRecord } from '@/assistant/calibrationRegistry';
-import { ReliabilityDiagram, VIZ } from '@/components/charts/charts';
+import { ReliabilityDiagram } from '@/components/charts/charts';
+import { VIZ } from '@/components/charts/palette';
 import { hashValue } from '@/engine/canonical';
 import { ENGINE_VERSION } from '@/engine/version';
 import { EVALUATED_MAX_ITEMS } from '@/evidence/engine';

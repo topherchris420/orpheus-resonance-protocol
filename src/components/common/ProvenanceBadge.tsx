@@ -14,8 +14,6 @@ const STYLE: Record<Provenance, { label: string; icon: LucideIcon; className: st
   missing: { label: 'Missing', icon: CircleDashed, className: 'border-dashed border-o-text3/70 text-o-text3' },
 };
 
-export const provenanceLabel = (kind: Provenance) => STYLE[kind].label;
-
 export const ProvenanceBadge = ({ kind, className }: { kind: Provenance; className?: string }) => {
   const { label, icon: Icon, className: tone } = STYLE[kind];
   return (

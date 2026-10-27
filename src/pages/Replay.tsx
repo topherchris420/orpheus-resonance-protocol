@@ -17,7 +17,7 @@ import { decisionEvidenceContext } from '@/scenarios/evidence';
 import { getScenario } from '@/scenarios/registry';
 import { recallRecord } from '@/state/missionStore';
 
-export const describeCommand = (command: MissionCommand, title: (pointId: string) => string): string => {
+const describeCommand = (command: MissionCommand, title: (pointId: string) => string): string => {
   switch (command.type) {
     case 'advance':
       return `Simulated time advanced ${command.ticks} s`;
