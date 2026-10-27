@@ -169,3 +169,28 @@ above are the places that contradicted them.
 | Robustness laboratory (eight perturbation families) | **Introduce** | Phase 6, built on the existing red-team concept. |
 | Explorer Mode (guided tutorial, previews, outcome summary, replay, comparison) and Research Mode / workbench | **Introduce** | Phases 1 and 9; both run the same engine. |
 | Strict TypeScript, runtime validation, component/E2E/accessibility tests | **Introduce** | Phase 11. |
+
+## 10. Outcome of the implementation matrix
+
+Status after the 2.0.0 rework. "Done" means implemented and covered by automated tests; anything less is
+stated.
+
+| Area | Outcome |
+| --- | --- |
+| Decision ledger rules | Done. Re-hosted in the mission reducer (`engine/mission/reducer.ts`); the v1 tests were ported. |
+| Building 47 mission, phases, objectives, red team, squad cohesion | Done. Same decisions and effects; each event now has evidence, hypotheses and seeded ground truth; red-team reports are injected into open decisions. |
+| Confirmation, after-action review, new session, export | Done. Decision preview in the confirmation; review shows what was chosen, true, known and uncertain, and how B–D would have advised; exports are replayable hash-chained records; v1 records import read-only. |
+| Microphone, consent, tone cap, pacing, reduced motion | Done. Consent token required by the sensor; every track stops on stop and on leaving (tested in a browser with a synthetic microphone); React updates throttled to 4 Hz. |
+| Theatrical terminal | Done. Optional, on the landing page, labeled as fiction. |
+| 3D view, temporal archive, touch surface | Done. Pseudo-scientific claims removed; touch surface works with keyboard and pointer. |
+| `realisticData` singleton and timer-driven world | Done. Replaced by seeded world systems on the tick clock; generator-bound tests ported. |
+| `PegasusSimulation` state ownership | Done. An external store owns engine state; the component was removed with the other replaced modules. |
+| Misleading names and percentages | Done. Honest labels; authored weights are metadata only. |
+| Unreachable modules | Done. Removed. |
+| Seeded RNG, clock, manifests, log, snapshots, hashes, replay | Done. Replay verified in Node and Chromium; other browsers untested. |
+| Evidence & Uncertainty Engine | Done. Calibration evaluated on the declared domain only. |
+| Assistant layer | Done for the deterministic provider. The external-model adapter is implemented and tested against simulated responses but not connected to the interface. |
+| Human–AI teaming protocol and runner | Done. No human data collected. |
+| Robustness laboratory | Done, with eleven information conditions (including assistant faults) rather than eight. |
+| Explorer Mode and Research workbench | Done. The workbench configures scenarios, assistance conditions and evidence mixes, and reproduces packages. |
+| Strict TypeScript, runtime validation, tests | Done. Unit, end-to-end and automated accessibility tests; no manual assistive-technology testing yet. |
