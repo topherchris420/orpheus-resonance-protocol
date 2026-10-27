@@ -2,93 +2,61 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. */
-
+/*
+ * Orpheus design tokens — Vers3Dynamics spectral teal on deep graphite.
+ * Text tokens meet WCAG AA on every surface token (text-3 ≥ 6.5:1 on surface-2).
+ * Status is never conveyed by color alone: every status token is paired with an icon and a label.
+ */
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --o-bg: 210 18% 5%;
+    --o-surface-1: 207 16% 8%;
+    --o-surface-2: 205 15% 11%;
+    --o-surface-3: 204 14% 15%;
+    --o-line: 203 14% 20%;
+    --o-line-strong: 202 13% 32%;
+    --o-text: 200 30% 95%;
+    --o-text-2: 202 16% 78%;
+    --o-text-3: 203 13% 64%;
+    --o-teal: 172 68% 56%;
+    --o-teal-strong: 172 80% 68%;
+    --o-teal-dim: 173 45% 22%;
+    --o-amber: 40 92% 64%;
+    --o-red: 4 86% 70%;
+    --o-violet: 255 85% 80%;
+    --o-sky: 212 92% 76%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    /* Component library tokens, mapped onto the Orpheus palette. The app is dark only. */
+    --background: var(--o-bg);
+    --foreground: var(--o-text);
+    --card: var(--o-surface-1);
+    --card-foreground: var(--o-text);
+    --popover: var(--o-surface-2);
+    --popover-foreground: var(--o-text);
+    --primary: var(--o-teal);
+    --primary-foreground: var(--o-bg);
+    --secondary: var(--o-surface-3);
+    --secondary-foreground: var(--o-text);
+    --muted: var(--o-surface-3);
+    --muted-foreground: var(--o-text-3);
+    --accent: var(--o-surface-3);
+    --accent-foreground: var(--o-text);
+    --destructive: 4 70% 45%;
+    --destructive-foreground: var(--o-text);
+    --border: var(--o-line);
+    --input: var(--o-line);
+    --ring: var(--o-teal);
+    --radius: 0.625rem;
+    --sidebar-background: var(--o-surface-1);
+    --sidebar-foreground: var(--o-text);
+    --sidebar-primary: var(--o-teal);
+    --sidebar-primary-foreground: var(--o-bg);
+    --sidebar-accent: var(--o-surface-3);
+    --sidebar-accent-foreground: var(--o-text);
+    --sidebar-border: var(--o-line);
+    --sidebar-ring: var(--o-teal);
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-
-    --radius: 0.5rem;
-
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
-
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    color-scheme: dark;
   }
 }
 
@@ -97,41 +65,97 @@
     @apply border-border;
   }
 
-  body {
-    @apply bg-background text-foreground;
+  html {
+    -webkit-text-size-adjust: 100%;
   }
-}
 
-/* Smooth transitions for live data updates */
-.smooth-data-transition {
-  transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-}
+  body {
+    @apply bg-o-bg text-o-text antialiased;
+    font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-feature-settings: 'tnum' 1;
+    line-height: 1.5;
+  }
 
-.data-value {
-  transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
-}
-
-.data-value-changing {
-  transform: scale(1.02);
-  opacity: 0.8;
-}
-
-.orpheus-welcome {
-  background: radial-gradient(ellipse at 75% 20%, rgba(11, 93, 99, .22), transparent 55%), #080f13;
+  code,
+  kbd,
+  .font-mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
+  }
 }
 
 @layer components {
-  .session-button {
-    @apply inline-flex min-h-11 items-center gap-2 rounded-lg border border-white/15 bg-white/[0.03] px-2.5 py-2 text-xs text-slate-300 sm:px-3 sm:text-sm transition-colors hover:border-emerald-300/40 hover:bg-emerald-300/10 hover:text-emerald-100 disabled:cursor-not-allowed disabled:opacity-40;
+  .o-panel {
+    @apply rounded-xl border border-o-line bg-o-s1;
   }
-  .session-button[aria-pressed="true"] {
-    @apply border-emerald-300/40 bg-emerald-300/10 text-emerald-200;
+  .o-panel-raised {
+    @apply rounded-xl border border-o-line bg-o-s2;
+  }
+  .o-eyebrow {
+    @apply text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-o-text3;
+  }
+  .o-layer {
+    @apply inline-flex items-center gap-2 text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-o-teal;
+  }
+  .o-button {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-o-line-strong bg-o-s2 px-3.5 py-2 text-sm font-medium text-o-text transition-colors hover:border-o-teal/60 hover:bg-o-s3 disabled:cursor-not-allowed disabled:opacity-45;
+  }
+  .o-button-primary {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-o-teal px-4 py-2 text-sm font-semibold text-o-bg transition-colors hover:bg-o-teal-strong disabled:cursor-not-allowed disabled:opacity-45;
+  }
+  .o-button-quiet {
+    @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-o-text2 transition-colors hover:bg-o-s3 hover:text-o-text disabled:cursor-not-allowed disabled:opacity-45;
+  }
+  .o-button[aria-pressed='true'],
+  .o-button-quiet[aria-pressed='true'] {
+    @apply border-o-teal/70 bg-o-teal-dim text-o-teal-strong;
+  }
+  .o-chip {
+    @apply inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 text-xs font-medium leading-5;
+  }
+  .o-input {
+    @apply min-h-11 rounded-lg border border-o-line-strong bg-o-bg px-3 text-sm text-o-text placeholder:text-o-text3;
+  }
+  .o-link {
+    @apply text-o-teal underline decoration-o-teal/40 underline-offset-4 hover:decoration-o-teal;
+  }
+  .o-table {
+    @apply w-full border-collapse text-left text-sm;
+  }
+  .o-table th {
+    @apply border-b border-o-line px-3 py-2 text-xs font-semibold uppercase tracking-wider text-o-text3;
+  }
+  .o-table td {
+    @apply border-b border-o-line/70 px-3 py-2 align-top text-o-text2;
+  }
+  .session-button {
+    @apply o-button;
   }
 }
 
-button:focus-visible, a:focus-visible, summary:focus-visible, input:focus-visible, [tabindex]:focus-visible {
-  outline: 2px solid #6ee7b7;
-  outline-offset: 4px;
+.orpheus-welcome {
+  background:
+    radial-gradient(ellipse 80% 60% at 78% 8%, hsl(var(--o-teal) / 0.13), transparent 60%),
+    radial-gradient(ellipse 60% 50% at 10% 100%, hsl(var(--o-sky) / 0.06), transparent 60%),
+    hsl(var(--o-bg));
+}
+
+.o-grid-backdrop {
+  background-image:
+    linear-gradient(hsl(var(--o-line) / 0.35) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(var(--o-line) / 0.35) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+button:focus-visible,
+a:focus-visible,
+summary:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible,
+[role='slider']:focus-visible {
+  outline: 2px solid hsl(var(--o-teal-strong));
+  outline-offset: 3px;
 }
 
 .skip-link {
@@ -140,18 +164,67 @@ button:focus-visible, a:focus-visible, summary:focus-visible, input:focus-visibl
   left: 16px;
   z-index: 100;
   padding: 12px 16px;
-  background: #6ee7b7;
-  color: #080f13;
+  border-radius: 8px;
+  background: hsl(var(--o-teal));
+  color: hsl(var(--o-bg));
+  font-weight: 600;
 }
-.skip-link:focus { top: 12px; }
+.skip-link:focus {
+  top: 12px;
+}
+
+.o-highlight {
+  box-shadow: 0 0 0 2px hsl(var(--o-teal) / 0.85), 0 0 24px hsl(var(--o-teal) / 0.25);
+}
 
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
-  .ambient-overlays { display: none; }
-  #session-workspace > div { transform: none !important; filter: none !important; }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .ambient-overlays {
+    display: none;
+  }
+  [data-ambient-surface] {
+    transform: none !important;
+    filter: none !important;
+  }
 }
 
-.mission-progress { appearance: none; border: 0; background: #263237; border-radius: 4px; overflow: hidden; }
-.mission-progress::-webkit-progress-bar { background: #263237; }
-.mission-progress::-webkit-progress-value { background: #6ee7b7; }
-.mission-progress::-moz-progress-bar { background: #6ee7b7; }
+.mission-progress {
+  appearance: none;
+  border: 0;
+  border-radius: 999px;
+  overflow: hidden;
+  background: hsl(var(--o-surface-3));
+}
+.mission-progress::-webkit-progress-bar {
+  background: hsl(var(--o-surface-3));
+}
+.mission-progress::-webkit-progress-value {
+  background: hsl(var(--o-teal));
+}
+.mission-progress::-moz-progress-bar {
+  background: hsl(var(--o-teal));
+}
+
+/* Study factor: a fixed, slow visual pacing ring (5.5 cycles per minute). Frozen under reduced motion. */
+@keyframes ambient-pace {
+  0%,
+  100% {
+    transform: scale(0.82);
+    opacity: 0.35;
+  }
+  50% {
+    transform: scale(1);
+    opacity: 0.75;
+  }
+}
+
+.ambient-pacer {
+  animation: ambient-pace 10.9s ease-in-out infinite;
+}

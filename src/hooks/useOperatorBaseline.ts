@@ -56,7 +56,10 @@ export const useOperatorBaseline = (signals: BaselineSignals): UseOperatorBaseli
       (typeof value === 'object' &&
         !Array.isArray(value) &&
         ['stress', 'cohesion', 'stressSpread', 'cohesionSpread', 'capturedAt', 'samples'].every(
-          (key) => typeof value[key] === 'number' && Number.isFinite(value[key]),
+          (key) => {
+            const field = (value as Record<string, unknown>)[key];
+            return typeof field === 'number' && Number.isFinite(field);
+          },
         )),
   );
   const [isCalibrating, setIsCalibrating] = useState(false);

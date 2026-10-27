@@ -10,7 +10,7 @@ export interface BreathPulseModulationValues {
   depth: number;
   /** Visual intensity 0..1 (glow, overlay strength) */
   intensity: number;
-  /** Binaural beat frequency in Hz */
+  /** Beat frequency of the generated tones, in Hz. No effect on the listener is claimed or assumed. */
   beatFrequency: number;
   /** Carrier tone in Hz */
   carrierTone: number;

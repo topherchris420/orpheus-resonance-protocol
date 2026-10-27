@@ -41,7 +41,6 @@ export const appConfig = {
     enableAudioBiofeedback: toBoolean(import.meta.env.VITE_ENABLE_AUDIO_BIOFEEDBACK, true),
   },
   limits: {
-    maxIntelFeedItems: clamp(toNumber(import.meta.env.VITE_MAX_INTEL_FEED_ITEMS, 10), 5, 50),
     maxAccessAttempts: clamp(toNumber(import.meta.env.VITE_MAX_ACCESS_ATTEMPTS, 5), 1, 12),
     accessLockoutMs: clamp(toNumber(import.meta.env.VITE_ACCESS_LOCKOUT_MS, 30_000), 5_000, 300_000),
   },

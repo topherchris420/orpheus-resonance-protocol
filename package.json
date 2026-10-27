@@ -1,7 +1,7 @@
 {
   "name": "orpheus-resonance-protocol",
   "private": true,
-  "version": "0.0.0",
+  "version": "2.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -12,7 +12,10 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "typecheck": "tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.node.json --noEmit"
+    "typecheck": "tsc -p tsconfig.app.json --noEmit && tsc -p tsconfig.node.json --noEmit && tsc -p tsconfig.e2e.json",
+    "test:e2e": "playwright test",
+    "evaluate": "vite-node scripts/evaluate-calibration.ts",
+    "baselines": "vite-node scripts/run-baselines.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
@@ -69,7 +72,9 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.10.2",
     "@eslint/js": "^9.32.0",
+    "@playwright/test": "1.63.0",
     "@tailwindcss/typography": "^0.5.15",
     "@types/node": "^22.5.5",
     "@types/react": "^18.3.3",
@@ -81,11 +86,13 @@
     "eslint-plugin-react-hooks": "^5.1.0-rc.0",
     "eslint-plugin-react-refresh": "^0.4.9",
     "globals": "^15.9.0",
+    "playwright-core": "1.63.0",
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.11",
     "typescript": "^5.5.3",
     "typescript-eslint": "^8.62.0",
     "vite": "^5.4.1",
+    "vite-node": "2.1.9",
     "vitest": "^2.1.4"
   }
 }
