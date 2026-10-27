@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Slider } from '@/components/ui/slider';
+import { Slider } from '@/components/common/Slider';
 import { COMPREHENSION_ITEMS, TLX_SUBSCALES, type TlxSubscale } from '@/experiment/protocol';
 
 export interface QuestionnaireAnswers {

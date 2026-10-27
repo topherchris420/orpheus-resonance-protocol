@@ -1,52 +1,53 @@
 import React from 'react';
-import { AlertOctagon, AlertTriangle, Clock3, Info } from 'lucide-react';
-import { formatSimTime } from '@/engine/clock';
-import type { TimelineEvent } from '@/engine/mission/types';
+import { Clock3 } from 'lucide-react';
+import { MissionSeverity, OperatorEvent } from '@/lib/missionUx';
 
 interface OperatorEventTimelineProps {
-  events: TimelineEvent[];
-  tickSeconds?: number;
+  events: OperatorEvent[];
 }
 
-const SEVERITY = {
-  nominal: { icon: Info, className: 'border-o-teal/50 text-o-teal-strong', label: 'Nominal' },
-  watch: { icon: AlertTriangle, className: 'border-o-amber/60 text-o-amber', label: 'Watch' },
-  critical: { icon: AlertOctagon, className: 'border-o-red/60 text-o-red', label: 'Critical' },
-} as const;
+const severityClass: Record<MissionSeverity, string> = {
+  nominal: 'border-emerald-400/30 text-emerald-200',
+  watch: 'border-amber-400/40 text-amber-200',
+  critical: 'border-red-400/50 text-red-200',
+};
 
-/** The session's recorded event log, newest first, in simulated time. */
-export const OperatorEventTimeline: React.FC<OperatorEventTimelineProps> = React.memo(({ events, tickSeconds = 1 }) => (
-  <section aria-label="Event timeline" className="flex h-full min-h-0 flex-col rounded-xl border border-o-line bg-o-s1 p-4">
-    <div className="mb-3 flex items-center justify-between border-b border-o-line pb-2">
-      <h3 className="flex items-center gap-2 text-sm font-semibold text-o-text">
-        <Clock3 aria-hidden="true" className="h-4 w-4 text-o-teal" />
-        Event timeline
-      </h3>
-      <span className="text-xs text-o-text3">{events.length} events</span>
-    </div>
-    <ol className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
-      {events.length === 0 && <li className="text-xs text-o-text3">No events yet.</li>}
-      {events
-        .slice()
-        .reverse()
-        .map((event) => {
-          const { icon: Icon, className, label } = SEVERITY[event.severity];
-          return (
-            <li key={event.id} className="rounded-lg border border-o-line bg-o-s2 px-3 py-2 text-xs">
+const formatTime = (timestamp: number): string => {
+  return new Intl.DateTimeFormat(undefined, {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  }).format(timestamp);
+};
+
+export const OperatorEventTimeline: React.FC<OperatorEventTimelineProps> = React.memo(({ events }) => {
+  return (
+    <div className="h-full border border-current/25 bg-black/45 p-4 backdrop-blur-sm">
+      <div className="mb-3 flex items-center justify-between border-b border-current/20 pb-2">
+        <div className="flex items-center gap-2 text-sm font-bold uppercase">
+          <Clock3 className="h-4 w-4" />
+          Operator Event Timeline
+        </div>
+        <span className="text-[10px] uppercase text-current/50">{events.length} events</span>
+      </div>
+
+      <div className="max-h-[calc(100%-2.25rem)] space-y-2 overflow-y-auto pr-1">
+        {events.length === 0 ? (
+          <div className="border border-current/15 bg-white/[0.03] p-3 text-xs text-current/60">
+            Event stream is waiting for operator activity.
+          </div>
+        ) : (
+          events.map((event) => (
+            <div key={event.id} className={`border-l-2 bg-white/[0.03] px-3 py-2 text-xs ${severityClass[event.severity]}`}>
               <div className="flex items-center justify-between gap-2">
-                <span className={`inline-flex items-center gap-1.5 font-semibold ${className.split(' ').slice(1).join(' ')}`}>
-                  <Icon aria-hidden="true" className="h-3.5 w-3.5" />
-                  <span className="sr-only">{label}: </span>
-                  {event.label}
-                </span>
-                <span className="shrink-0 font-mono text-o-text3">{formatSimTime(event.tick, tickSeconds)}</span>
+                <span className="font-semibold uppercase tracking-wide">{event.label}</span>
+                <span className="shrink-0 text-current/45">{formatTime(event.timestamp)}</span>
               </div>
-              <p className="mt-1 text-o-text2">{event.detail}</p>
-            </li>
-          );
-        })}
-    </ol>
-  </section>
-));
-
-OperatorEventTimeline.displayName = 'OperatorEventTimeline';
+              <div className="mt-1 text-current/70">{event.detail}</div>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  );
+});

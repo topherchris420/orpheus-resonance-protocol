@@ -3,50 +3,47 @@
   height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  background-color: hsl(var(--o-surface-1));
-  border: 1px solid hsl(var(--o-line));
-  border-radius: 0.75rem;
-  color: hsl(var(--o-text));
+  background-color: #0a0a0a;
+  border: 1px solid #333;
+  border-radius: 8px;
+  color: #e0e0e0;
   padding: 1rem;
   box-sizing: border-box;
 }
 
 .title {
-  font-size: 1rem;
-  font-weight: 600;
-  color: hsl(var(--o-text));
+  text-align: center;
+  margin-bottom: 1rem;
+  font-size: 1.25rem;
+  color: #4ade80; /* A nice green */
 }
 
 .mainContent {
   flex-grow: 1;
   display: flex;
-  flex-wrap: wrap;
   gap: 1rem;
-  min-height: 0;
+  min-height: 0; /* Important for flexbox children with percentage heights */
 }
 
 .visualization {
-  flex: 3 1 18rem;
-  min-height: 16rem;
-  border: 1px solid hsl(var(--o-line));
-  border-radius: 0.5rem;
-  background-color: hsl(var(--o-bg));
+  flex: 3;
+  border: 1px solid #222;
+  border-radius: 6px;
+  background-color: #000;
 }
 
 .controlsAndFeedback {
-  flex: 2 1 14rem;
+  flex: 2;
   display: flex;
   flex-direction: column;
   gap: 1rem;
 }
 
-.controls,
-.feedback {
-  background-color: hsl(var(--o-surface-2));
+.controls {
+  background-color: #1a1a1a;
   padding: 1rem;
-  border-radius: 0.5rem;
-  border: 1px solid hsl(var(--o-line));
+  border-radius: 6px;
+  border: 1px solid #333;
 }
 
 .control {
@@ -59,18 +56,36 @@
 
 .waveformButtons {
   display: flex;
-  flex-wrap: wrap;
   gap: 0.5rem;
   margin-top: 0.5rem;
 }
 
 .feedback {
   flex-grow: 1;
+  background-color: #1a1a1a;
+  padding: 1rem;
+  border-radius: 6px;
+  border: 1px solid #333;
   overflow-y: auto;
 }
 
 .feedbackTitle {
-  font-weight: 600;
-  color: hsl(var(--o-teal));
+  font-weight: bold;
+  color: #4ade80;
+  margin-bottom: 0.75rem;
+}
+
+.effectList {
+  list-style-type: none;
+  padding-left: 0;
+  font-size: 0.9rem;
+}
+
+.effectList li {
   margin-bottom: 0.5rem;
+  line-height: 1.4;
+}
+
+.effectList strong {
+  color: #a7f3d0; /* A lighter green */
 }

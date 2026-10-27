@@ -15,66 +15,125 @@ interface BaselineCalibrationPanelProps {
 
 const pct = (value: number) => `${Math.round(value * 100)}%`;
 
-/** A chart reference window over generated values. Not a personal or physiological calibration. */
-export const BaselineCalibrationPanel: React.FC<BaselineCalibrationPanelProps> = ({ baseline, isCalibrating, progress, liveStress, liveCohesion, onStart, onCancel, onClear, onAdjust }) => {
+export const BaselineCalibrationPanel: React.FC<BaselineCalibrationPanelProps> = ({
+  baseline,
+  isCalibrating,
+  progress,
+  liveStress,
+  liveCohesion,
+  onStart,
+  onCancel,
+  onClear,
+  onAdjust,
+}) => {
   const [expanded, setExpanded] = useState(false);
+
   return (
-    <div className="rounded-lg border border-o-line bg-o-s2 p-3 text-xs">
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <button type="button" className="font-semibold text-o-text2 hover:text-o-text" aria-expanded={expanded} onClick={() => setExpanded((previous) => !previous)}>
-          {expanded ? '▾' : '▸'} Chart reference window
+    <div className="border border-current/15 bg-black/50 p-2 font-mono text-[10px]">
+      <div className="flex items-center justify-between gap-2">
+        <button
+          type="button"
+          onClick={() => setExpanded((previous) => !previous)}
+          className="uppercase tracking-widest opacity-80 hover:opacity-100"
+          aria-expanded={expanded}
+        >
+          {expanded ? '▾' : '▸'} Baseline Calibration
         </button>
-        <span className="text-o-text3">
-          {isCalibrating ? `Sampling ${pct(progress)}` : baseline ? `Set · stress ${pct(baseline.stress)} · cohesion ${pct(baseline.cohesion)}` : 'Not set'}
+        <span className="opacity-60">
+          {isCalibrating
+            ? `Sampling ${pct(progress)}`
+            : baseline
+              ? `Set · stress ${pct(baseline.stress)} · cohesion ${pct(baseline.cohesion)}`
+              : 'Not calibrated'}
         </span>
       </div>
-      {isCalibrating && <progress className="mission-progress mt-2 h-1 w-full" value={progress} max={1} aria-label="Reference window sampling progress" />}
+
+      {isCalibrating && (
+        <div className="mt-2 h-1 w-full bg-current/10">
+          <div className="h-full bg-current/60 transition-all duration-300" style={{ width: pct(progress) }} />
+        </div>
+      )}
+
       {expanded && (
         <div className="mt-2 space-y-2">
-          <p className="text-o-text3">
-            Samples the generated stress and cohesion values for {Math.round(CALIBRATION_DURATION_MS / 1000)} s; their averages become the 50% line of the charts. This is a
-            reference for simulated values, not a calibration of you.
+          <p className="opacity-60">
+            Sample generated stress and cohesion for {Math.round(CALIBRATION_DURATION_MS / 1000)}s. Their averages
+            become the 50% midpoint of the chart. This is a simulation baseline, not a personal or physiological calibration.
           </p>
-          <div className="flex flex-wrap items-center gap-2">
+
+          <div className="flex flex-wrap gap-2">
             {!isCalibrating ? (
-              <button type="button" className="o-button min-h-9 px-2 text-xs" onClick={onStart}>
-                {baseline ? 'Sample again' : 'Start sampling'}
+              <button
+                type="button"
+                onClick={onStart}
+                className="border border-current/40 px-2 py-1 uppercase tracking-wider hover:bg-current/10"
+              >
+                {baseline ? 'Recalibrate' : 'Start Calibration'}
               </button>
             ) : (
-              <button type="button" className="o-button min-h-9 px-2 text-xs" onClick={onCancel}>
+              <button
+                type="button"
+                onClick={onCancel}
+                className="border border-current/40 px-2 py-1 uppercase tracking-wider hover:bg-current/10"
+              >
                 Cancel
               </button>
             )}
             {baseline && !isCalibrating && (
-              <button type="button" className="o-button-quiet min-h-9 px-2 text-xs" onClick={onClear}>
+              <button
+                type="button"
+                onClick={onClear}
+                className="border border-current/20 px-2 py-1 uppercase tracking-wider opacity-70 hover:bg-current/10"
+              >
                 Clear
               </button>
             )}
-            <span className="ml-auto text-o-text3">
-              now {pct(liveStress)} / {pct(liveCohesion)}
+            <span className="ml-auto self-center opacity-50">
+              live {pct(liveStress)} / {pct(liveCohesion)}
             </span>
           </div>
+
           {baseline && (
             <div className="space-y-2">
-              {[
-                { label: `Stress reference · ${pct(baseline.stress)}`, value: baseline.stress, min: 0, max: 1, patch: (value: number) => ({ stress: value }) },
-                { label: `Cohesion reference · ${pct(baseline.cohesion)}`, value: baseline.cohesion, min: 0, max: 1, patch: (value: number) => ({ cohesion: value }) },
-                { label: `Window width · ±${pct(baseline.stressSpread)}`, value: baseline.stressSpread, min: 0.05, max: 0.5, patch: (value: number) => ({ stressSpread: value, cohesionSpread: value }) },
-              ].map((control) => (
-                <label key={control.label} className="block text-o-text3">
-                  {control.label}
-                  <input
-                    type="range"
-                    min={control.min}
-                    max={control.max}
-                    step={0.01}
-                    value={control.value}
-                    onChange={(event) => onAdjust(control.patch(Number(event.target.value)))}
-                    className="mt-1 w-full accent-[hsl(var(--o-teal))]"
-                  />
-                </label>
-              ))}
-              <p className="text-o-text3">
+              <label className="block">
+                <span className="opacity-70">Stress baseline · {pct(baseline.stress)}</span>
+                <input
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  value={baseline.stress}
+                  onChange={(event) => onAdjust({ stress: Number(event.target.value) })}
+                  className="mt-1 w-full accent-current"
+                />
+              </label>
+              <label className="block">
+                <span className="opacity-70">Cohesion baseline · {pct(baseline.cohesion)}</span>
+                <input
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.01}
+                  value={baseline.cohesion}
+                  onChange={(event) => onAdjust({ cohesion: Number(event.target.value) })}
+                  className="mt-1 w-full accent-current"
+                />
+              </label>
+              <label className="block">
+                <span className="opacity-70">Sensitivity window · ±{pct(baseline.stressSpread)}</span>
+                <input
+                  type="range"
+                  min={0.05}
+                  max={0.5}
+                  step={0.01}
+                  value={baseline.stressSpread}
+                  onChange={(event) =>
+                    onAdjust({ stressSpread: Number(event.target.value), cohesionSpread: Number(event.target.value) })
+                  }
+                  className="mt-1 w-full accent-current"
+                />
+              </label>
+              <p className="opacity-50">
                 Captured {new Date(baseline.capturedAt).toLocaleTimeString()} · {baseline.samples} samples
               </p>
             </div>

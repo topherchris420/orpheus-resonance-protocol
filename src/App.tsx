@@ -1,41 +1,53 @@
-import { lazy, Suspense } from 'react';
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
-import { Toaster } from '@/components/ui/sonner';
-import { TooltipProvider } from '@/components/ui/tooltip';
-import Landing from './pages/Landing';
-import NotFound from './pages/NotFound';
+import { Toaster } from "@/components/ui/toaster";
+import { Toaster as Sonner } from "@/components/ui/sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { lazy, Suspense } from "react";
+import { BrowserRouter, Navigate, Routes, Route } from "react-router-dom";
+import Index from "./pages/Index";
+import NotFound from "./pages/NotFound";
 
-// Heavier modes load on demand so the landing page stays small.
-const Explore = lazy(() => import('./pages/Explore'));
-const Research = lazy(() => import('./pages/Research'));
-const Study = lazy(() => import('./pages/Study'));
-const Replay = lazy(() => import('./pages/Replay'));
-const Method = lazy(() => import('./pages/Method'));
+// Research tools (replay, evidence explorer, experiment workbench, study runner). They are not linked
+// from the main experience and load only when one of these addresses is opened directly.
+const Explore = lazy(() => import("./pages/Explore"));
+const Research = lazy(() => import("./pages/Research"));
+const Study = lazy(() => import("./pages/Study"));
+const Replay = lazy(() => import("./pages/Replay"));
+const Method = lazy(() => import("./pages/Method"));
 
-const Loading = () => (
-  <div role="status" className="flex min-h-screen items-center justify-center bg-o-bg text-sm text-o-text3">
-    Loading…
-  </div>
-);
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      staleTime: 30_000,
+      refetchOnWindowFocus: false,
+    },
+    mutations: {
+      retry: 0,
+    },
+  },
+});
 
 const App = () => (
-  <TooltipProvider delayDuration={200}>
-    <Toaster />
-    <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
-      <Suspense fallback={<Loading />}>
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter future={{ v7_relativeSplatPath: true, v7_startTransition: true }}>
         <Routes>
-          <Route path="/" element={<Landing />} />
+          <Route path="/" element={<Index />} />
           <Route path="/explore" element={<Navigate to="/explore/orientation" replace />} />
-          <Route path="/explore/:scenarioId" element={<Explore />} />
-          <Route path="/research" element={<Research />} />
-          <Route path="/study" element={<Study />} />
-          <Route path="/replay" element={<Replay />} />
-          <Route path="/method" element={<Method />} />
+          <Route path="/explore/:scenarioId" element={<Suspense fallback={null}><Explore /></Suspense>} />
+          <Route path="/research" element={<Suspense fallback={null}><Research /></Suspense>} />
+          <Route path="/study" element={<Suspense fallback={null}><Study /></Suspense>} />
+          <Route path="/replay" element={<Suspense fallback={null}><Replay /></Suspense>} />
+          <Route path="/method" element={<Suspense fallback={null}><Method /></Suspense>} />
+          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
-      </Suspense>
-    </BrowserRouter>
-  </TooltipProvider>
+      </BrowserRouter>
+    </TooltipProvider>
+  </QueryClientProvider>
 );
 
 export default App;

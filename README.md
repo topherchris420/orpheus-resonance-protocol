@@ -1,161 +1,160 @@
 # Orpheus
 
-**A research instrument for one question: can an AI system improve human decisions under uncertainty by
-knowing when to advise, when to explain, and when to refuse to make a recommendation?**
+Browser-based tactical simulation with generated mission events, squad state, visual pacing controls, and an optional microphone-reactive audio layer. The interface is an interactive fiction and systems-design prototype.
 
-Orpheus puts you in a fictional situation with reports that may be conflicting, stale, relayed,
-corrupted or missing, next to an assistant that concludes, explains — or declines when the evidence
-cannot support a conclusion. Every session is seeded and recorded so it can be replayed exactly, and the
-same engine runs controlled human–AI teaming experiments whose results can be regenerated bit for bit.
+**What is real:** When explicitly enabled for the current visit, the browser reads microphone audio energy locally and uses it to vary a visual glow and generated tones. **What is generated:** Threats, intel, pulse, respiration, HRV, stress, cohesion, and recommendations. Audio energy cannot establish those physiological values. This app is not a medical, biometric, or operational decision system.
 
-> Intelligence earns authority through evidence, not confidence.
+## A command room where every choice leaves a trace
 
-Everything runs in the browser. No account, no AI service, no server, no special hardware.
+Orpheus puts you inside a changing fictional situation. Read the map, weigh competing courses of action, and see how your choices change modeled pressure, cohesion, and objective progress. Then open the after-action review: each committed choice has a phase, a timestamp, and an explicit set of consequences.
 
-## Five minutes with Orpheus
+### Try a complete session
 
-| Where | What you do |
+1. Choose **Enter simulation** to open the focused workspace with a situation map, current objectives, and latest reports. The theatrical terminal is optional; no account, API key, or microphone is required.
+2. Open **Decisions**. Inspect the tradeoffs, choose **Review course**, then **Confirm choice** to commit one course for an event. **Keep comparing** closes the confirmation without changing the record. Its alternatives close for this visit, even if you switch views.
+3. Use **Advance phase** to reveal later events and unlock the red-team controls. Phases stay under your control by default; **Auto advance** optionally advances every 30 seconds.
+4. Switch back to **Situation map** whenever you want. Opening decisions no longer replaces the map permanently.
+5. Open **After-action** to review your decisions and objective progress. **Download session JSON** or **Save record** preserves the record before you refresh.
+
+6. Use **New session** to start over without reloading the page. The confirmation offers a download before clearing your decisions and stopping audio.
+7. Open the **full control room** for generated vitals, charts, pacing controls, and the touch surface. **Guide** is always available. Ambient effects start off; reduced-motion preferences suppress interface movement and overlays.
+
+### What makes the loop work
+
+- **One authoritative decision ledger.** The model accepts only available event/outcome pairs, resolves effects from its own catalog, and rejects repeated or conflicting commitments. Pending events replenish the shortlist.
+- **Inspectable consequences.** Choices apply deterministic, bounded changes to simulated pressure, stress, cohesion, and objectives. Displayed authored weights are metadata, not calibrated success probabilities; no probability draw is performed.
+- **Reviewable sessions.** Exports include the decision ledger, objective snapshot, up to 120 recent events, and 48 chart samples with source labels. No raw microphone data or activation phrase is included.
+- **Optional sensory layer.** Explicit per-visit microphone consent enables local audio-energy response. Generated tones start at zero gain, have a fixed output cap, and stop with the microphone control.
+- **A guided, responsive workspace.** Contextual next steps lead from the first decision through the complete catalog. The focused view keeps the map, readable choices, objectives, and reports together; the optional full control room exposes deeper tools. Layout changes do not alter the cohesion model.
+- **Deliberate session controls.** Confirm a course before recording it, export at any time, and restart with an explicit confirmation. Microphone permission is requested again for each new session. Display preferences persist locally; dismissed alerts belong only to the current session.
+
+### Boundaries of the model
+
+The tactical world and telemetry use random generators; a full session is **not deterministically replayable**. Only the catalog decision transition is deterministic for a given state and choice. The review remains live while the world advances. Objective percentages are authored scenario bookkeeping, not validated measures of success or operator performance. Refresh starts a fresh decision session; preferences may persist locally. Exports are snapshots, not authenticated audit logs.
+
+## Research tools (off the main path)
+
+Alongside the command room, the repository contains research tools for one question: can an AI
+assistant improve decisions under uncertainty by knowing when to advise, when to explain, and when to
+decline? They are not linked from the main experience; open them directly:
+
+| Address | What it is |
 | --- | --- |
-| **Explorer · guided scenario** (`/explore/orientation`) | A five-minute tutorial that teaches by doing: check where evidence comes from, decide when sources agree, watch the assistant decline when two equally reliable reports disagree, read the data-quality notes on a corrupted and stale alarm, then open the after-action review — what you chose, what was true, what was known, and what the other assistants would have said. |
-| **Explorer · full mission** (`/explore/building-47`) | The original Building 47 mission — phases, red-team simulation, squad cohesion, decision confirmation and consequences — now with evidence, ground truth and replay. The control room keeps the v1 instruments, honestly labeled. |
-| **Research workbench** (`/research`) | Read the preregistered protocol; design an experiment (scenarios, assistance conditions, evidence quality and missing data, policies, seed); run it with scripted participants; compare conditions with intervals; inspect individual errors; export a research package; verify and reproduce any package; re-run the calibration evaluation; read every modeling assumption. |
-| **Study runner** (`/study`) | Run the protocol with people: consent, practice, four counterbalanced blocks with sequential advice, questionnaires, withdrawal at any time, crash-safe resume, and a downloadable participant package. |
-| **Replay** (`/replay`) | Load a session record, verify it against its state hashes, and step backward and forward through every decision and event. |
-| **Method** (`/method`) | What has and has not been established (the evidence ladder), what every signal is, how the assistant reasons, and the limitations. |
+| `/explore/orientation` | A guided five-minute scenario with an evidence panel and an assistant that concludes, explains or declines. |
+| `/research` | An experiment workbench: preregistered protocol, simulated participants, results with intervals, calibration, package verification. |
+| `/study` | A participant runner for the protocol (consent, practice, four counterbalanced blocks, questionnaires). |
+| `/replay` | Verifies and steps through session records from the explorer. |
+| `/method` | What has and has not been established. |
 
-## How it works
+They run on a separate, deterministic engine (`src/engine`, `src/evidence`, `src/assistant`,
+`src/scenarios`, `src/experiment`) and use their own copies of the instruments
+(`src/components/instruments`) and their own palette, which applies only while they are open. They do
+not change the command room. No human-subject data has been collected; results so far come from
+scripted agents in simulation. Details: [`docs/RESEARCH_DOSSIER.md`](docs/RESEARCH_DOSSIER.md) and
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
-Each decision has three layers on screen:
-
-- **Situation** — what is happening in the fictional world (map, contacts, reports, simulated vitals).
-- **Evidence** — every item labeled *observed*, *reported*, *derived*, *assumed*, *missing* or *AI
-  statement*, with its source grade, age and data-quality problems (failed integrity checks, relayed
-  copies, stale readings, changed sources).
-- **Decision** — courses of action that state what they rely on, with previews of their modeled effects,
-  confirmed before they are recorded.
-
-The assistant runs in one of four conditions: **A** none, **B** conventional (a suggestion), **C**
-explainable (suggestion with evidence and alternatives), **D** uncertainty-aware (evidence, alternatives,
-what is unknown, a probability only when its method has been evaluated, a bounded verification step, and
-an explicit **insufficient evidence** state when it cannot conclude). Its reasoning can be inspected step
-by step. A deterministic verifier checks every proposal; assistant output can never become evidence,
-and the assistant can never take an action.
-
-## What is established — and what is not
-
-| Claim | Status |
-| --- | --- |
-| Sessions and experiments replay and regenerate exactly | **Reproduced** in Node and Chromium; CI regenerates the committed results and fails on any difference. |
-| The uncertainty-aware probabilities are calibrated | **Observed in simulation**: expected calibration error 0.0056 over 20,000 decisions sampled from the declared source model (face-value baseline: 0.0923). Unknown on real sources. |
-| Abstention prevents wrong conclusions for a policy that follows the assistant | **Observed in simulation**: 0.04 wrong conclusions per trial with D vs 0.43 with B (scripted agents). Partly true by construction, and not on every information condition. |
-| Guardrails catch faulty model output | **Observed in simulation**: 200 of 200 simulated faulty proposals rejected. Never tested with a real language model. |
-| Uncertainty-aware assistance improves *human* decisions | **Not established.** The protocol is preregistered and the runner is tested; **no human data has been collected.** |
-| Ambient sensory feedback helps | **Not established.** Available as a study factor; no benefit assumed. |
-
-Details, numbers and caveats: [`docs/RESEARCH_DOSSIER.md`](docs/RESEARCH_DOSSIER.md) and
-[`docs/results/baseline-agents.md`](docs/results/baseline-agents.md).
-
-## What is real, simulated and inferred
-
-- **Measured:** only microphone audio energy, and only after explicit consent in the current visit. It is
-  processed locally, never stored or sent, and never described as breathing, heart rate, HRV, stress or
-  workload.
-- **Simulated:** the world, the reports, the squad, and the fictional operator's pulse, HRV, respiration,
-  stress and cohesion. None of it measures you.
-- **Inferred:** nothing. Orpheus has no validated model that estimates anything about a person.
-
-## Quick start
-
-Requires Node.js 24 (as in CI).
-
-```bash
-npm ci
-npm run dev          # http://localhost:5173
-```
-
-Optional: `cp .env.example .env` to change the settings below.
-
-## Reproduce the results
-
-```bash
-npm run evaluate     # calibration record → src/assistant/calibration.record.json
-npm run baselines    # scripted-participant experiments → docs/results/
-git diff --exit-code -- src/assistant/calibration.record.json docs/results   # empty = reproduced
-```
-
-In the browser, Research → Calibration and Research → Simulate (default settings) reproduce the same
-numbers and package hash; Research → Reproduce verifies any research package by replay.
-
-## Tests
-
-```bash
-npm run lint         # ESLint, including determinism rules for the engine
-npm run typecheck    # strict TypeScript for the app, configs and end-to-end tests
-npm test             # unit tests (Vitest)
-npm run test:e2e     # end-to-end, accessibility (axe) and microphone tests (Playwright, Chromium)
-npm run build
-```
-
-The end-to-end suite builds and serves the production bundle itself. It needs a Chromium for Playwright
-(`npx playwright install chromium`).
-
-## Project structure
+## Project structure 
 
 ```text
 src/
-  engine/          seeded RNG, canonical JSON, SHA-256, hash-chained log, versions
-  engine/mission/  event-sourced mission engine, replay verification, records, condition comparison
-  evidence/        Evidence & Uncertainty Engine, calibration and its evaluation
-  assistant/       output schemas, deterministic provider, guardrails, optional external-model adapter
-  scenarios/       versioned mission manifests and the research task family
-  experiment/      protocol, counterbalancing, study runner logic, scoring, statistics, agents, packages
-  sensing/         signal registry and the consent-gated microphone sensor
-  state/           store bridge, research jobs (Web Worker), study progress
-  components/      Explorer, evidence, research, study and shared UI
-  pages/           routes
-docs/              architecture, research dossier, audit, generated results
-e2e/               Playwright tests
-scripts/           result generators
+  components/      Reusable UI and domain modules (sim widgets, status panels)
+  config/          App-level runtime configuration parsing
+  data/            Static/mock realistic data sets + tests
+  hooks/           Custom interaction and state hooks
+  pages/           Route-level views
+  lib/             Shared utilities
+
+  engine/ evidence/ assistant/ scenarios/ experiment/ sensing/ state/ workers/ content/
+                   Research tools (see above)
+  components/{instruments,explorer,research,study,evidence,charts,common}/
+                   Research tool interface
+e2e/               Browser tests (Playwright)
+scripts/           Result generators for the research tools
+docs/              Audit, architecture, research dossier, generated results
 ```
 
-See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the design and
-[`docs/AUDIT.md`](docs/AUDIT.md) for the audit of the original prototype.
+## Prerequisites
 
-## Configuration
+- **Node.js 24** (matches CI)
+- **npm** (ships with Node)
+
+## Quick start
+
+1. Install dependencies:
+   ```bash
+   npm ci
+   ```
+2. Create a local environment file:
+   ```bash
+   cp .env.example .env
+   ```
+3. Start the dev server:
+   ```bash
+   npm run dev
+   ```
+4. Open the local URL printed by Vite (usually `http://localhost:5173`).
+
+## Environment variables
+
+Use `.env.example` as the baseline.
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `VITE_APP_NAME` | `Orpheus` | Display name. |
-| `VITE_SUPPORT_EMAIL` | `support@example.com` | Contact shown in the fatal-error screen. |
-| `VITE_REQUIRE_ACCESS_GATE` | `true` | Shows the optional theatrical terminal on the landing page. It is fiction, not access control. |
-| `VITE_ENABLE_AUDIO_BIOFEEDBACK` | `true` | Allows the optional local microphone response. |
-| `VITE_MAX_ACCESS_ATTEMPTS` | `5` | Terminal attempts before a cool-down. |
-| `VITE_ACCESS_LOCKOUT_MS` | `30000` | Cool-down length in milliseconds. |
-| `VITE_ACCESS_PASSPHRASE` | `1912` | Public demo phrase shown next to the terminal; never put a secret here. |
+| `VITE_APP_NAME` | `Orpheus` | Display name shown in the UI. |
+| `VITE_SUPPORT_EMAIL` | `support@example.com` | Contact shown in fatal-error fallback states. |
+| `VITE_REQUIRE_ACCESS_GATE` | `true` | Enables/disables the theatrical activation screen. |
+| `VITE_ENABLE_AUDIO_BIOFEEDBACK` | `true` | Enables local microphone audio-energy analysis. |
+| `VITE_MAX_INTEL_FEED_ITEMS` | `10` | Max intel-feed history retained in UI memory. |
+| `VITE_MAX_ACCESS_ATTEMPTS` | `5` | Allowed gate attempts before lockout. |
+| `VITE_ACCESS_LOCKOUT_MS` | `30000` | Lockout duration in milliseconds. |
+| `VITE_ACCESS_PASSPHRASE` | `1912` | Public demo phrase embedded in client JavaScript; never put a secret here. |
 
-`VITE_MAX_INTEL_FEED_ITEMS` is no longer read: the feed length is part of the deterministic engine, so
-that two deployments cannot replay the same session differently.
+## Scripts
 
-## Privacy and boundaries
+| Command | Purpose |
+| --- | --- |
+| `npm run dev` | Start local development server. |
+| `npm run build` | Create production bundle. |
+| `npm run build:dev` | Build using development mode flags. |
+| `npm run preview` | Preview production build locally. |
+| `npm run lint` | Run ESLint across the project. |
+| `npm run typecheck` | Run TypeScript without emitting build output. |
+| `npm run test` | Run the Vitest suite once. |
+| `npm run test:watch` | Run Vitest in watch mode. |
+| `npm run test:coverage` | Run tests with coverage output. |
+| `npm run test:e2e` | Run the browser tests (Playwright; needs `npx playwright install chromium` once). |
+| `npm run evaluate` | Regenerate the research tools' calibration record. |
+| `npm run baselines` | Regenerate the research tools' simulated-participant results in `docs/results`. |
 
-- No accounts, analytics or telemetry. A Content-Security-Policy restricts connections to the app's own
-  origin. Records and research packages leave the browser only when you download them, and contain no
-  audio, names, contact details, free text or device identifiers.
-- Orpheus is a simulation and research environment. It does not target, control weapons or any real
-  system, make autonomous decisions, or give operational advice. Its recommendations are limited to
-  analysis and verification steps inside the fiction.
-- Simulated values are never presented as measurements, and the assistant never shows a confidence value
-  its method has not earned.
+## Recommended local validation sequence
 
-## Documentation
+Run these before opening a PR:
 
-- [`docs/RESEARCH_DOSSIER.md`](docs/RESEARCH_DOSSIER.md) — problem, hypotheses, baselines, protocol,
-  evaluation criteria, reproducibility, results and limitations, organized around the Heilmeier Catechism.
-- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — technical architecture.
-- [`docs/AUDIT.md`](docs/AUDIT.md) — audit of the v1 prototype and the implementation matrix.
-- [`docs/results/`](docs/results) — generated results (do not edit by hand).
+```bash
+npm ci
+npm run lint
+npm run typecheck
+npm run test
+npm run build
+npm run test:e2e
+```
 
-## License and affiliation
+## Production and security notes
 
-MIT (see [`LICENSE`](LICENSE)). Orpheus is a Vers3Dynamics project. It is not affiliated with, endorsed
-by, or funded by DARPA or any government agency.
+- The activation screen provides no access control. For a protected deployment, enforce identity, authorization, and audit logging on a server.
+- Microphone permission is requested per visit and audio samples are analyzed in browser memory. The app does not record or transmit the microphone stream. Browser permission and local preferences are under the visitor's control.
+- A low-frequency audio FFT envelope is an audio proxy, not breath or pulse sensing. All physiological-looking dashboard numbers come from simulation generators. Do not use them to assess a person.
+- The **Export** button downloads a JSON snapshot of this visit's decisions, objectives, recent simulated events, and metrics. The schema includes explicit provenance for each signal family; it is a demo record, not a verified audit log.
+- Tones are generated by local Web Audio oscillators. Gain starts at zero and is capped, but visitors should set a comfortable device volume before enabling audio.
+- The Vite dev server binds to localhost by default. Use `npm run dev -- --host 0.0.0.0` only when intentionally testing on another device.
+
+## Troubleshooting
+
+- **Port already in use**: run `npm run dev -- --port 5174` to use an alternate port.
+- **Environment changes not reflected**: stop/restart the Vite dev server after editing `.env`.
+- **Microphone access unavailable**: check browser permissions and `VITE_ENABLE_AUDIO_BIOFEEDBACK=true`; manual simulation remains available.
+
+## License
+
+MIT (see [`LICENSE`](LICENSE)). Orpheus is a Vers3Dynamics project. It is not affiliated with, endorsed by,
+or funded by DARPA or any government agency.

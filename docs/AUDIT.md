@@ -194,3 +194,14 @@ stated.
 | Robustness laboratory | Done, with eleven information conditions (including assistant faults) rather than eight. |
 | Explorer Mode and Research workbench | Done. The workbench configures scenarios, assistance conditions and evidence mixes, and reproduces packages. |
 | Strict TypeScript, runtime validation, tests | Done. Unit, end-to-end and automated accessibility tests; no manual assistive-technology testing yet. |
+
+## 11. Update: the original interface is the main experience again
+
+At the owner's request, the original command room (the interface audited in §1–§8) is restored
+unchanged at `/`. The rows above that say "removed" or "replaced" describe the research tools, which
+now live off the main path (`/explore`, `/research`, `/study`, `/replay`, `/method`) with their own copies
+of the instruments. The audit findings in §5–§7 (unsupported labels, accessibility gaps, re-render
+costs) therefore apply to the main experience again and are candidates for improvement in its own
+style. A pixel comparison against the original build (frozen randomness and clock, desktop and phone
+widths) found no difference other than a feed timestamp that also varies between two runs of the
+original build.

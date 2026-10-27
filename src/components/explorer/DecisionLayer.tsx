@@ -10,7 +10,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Slider } from '@/components/ui/slider';
+import { Slider } from '@/components/common/Slider';
 import { specFor } from '@/engine/mission/selectors';
 import type { DecisionRuntime, ResolvedDecision } from '@/engine/mission/types';
 import type { DecisionOption, DecisionSpec } from '@/scenarios/types';

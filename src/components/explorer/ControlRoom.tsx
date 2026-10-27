@@ -1,18 +1,18 @@
 import { useCallback, useMemo, useState } from 'react';
-import { BaselineCalibrationPanel } from '@/components/BaselineCalibrationPanel';
-import { BreathPulseControls } from '@/components/BreathPulseControls';
-import { MissionAlertQueue } from '@/components/MissionAlertQueue';
-import { MissionCommandStrip } from '@/components/MissionCommandStrip';
-import { OperatorEventTimeline } from '@/components/OperatorEventTimeline';
-import { OperatorMetricsDashboard } from '@/components/OperatorMetricsDashboard';
-import { OperatorVitalsCognitiveLoadMonitor } from '@/components/OperatorVitalsCognitiveLoadMonitor';
-import { SquadCohesionIndex } from '@/components/SquadCohesionIndex';
-import { TemporalArchive } from '@/components/TemporalArchive';
-import { TouchInterface } from '@/components/TouchInterface';
+import { BaselineCalibrationPanel } from '@/components/instruments/BaselineCalibrationPanel';
+import { BreathPulseControls } from '@/components/instruments/BreathPulseControls';
+import { MissionAlertQueue } from '@/components/instruments/MissionAlertQueue';
+import { MissionCommandStrip } from '@/components/instruments/MissionCommandStrip';
+import { OperatorEventTimeline } from '@/components/instruments/OperatorEventTimeline';
+import { OperatorMetricsDashboard } from '@/components/instruments/OperatorMetricsDashboard';
+import { OperatorVitalsCognitiveLoadMonitor } from '@/components/instruments/OperatorVitalsCognitiveLoadMonitor';
+import { SquadCohesionIndex } from '@/components/instruments/SquadCohesionIndex';
+import { TemporalArchive } from '@/components/instruments/TemporalArchive';
+import { TouchInterface } from '@/components/instruments/TouchInterface';
 import { communicationEfficiency, effectiveCohesion, hostileTrackCount, maxPhase, squadStress } from '@/engine/mission/selectors';
 import type { BreathPulseControlsState } from '@/hooks/useBreathPulseModulation';
 import { useOperatorBaseline } from '@/hooks/useOperatorBaseline';
-import { deriveMissionUx } from '@/lib/missionUx';
+import { deriveMissionUx } from '@/components/instruments/missionUx';
 import { useMission, type MissionStore } from '@/state/missionStore';
 
 interface ControlRoomProps {

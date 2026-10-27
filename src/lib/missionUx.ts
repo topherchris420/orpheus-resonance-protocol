@@ -100,10 +100,10 @@ export const getTelemetryAssessment = ({
 
   const recommendation =
     severity === 'critical'
-      ? 'Simulated values are in the critical band. Pause and review the generated inputs if you like.'
+      ? 'Scenario hint: pause the simulation and review the generated inputs.'
       : severity === 'watch'
-        ? 'Simulated values are elevated. They describe the fictional operator, not you.'
-        : 'Simulated values are within their usual band.';
+        ? 'Scenario hint: inspect the generated stress and mission variables.'
+        : 'Scenario hint: continue exploring the simulated mission.';
 
   return {
     severity,
@@ -123,9 +123,9 @@ export const deriveMissionUx = (input: MissionUxInput): MissionUxState => {
     alerts.push({
       id: 'red-team-conflict',
       severity: 'critical',
-      title: 'Conflicting report',
+      title: 'Conflicting Intel',
       message: input.conflictingIntel,
-      action: 'Treat this report as unverified; check the evidence before relying on it.',
+      action: 'Resolve conflicting intel before advancing the simulation.',
       timestamp,
     });
   }
@@ -134,18 +134,18 @@ export const deriveMissionUx = (input: MissionUxInput): MissionUxState => {
     alerts.push({
       id: 'operator-stress',
       severity: 'critical',
-      title: 'Modeled stress critical',
-      message: `The fictional operator's modeled stress is ${(input.cognitiveStressIndex * 100).toFixed(0)}%.`,
-      action: 'A simulated value; it does not describe you.',
+      title: 'Operator Stress Critical',
+      message: `Cognitive load is ${(input.cognitiveStressIndex * 100).toFixed(0)}%.`,
+      action: 'Pause escalation and stabilize operator vitals.',
       timestamp,
     });
   } else if (input.cognitiveStressIndex >= 0.58) {
     alerts.push({
       id: 'operator-stress-watch',
       severity: 'watch',
-      title: 'Modeled stress rising',
-      message: `The fictional operator's modeled stress is ${(input.cognitiveStressIndex * 100).toFixed(0)}%.`,
-      action: 'A simulated value; it does not describe you.',
+      title: 'Operator Stress Rising',
+      message: `Cognitive load is ${(input.cognitiveStressIndex * 100).toFixed(0)}%.`,
+      action: 'Shift support frequency toward calm and reduce task load.',
       timestamp,
     });
   }
@@ -154,18 +154,18 @@ export const deriveMissionUx = (input: MissionUxInput): MissionUxState => {
     alerts.push({
       id: 'hostile-density',
       severity: 'critical',
-      title: 'Hostile density',
-      message: `${input.hostileThreatCount} hostile contacts are on the generated map.`,
-      action: 'Review the map and the evidence before choosing a course.',
+      title: 'Hostile Density',
+      message: `${input.hostileThreatCount} hostile indicators are active.`,
+      action: 'Re-route squad pathing around hostile concentration.',
       timestamp,
     });
   } else if (input.threatCount > 0) {
     alerts.push({
       id: 'threat-watch',
       severity: 'watch',
-      title: 'Map updated',
-      message: `${input.threatCount} contacts are on the generated map.`,
-      action: 'Contacts are generated; positions are simulated.',
+      title: 'Threat Map Updated',
+      message: `${input.threatCount} indicators require monitoring.`,
+      action: 'Review map confidence before issuing movement.',
       timestamp,
     });
   }
@@ -174,18 +174,18 @@ export const deriveMissionUx = (input: MissionUxInput): MissionUxState => {
     alerts.push({
       id: 'audio-error',
       severity: 'watch',
-      title: 'Microphone unavailable',
+      title: 'Biofeedback Fallback',
       message: input.audioError,
-      action: 'Everything except audio response works without it.',
+      action: 'Use simulated vitals or re-enable microphone permission.',
       timestamp,
     });
   } else if (input.audioEnabled && !input.microphoneConnected) {
     alerts.push({
       id: 'microphone-pending',
       severity: 'watch',
-      title: 'Microphone pending',
-      message: 'Local audio analysis is waiting for browser permission.',
-      action: 'Grant access in the browser prompt, or stop audio.',
+      title: 'Microphone Pending',
+      message: 'Live analysis is waiting for browser permission.',
+      action: 'Grant microphone access or disable biofeedback.',
       timestamp,
     });
   }
@@ -194,9 +194,9 @@ export const deriveMissionUx = (input: MissionUxInput): MissionUxState => {
     alerts.push({
       id: 'cohesion-low',
       severity: 'watch',
-      title: 'Cohesion low',
-      message: `Modeled squad cohesion is ${(input.cohesionScore * 100).toFixed(0)}%.`,
-      action: 'A modeled value in the story.',
+      title: 'Cohesion Low',
+      message: `Squad cohesion is ${(input.cohesionScore * 100).toFixed(0)}%.`,
+      action: 'Stabilize communications before high-risk movement.',
       timestamp,
     });
   }
@@ -207,8 +207,8 @@ export const deriveMissionUx = (input: MissionUxInput): MissionUxState => {
   const primaryAction =
     alerts[0]?.action ||
     (input.simulationMode
-      ? 'Continue the simulation; open decisions are in the Decision column.'
-      : 'Advance the phase when you are ready.');
+      ? 'Continue simulation and monitor telemetry drift.'
+      : 'Advance acclimatization when operator vitals remain stable.');
 
   return {
     phaseLabel: `Phase ${input.phase}/4`,
@@ -216,10 +216,10 @@ export const deriveMissionUx = (input: MissionUxInput): MissionUxState => {
       ? 'Red Team Active'
       : input.simulationMode
         ? 'Simulation Active'
-        : 'Approach',
+        : 'Acclimatization',
     threatLevel,
     nextAction: primaryAction,
-    summary: `${input.threatCount} map contacts, ${(input.cohesionScore * 100).toFixed(0)}% modeled cohesion, ${input.bioResonanceFrequency.toFixed(1)} Hz display marker`,
+    summary: `${input.threatCount} map indicators, ${(input.cohesionScore * 100).toFixed(0)}% cohesion, ${input.bioResonanceFrequency.toFixed(1)}Hz support`,
     alerts,
   };
 };

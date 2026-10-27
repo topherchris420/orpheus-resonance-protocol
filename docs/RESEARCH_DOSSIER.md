@@ -343,8 +343,8 @@ Full tables, including the protocol-materials run and the robustness laboratory,
 
 #### 15.3 Software verification
 
-At the time of writing: 147 unit tests and 39 end-to-end tests pass; ESLint and strict TypeScript pass;
-axe reports no WCAG 2.2 AA rule violations on any route, dialog or study screen tested; the workbench's
+At the time of writing: 163 unit tests and 38 end-to-end tests pass; ESLint and strict TypeScript pass;
+axe reports no WCAG 2.2 AA rule violations on any research route, dialog or study screen tested; the workbench's
 default batch (1,920 trials) produces the same package hash in Chromium as in Node; the committed results
 regenerate byte-identically.
 
@@ -387,7 +387,7 @@ experiments only) → Externally validated. The canonical, test-checked version 
 | Study runner, scoring and analysis pipeline | Tested | Unit tests; complete participant session in the browser, withdrawal, resume. | Not piloted with people. |
 | Human–AI teaming effects in people (H1–H7) | Proposed | Preregistered hypotheses only. | No human data. |
 | Effect of ambient sensory feedback | Proposed | Implemented as a study factor. | No data; no benefit assumed. |
-| Accessibility | Tested | axe scans of all routes and dialogs; keyboard, reduced motion, phone layouts. | No assistive-technology user testing. |
+| Accessibility | Tested | axe scans of all research routes and dialogs; keyboard, reduced motion, phone layouts. | Original command room not yet covered; no assistive-technology user testing. |
 | Microphone consent and shutdown | Tested | Unit tests; browser tests with a synthetic microphone. | Real hardware and mobile browsers untested. |
 | Optional language-model assistant | Tested | Adapter tests with simulated endpoints and fallback. | Not connected; never run with a real model. |
 | Physiological sensing | Proposed | Sensor interface pattern (consent, quality, disconnect). | No biosensor; nothing measured or inferred. |
