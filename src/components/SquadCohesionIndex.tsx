@@ -1,100 +1,154 @@
-import React, { useEffect, useRef } from 'react';
-import { SignalBadge } from '@/components/common/ProvenanceBadge';
+import React, { useEffect, useRef, useState } from 'react';
+import { calculateSquadCohesion } from '@/lib/sessionGuidance';
 
 interface SquadCohesionIndexProps {
-  members: Array<{ callSign: string; stress: number }>;
+  squadVitals: Array<{ hrv: number; respiratoryRate: number; cognitiveStressIndex: number }>;
   communicationEfficiency: number;
-  cohesion: number;
-  history: number[];
 }
 
-const label = (cohesion: number) =>
-  cohesion < 0.2 ? 'Disjointed' : cohesion < 0.4 ? 'Synchronizing' : cohesion < 0.6 ? 'Cohesive' : cohesion < 0.8 ? 'Strong' : 'Unified';
-
-/**
- * Modeled squad cohesion. Members sit at fixed positions on a ring; link strength follows the model.
- * The canvas redraws only when the data change — no animation loop and no randomness.
- */
-export const SquadCohesionIndex: React.FC<SquadCohesionIndexProps> = React.memo(({ members, communicationEfficiency, cohesion, history }) => {
+export const SquadCohesionIndex: React.FC<SquadCohesionIndexProps> = React.memo(({
+  squadVitals,
+  communicationEfficiency,
+}) => {
+  const cohesionScore = calculateSquadCohesion(squadVitals.map(member => member.cognitiveStressIndex), communicationEfficiency);
+  const [squadField, setSquadField] = useState<Array<{ x: number; y: number; energy: number }>>([]);
+  const [cohesionHistory, setCohesionHistory] = useState<number[]>([]);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const averageStress = members.length ? members.reduce((sum, member) => sum + member.stress, 0) / members.length : 0;
+  const animationRef = useRef<number>();
+
+  const avgStress = squadVitals.reduce((acc, val) => acc + val.cognitiveStressIndex, 0) / (squadVitals.length || 1);
+
+  useEffect(() => {
+    setCohesionHistory((prev) => [...prev.slice(-99), cohesionScore]);
+  }, [cohesionScore]);
+
+  useEffect(() => {
+    const fieldPoints = Array.from({ length: squadVitals.length }, (_, i) => ({
+      x: Math.random(),
+      y: Math.random(),
+      energy: cohesionScore * (1 - squadVitals[i].cognitiveStressIndex),
+    }));
+    setSquadField(fieldPoints);
+  }, [cohesionScore, squadVitals]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
-    const ctx = canvas?.getContext('2d');
-    if (!canvas || !ctx) return;
-    const width = canvas.width;
-    const height = canvas.height;
-    ctx.clearRect(0, 0, width, height);
-    const centre = { x: width / 2, y: height * 0.42 };
-    const radius = Math.min(width, height) * 0.28;
-    const points = members.map((member, index) => {
-      const angle = (index / Math.max(1, members.length)) * Math.PI * 2 - Math.PI / 2;
-      return { x: centre.x + Math.cos(angle) * radius, y: centre.y + Math.sin(angle) * radius, member };
-    });
-    ctx.lineWidth = 1.5;
-    for (let i = 0; i < points.length; i += 1) {
-      for (let j = i + 1; j < points.length; j += 1) {
-        const strength = cohesion * (1 - (points[i].member.stress + points[j].member.stress) / 2);
-        ctx.strokeStyle = `rgba(84, 224, 202, ${Math.max(0.08, strength * 0.7)})`;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const animate = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      squadField.forEach((point, i) => {
+        const x = point.x * canvas.width;
+        const y = point.y * canvas.height;
+        const radius = point.energy * 15 + 2;
+
         ctx.beginPath();
-        ctx.moveTo(points[i].x, points[i].y);
-        ctx.lineTo(points[j].x, points[j].y);
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.fillStyle = `hsla(${120 + cohesionScore * 120}, 70%, 50%, ${point.energy})`;
+        ctx.fill();
+
+        squadField.forEach((other, j) => {
+          if (i < j && Math.random() < cohesionScore * 0.4) {
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            ctx.lineTo(other.x * canvas.width, other.y * canvas.height);
+            ctx.strokeStyle = `hsla(180, 60%, 60%, ${cohesionScore * 0.22})`;
+            ctx.lineWidth = 1;
+            ctx.stroke();
+          }
+        });
+      });
+
+      if (cohesionHistory.length > 1) {
+        ctx.beginPath();
+        ctx.strokeStyle = 'rgba(125, 211, 252, 0.8)';
+        ctx.lineWidth = 2;
+
+        cohesionHistory.forEach((value, i) => {
+          const x = (i / cohesionHistory.length) * canvas.width;
+          const y = canvas.height - value * canvas.height * 0.35 - 16;
+
+          if (i === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        });
         ctx.stroke();
       }
-    }
-    for (const point of points) {
-      ctx.beginPath();
-      ctx.arc(point.x, point.y, 5 + (1 - point.member.stress) * 6, 0, Math.PI * 2);
-      ctx.fillStyle = point.member.stress > 0.6 ? 'rgba(250, 200, 92, 0.9)' : 'rgba(84, 224, 202, 0.9)';
-      ctx.fill();
-      ctx.fillStyle = 'rgba(230, 240, 244, 0.85)';
-      ctx.font = '600 11px ui-sans-serif, system-ui, sans-serif';
-      ctx.fillText(point.member.callSign, point.x + 10, point.y + 4);
-    }
-    if (history.length > 1) {
-      ctx.strokeStyle = 'rgba(120, 182, 255, 0.85)';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      history.forEach((value, index) => {
-        const x = (index / (history.length - 1)) * width;
-        const y = height - 8 - value * height * 0.22;
-        if (index === 0) ctx.moveTo(x, y);
-        else ctx.lineTo(x, y);
-      });
-      ctx.stroke();
-    }
-  }, [cohesion, history, members]);
+
+      animationRef.current = requestAnimationFrame(animate);
+    };
+
+    animate();
+
+    return () => {
+      if (animationRef.current) {
+        cancelAnimationFrame(animationRef.current);
+      }
+    };
+  }, [squadField, cohesionHistory, cohesionScore]);
+
+  const getCohesionLabel = () => {
+    if (cohesionScore < 0.2) return 'SIGNAL DISJOINTED';
+    if (cohesionScore < 0.4) return 'SYNCHRONIZING';
+    if (cohesionScore < 0.6) return 'COHESIVE';
+    if (cohesionScore < 0.8) return 'BATTLE-READY';
+    return 'UNITARY COHESION';
+  };
+
+  const getCohesionColor = () => {
+    if (cohesionScore < 0.2) return 'text-red-300';
+    if (cohesionScore < 0.4) return 'text-amber-300';
+    if (cohesionScore < 0.6) return 'text-emerald-300';
+    if (cohesionScore < 0.8) return 'text-sky-300';
+    return 'text-cyan-200';
+  };
+
+  const getCohesionRecommendation = () => {
+    if (cohesionScore < 0.35) return 'Stabilize comms before movement.';
+    if (communicationEfficiency < 0.65) return 'Route around interference and confirm squad acknowledgements.';
+    if (cohesionScore > 0.8) return 'Unit is ready for synchronized action.';
+    return 'Maintain cadence and monitor drift.';
+  };
 
   return (
-    <section aria-label="Squad cohesion" className="h-full rounded-xl border border-o-line bg-o-s1 p-4">
-      <div className="flex items-center justify-between gap-2">
-        <h3 className="text-sm font-semibold text-o-text">Squad cohesion</h3>
-        <SignalBadge category="simulated" />
+    <div className="h-full border border-current/25 bg-black/45 backdrop-blur-sm p-4 relative overflow-hidden">
+      <div className="text-center mb-3">
+        <div className="text-sm font-bold uppercase">Squad Cohesion</div>
+        <div className={`mt-1 text-xl font-mono ${getCohesionColor()}`}>
+          {getCohesionLabel()}
+        </div>
+        <div className="text-xs opacity-70 mt-1">
+          Cohesion Score: {(cohesionScore * 100).toFixed(1)}%
+        </div>
+        <div className="mt-2 border border-current/15 bg-white/[0.03] px-2 py-1 text-xs text-current/70">
+          {getCohesionRecommendation()}
+        </div>
       </div>
-      <p className="mt-2 text-xl font-semibold text-o-text">
-        {label(cohesion)} <span className="font-mono text-base text-o-text2">{Math.round(cohesion * 100)}%</span>
-      </p>
+
       <canvas
         ref={canvasRef}
-        width={320}
-        height={190}
-        role="img"
-        aria-label={`Modeled cohesion ${Math.round(cohesion * 100)} percent across ${members.length} fictional squad members; line chart of recent cohesion below.`}
-        className="mt-2 h-36 w-full rounded-lg border border-o-line bg-o-bg/60"
+        width={300}
+        height={200}
+        className="w-full h-32 border border-current/20 bg-black/20"
       />
-      <dl className="mt-3 grid grid-cols-2 gap-2 text-xs text-o-text3">
-        <div>
-          <dt>Average modeled stress</dt>
-          <dd className="font-mono text-sm text-o-text">{Math.round(averageStress * 100)}%</dd>
+
+      <div className="mt-3 space-y-2 text-xs">
+        <div className="flex justify-between">
+          <span>Avg. Squad Stress:</span>
+          <span className={avgStress > 0.5 ? 'text-red-300' : 'text-emerald-300'}>
+            {(avgStress * 100).toFixed(0)}%
+          </span>
         </div>
-        <div>
-          <dt>Communication efficiency</dt>
-          <dd className="font-mono text-sm text-o-text">{Math.round(communicationEfficiency * 100)}%</dd>
+        <div className="flex justify-between">
+          <span>Comm. Efficiency:</span>
+          <span className={communicationEfficiency > 0.7 ? 'text-emerald-300' : 'text-amber-300'}>
+            {(communicationEfficiency * 100).toFixed(0)}%
+          </span>
         </div>
-      </dl>
-    </section>
+      </div>
+    </div>
   );
 });
-
-SquadCohesionIndex.displayName = 'SquadCohesionIndex';

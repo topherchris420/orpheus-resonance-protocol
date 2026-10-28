@@ -1,59 +1,55 @@
 import React from 'react';
-import { AlertOctagon, AlertTriangle, Info, Radio } from 'lucide-react';
-import { formatSimTime } from '@/engine/clock';
-import type { IntelItem } from '@/engine/mission/types';
 
-interface SitRepIntelFeedProps {
-  intel: IntelItem[];
-  currentClearance: number;
-  tickSeconds?: number;
+interface IntelUpdate {
+  id: string;
+  timestamp: number;
+  message: string;
+  clearanceLevel: number;
+  priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  source?: string;
 }
 
-const PRIORITY = {
-  CRITICAL: { icon: AlertOctagon, className: 'border-o-red/60 text-o-red', label: 'Critical' },
-  HIGH: { icon: AlertTriangle, className: 'border-o-amber/60 text-o-amber', label: 'High' },
-  MEDIUM: { icon: Info, className: 'border-o-sky/50 text-o-sky', label: 'Medium' },
-  LOW: { icon: Info, className: 'border-o-line-strong text-o-text3', label: 'Low' },
-} as const;
+interface SitRepIntelFeedProps {
+  intelFeed: IntelUpdate[];
+  currentClearance: number;
+}
 
-const ORIGIN_LABEL: Record<IntelItem['origin'], string> = {
-  generated: 'Generated report',
-  command: 'Your recorded course',
-  'red-team': 'Red-team injection',
-};
+export const SitRepIntelFeed: React.FC<SitRepIntelFeedProps> = React.memo(({
+  intelFeed,
+  currentClearance,
+}) => {
+  const visibleUpdates = intelFeed.filter(update => update.clearanceLevel <= currentClearance).slice().reverse();
 
-/** The generated report feed. Reports are fiction; red-team injections are labeled as such. */
-export const SitRepIntelFeed: React.FC<SitRepIntelFeedProps> = React.memo(({ intel, currentClearance, tickSeconds = 1 }) => {
-  const visible = intel.filter((item) => item.clearance <= currentClearance).slice().reverse();
   return (
-    <section aria-label="Latest reports" className="flex h-full min-h-0 flex-col rounded-xl border border-o-line bg-o-s1 p-4">
-      <div className="flex items-center gap-2 border-b border-o-line pb-2">
-        <Radio aria-hidden="true" className="h-4 w-4 text-o-teal" />
-        <h3 className="text-sm font-semibold text-o-text">Latest reports</h3>
-        <span className="ml-auto text-xs text-o-text3">Simulated feed</span>
-      </div>
-      <ol className="mt-3 min-h-0 flex-1 space-y-2.5 overflow-y-auto pr-1">
-        {visible.length === 0 && <li className="text-sm text-o-text3">No reports yet. Let simulated time run to receive fictional reports.</li>}
-        {visible.map((item) => {
-          const { icon: Icon, className, label } = PRIORITY[item.priority];
-          return (
-            <li key={item.id} className="rounded-lg border border-o-line bg-o-s2 p-2.5">
-              <div className="flex flex-wrap items-center gap-2 text-xs text-o-text3">
-                <span className={`o-chip ${className}`}>
-                  <Icon aria-hidden="true" className="h-3 w-3" />
-                  {label}
-                </span>
-                <span>{item.source}</span>
-                <span>· {ORIGIN_LABEL[item.origin]}</span>
-                <span className="ml-auto font-mono">{formatSimTime(item.tick, tickSeconds)}</span>
+    <div className="flex h-full min-h-0 flex-col rounded-xl border border-current/20 bg-black/30 p-4">
+      <div className="font-bold border-b border-current/30 pb-2 mb-4">LATEST REPORTS · SIMULATED</div>
+      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
+        {visibleUpdates.length === 0 && <p className="py-4 text-sm leading-relaxed text-slate-400">No reports available in this phase yet. New fictional reports arrive as the simulation runs; you can explore decisions now.</p>}
+        {visibleUpdates.map(update => (
+            <div key={update.id} className={`p-2 border rounded-md bg-black/30 ${
+              update.priority === 'CRITICAL' ? 'border-red-500/70' : 
+              update.priority === 'HIGH' ? 'border-yellow-500/70' : 
+              'border-current/30'
+            }`}>
+              <div className="flex flex-wrap justify-between gap-2 text-xs opacity-70">
+                <span>{new Date(update.timestamp).toLocaleTimeString()}</span>
+                <div className="flex flex-wrap gap-2">
+                  {update.priority && (
+                    <span className={`${
+                      update.priority === 'CRITICAL' ? 'text-red-400' :
+                      update.priority === 'HIGH' ? 'text-yellow-400' :
+                      update.priority === 'MEDIUM' ? 'text-blue-400' :
+                      'text-green-400'
+                    }`}>[{update.priority}]</span>
+                  )}
+                  <span>CLEARANCE {update.clearanceLevel}</span>
+                  {update.source && <span>({update.source})</span>}
+                </div>
               </div>
-              <p className="mt-1.5 text-sm text-o-text2">{item.message}</p>
-            </li>
-          );
-        })}
-      </ol>
-    </section>
+              <p className="text-sm mt-1">{update.message}</p>
+            </div>
+          ))}
+      </div>
+    </div>
   );
 });
-
-SitRepIntelFeed.displayName = 'SitRepIntelFeed';

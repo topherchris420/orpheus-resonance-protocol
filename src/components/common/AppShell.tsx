@@ -1,5 +1,5 @@
 import { Waves } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { useLayoutEffect, type ReactNode } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
@@ -16,6 +16,11 @@ const NAV = [
  */
 export const AppShell = ({ children, mode, wide = false, minimal = false }: { children: ReactNode; mode?: string; wide?: boolean; minimal?: boolean }) => {
   const { pathname } = useLocation();
+  // The research palette applies only while a research page is open (see index.css).
+  useLayoutEffect(() => {
+    document.documentElement.classList.add('o-theme');
+    return () => document.documentElement.classList.remove('o-theme');
+  }, []);
   return (
     <div className="min-h-screen bg-o-bg text-o-text">
       <a href="#main" className="skip-link">

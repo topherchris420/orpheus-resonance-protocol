@@ -1,8 +1,14 @@
 import React from 'react';
-import { Mic, ShieldCheck, Volume2 } from 'lucide-react';
+import { Mic, Volume2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { CONSENT_STATEMENT } from '@/sensing/microphone';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 
 interface BiofeedbackConsentDialogProps {
   open: boolean;
@@ -10,45 +16,44 @@ interface BiofeedbackConsentDialogProps {
   onConfirm: () => void;
 }
 
-/** Explicit, per-session consent for local microphone energy analysis and generated tones. */
-export const BiofeedbackConsentDialog: React.FC<BiofeedbackConsentDialogProps> = ({ open, onOpenChange, onConfirm }) => (
-  <Dialog open={open} onOpenChange={onOpenChange}>
-    <DialogContent className="max-h-[85vh] overflow-y-auto border-o-line-strong bg-o-s1 text-o-text">
-      <DialogHeader>
-        <DialogTitle className="flex items-center gap-2">
-          <Mic aria-hidden="true" className="h-5 w-5 text-o-teal" />
-          Enable local audio response?
-        </DialogTitle>
-        <DialogDescription className="text-o-text2">
-          Optional. The browser will then ask for microphone access. You can stop at any time with “Stop microphone and tones”; leaving the page stops it too.
-        </DialogDescription>
-      </DialogHeader>
-      <ul className="grid gap-3 text-sm text-o-text2">
-        <li className="flex gap-3 rounded-lg border border-o-line bg-o-s2 p-3">
-          <Mic aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-o-teal" />
-          <span>
-            <strong className="text-o-text">Measured:</strong> low-frequency audio energy, analyzed in this tab. It does not measure breathing, pulse, HRV, stress or any physiological
-            state. Every vital sign on screen remains simulated.
-          </span>
-        </li>
-        <li className="flex gap-3 rounded-lg border border-o-line bg-o-s2 p-3">
-          <ShieldCheck aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-o-teal" />
-          <span>Nothing is recorded, stored or sent. Session records note only that the microphone was switched on or off.</span>
-        </li>
-        <li className="flex gap-3 rounded-lg border border-o-line bg-o-s2 p-3">
-          <Volume2 aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0 text-o-teal" />
-          <span>Generated tones start silent and are capped at a low level. Set a comfortable device volume first. No benefit of the tones is claimed.</span>
-        </li>
-      </ul>
-      <p className="text-xs text-o-text3">By enabling: “{CONSENT_STATEMENT}”</p>
-      <DialogFooter className="gap-2">
-        <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-          Not now
-        </Button>
-        <Button type="button" onClick={onConfirm}>
-          Enable for this session
-        </Button>
-      </DialogFooter>
-    </DialogContent>
-  </Dialog>
-);
+export const BiofeedbackConsentDialog: React.FC<BiofeedbackConsentDialogProps> = ({
+  open,
+  onOpenChange,
+  onConfirm,
+}) => {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="dark max-h-[85vh] overflow-y-auto border-cyan-500/30 bg-slate-950 text-slate-100">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <Mic className="h-5 w-5 text-cyan-300" />
+            Enable local audio response
+          </DialogTitle>
+          <DialogDescription className="text-slate-300">
+            The browser will ask for microphone access. Generated tones start at low volume, and you can stop audio from the mode toolbar.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="grid gap-3 text-sm text-slate-300">
+          <div className="flex gap-3 border border-slate-700 bg-slate-900/70 p-3">
+            <Mic className="mt-0.5 h-4 w-4 text-cyan-300" />
+            <span>Only audio energy is analyzed in the browser. This does not measure pulse, respiration, HRV, stress, or cognitive state. The other dashboard values are generated.</span>
+          </div>
+          <div className="flex gap-3 border border-slate-700 bg-slate-900/70 p-3">
+            <Volume2 className="mt-0.5 h-4 w-4 text-cyan-300" />
+            <span>Use headphones at a comfortable level if you enable tones. Audio stops when you leave this page; the choice is requested again next visit.</span>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button type="button" onClick={onConfirm}>
+            Enable
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};

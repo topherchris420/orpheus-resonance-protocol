@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AssistantPanel } from '@/components/evidence/AssistantPanel';
 import { EvidencePanel } from '@/components/evidence/EvidencePanel';
-import { Slider } from '@/components/ui/slider';
+import { Slider } from '@/components/common/Slider';
 import { assessEvidence } from '@/evidence/engine';
 import { PROTOCOL } from '@/experiment/protocol';
 import { adviceFor, type PlannedTrial, type StageResponse } from '@/experiment/study';

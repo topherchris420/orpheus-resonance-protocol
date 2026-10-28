@@ -2,10 +2,164 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. */
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 222.2 84% 4.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222.2 84% 4.9%;
+
+    --primary: 222.2 47.4% 11.2%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+
+    --accent: 210 40% 96.1%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Smooth transitions for live data updates */
+.smooth-data-transition {
+  transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.data-value {
+  transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+}
+
+.data-value-changing {
+  transform: scale(1.02);
+  opacity: 0.8;
+}
+
+.orpheus-welcome {
+  background: radial-gradient(ellipse at 75% 20%, rgba(11, 93, 99, .22), transparent 55%), #080f13;
+}
+
+@layer components {
+  .session-button {
+    @apply inline-flex min-h-11 items-center gap-2 rounded-lg border border-white/15 bg-white/[0.03] px-2.5 py-2 text-xs text-slate-300 sm:px-3 sm:text-sm transition-colors hover:border-emerald-300/40 hover:bg-emerald-300/10 hover:text-emerald-100 disabled:cursor-not-allowed disabled:opacity-40;
+  }
+  .session-button[aria-pressed="true"] {
+    @apply border-emerald-300/40 bg-emerald-300/10 text-emerald-200;
+  }
+}
+
+button:focus-visible, a:focus-visible, summary:focus-visible, input:focus-visible, [tabindex]:focus-visible {
+  outline: 2px solid #6ee7b7;
+  outline-offset: 4px;
+}
+
+.skip-link {
+  position: fixed;
+  top: -100px;
+  left: 16px;
+  z-index: 100;
+  padding: 12px 16px;
+  background: #6ee7b7;
+  color: #080f13;
+}
+.skip-link:focus { top: 12px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+  .ambient-overlays { display: none; }
+  #session-workspace > div { transform: none !important; filter: none !important; }
+}
+
+.mission-progress { appearance: none; border: 0; background: #263237; border-radius: 4px; overflow: hidden; }
+.mission-progress::-webkit-progress-bar { background: #263237; }
+.mission-progress::-webkit-progress-value { background: #6ee7b7; }
+.mission-progress::-moz-progress-bar { background: #6ee7b7; }
+
 /*
- * Orpheus design tokens — Vers3Dynamics spectral teal on deep graphite.
- * Text tokens meet WCAG AA on every surface token (text-3 ≥ 6.5:1 on surface-2).
- * Status is never conveyed by color alone: every status token is paired with an icon and a label.
+ * Research tools (/explore, /research, /study, /replay, /method). These addresses are not linked from
+ * the main experience. Their palette applies only while one of them is open: AppShell puts the
+ * `o-theme` class on <html>. Nothing below changes how the main experience looks.
  */
 @layer base {
   :root {
@@ -25,8 +179,9 @@
     --o-red: 4 86% 70%;
     --o-violet: 255 85% 80%;
     --o-sky: 212 92% 76%;
+  }
 
-    /* Component library tokens, mapped onto the Orpheus palette. The app is dark only. */
+  html.o-theme {
     --background: var(--o-bg);
     --foreground: var(--o-text);
     --card: var(--o-surface-1);
@@ -47,38 +202,20 @@
     --input: var(--o-line);
     --ring: var(--o-teal);
     --radius: 0.625rem;
-    --sidebar-background: var(--o-surface-1);
-    --sidebar-foreground: var(--o-text);
-    --sidebar-primary: var(--o-teal);
-    --sidebar-primary-foreground: var(--o-bg);
-    --sidebar-accent: var(--o-surface-3);
-    --sidebar-accent-foreground: var(--o-text);
-    --sidebar-border: var(--o-line);
-    --sidebar-ring: var(--o-teal);
-
     color-scheme: dark;
-  }
-}
-
-@layer base {
-  * {
-    @apply border-border;
-  }
-
-  html {
     -webkit-text-size-adjust: 100%;
   }
 
-  body {
+  html.o-theme body {
     @apply bg-o-bg text-o-text antialiased;
     font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     font-feature-settings: 'tnum' 1;
     line-height: 1.5;
   }
 
-  code,
-  kbd,
-  .font-mono {
+  html.o-theme code,
+  html.o-theme kbd,
+  html.o-theme .font-mono {
     font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, 'Liberation Mono', monospace;
   }
 }
@@ -127,89 +264,43 @@
   .o-table td {
     @apply border-b border-o-line/70 px-3 py-2 align-top text-o-text2;
   }
-  .session-button {
-    @apply o-button;
-  }
-}
-
-.orpheus-welcome {
-  background:
-    radial-gradient(ellipse 80% 60% at 78% 8%, hsl(var(--o-teal) / 0.13), transparent 60%),
-    radial-gradient(ellipse 60% 50% at 10% 100%, hsl(var(--o-sky) / 0.06), transparent 60%),
-    hsl(var(--o-bg));
-}
-
-.o-grid-backdrop {
-  background-image:
-    linear-gradient(hsl(var(--o-line) / 0.35) 1px, transparent 1px),
-    linear-gradient(90deg, hsl(var(--o-line) / 0.35) 1px, transparent 1px);
-  background-size: 32px 32px;
-}
-
-button:focus-visible,
-a:focus-visible,
-summary:focus-visible,
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible,
-[tabindex]:focus-visible,
-[role='slider']:focus-visible {
-  outline: 2px solid hsl(var(--o-teal-strong));
-  outline-offset: 3px;
-}
-
-.skip-link {
-  position: fixed;
-  top: -100px;
-  left: 16px;
-  z-index: 100;
-  padding: 12px 16px;
-  border-radius: 8px;
-  background: hsl(var(--o-teal));
-  color: hsl(var(--o-bg));
-  font-weight: 600;
-}
-.skip-link:focus {
-  top: 12px;
 }
 
 .o-highlight {
   box-shadow: 0 0 0 2px hsl(var(--o-teal) / 0.85), 0 0 24px hsl(var(--o-teal) / 0.25);
 }
 
+html.o-theme :is(button, a, summary, input, select, textarea, [tabindex], [role='slider']):focus-visible {
+  outline: 2px solid hsl(var(--o-teal-strong));
+  outline-offset: 3px;
+}
+
+html.o-theme .skip-link {
+  border-radius: 8px;
+  background: hsl(var(--o-teal));
+  color: hsl(var(--o-bg));
+  font-weight: 600;
+}
+
+html.o-theme .mission-progress {
+  border-radius: 999px;
+  background: hsl(var(--o-surface-3));
+}
+html.o-theme .mission-progress::-webkit-progress-bar {
+  background: hsl(var(--o-surface-3));
+}
+html.o-theme .mission-progress::-webkit-progress-value {
+  background: hsl(var(--o-teal));
+}
+html.o-theme .mission-progress::-moz-progress-bar {
+  background: hsl(var(--o-teal));
+}
+
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-  .ambient-overlays {
-    display: none;
-  }
   [data-ambient-surface] {
     transform: none !important;
     filter: none !important;
   }
-}
-
-.mission-progress {
-  appearance: none;
-  border: 0;
-  border-radius: 999px;
-  overflow: hidden;
-  background: hsl(var(--o-surface-3));
-}
-.mission-progress::-webkit-progress-bar {
-  background: hsl(var(--o-surface-3));
-}
-.mission-progress::-webkit-progress-value {
-  background: hsl(var(--o-teal));
-}
-.mission-progress::-moz-progress-bar {
-  background: hsl(var(--o-teal));
 }
 
 /* Study factor: a fixed, slow visual pacing ring (5.5 cycles per minute). Frozen under reduced motion. */

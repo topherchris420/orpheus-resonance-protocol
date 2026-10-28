@@ -4,7 +4,13 @@ Orpheus is a single-page React 18 + TypeScript + Vite application with no server
 simulation, the evidence analysis, the assistant, the experiments and their statistics — runs in the
 browser, and the same modules run in Node for tests and for the result-generating scripts.
 
-The design rule is that **the interface never owns truth**. A deterministic core decides what happens;
+The main experience at `/` is the original Orpheus command room (`pages/Index.tsx`,
+`components/PegasusSimulation.tsx` and its instruments), restored with its own state and generators. It
+looks and reads as it did; the only later changes make it cheaper to draw (`docs/AUDIT.md` §12).
+Everything below describes the research tools, which live at addresses that the command room does not
+link to and which run on a separate deterministic core.
+
+The design rule for the research tools is that **the interface never owns truth**. A deterministic core decides what happens;
 the interface renders it and sends commands. That is what makes sessions replayable, experiments
 reproducible and claims checkable.
 
@@ -161,11 +167,14 @@ processes audio locally (low-frequency energy, quality flag, timestamps), never 
 - `state/studyProgress.ts` keeps an in-progress participant session (configuration and log only) in
   session storage so a reload resumes by replay; `state/packageStore.ts` hands a package to the
   workbench in memory.
-- Routes: `/` landing, `/explore/:scenarioId` (Explorer; `orientation` is the guided five-minute
-  scenario), `/research` (workbench tabs: Protocol, Simulate, Human study, Results, Calibration,
-  Reproduce, Assumptions), `/study` (participant runner), `/replay`, `/method`. Heavy routes load lazily.
+- Routes: `/` is the original command room. The research tools load lazily at `/explore/:scenarioId`
+  (Explorer; `orientation` is the guided five-minute scenario), `/research` (workbench tabs: Protocol,
+  Simulate, Human study, Results, Calibration, Reproduce, Assumptions), `/study` (participant runner),
+  `/replay` and `/method`. They use their own copies of the instruments (`components/instruments/`) so
+  the command room's components stay exactly as they were.
 - Visual system: design tokens in `index.css` and `tailwind.config.ts` (graphite surfaces, spectral teal,
-  amber for AI statements); provenance badges carry icon + label + border style so status never depends
+  amber for AI statements). The research palette is scoped: `AppShell` adds the `o-theme` class to
+  `<html>` while a research page is open, so the command room keeps its original styles; provenance badges carry icon + label + border style so status never depends
   on color; charts (forest plot, reliability diagram) use a palette validated for color-vision deficiency
   and contrast, with focusable marks, tooltips and table twins.
 
@@ -176,14 +185,14 @@ processes audio locally (low-frequency energy, quality flag, timestamps), never 
 - Stored locally: display preferences (`localStorage`), an in-progress study session (`sessionStorage`,
   cleared with the tab). Records and packages leave the browser only when the user downloads them.
 - Exports never contain raw audio, names, contact details, free text or device identifiers.
-- The theatrical terminal on the landing page is fiction: its phrase is public and it grants nothing.
+- The theatrical terminal on the main page is fiction: its phrase is public and it grants nothing.
 
 ## 10. Verification
 
 | Layer | What runs |
 | --- | --- |
-| Unit (Vitest) | RNG reference vectors, canonical JSON, hash chain and tamper detection, every admissibility rule, calibration, guardrails and fallback, manifests, mission reducer rules, replay and version mismatch, world bounds, study reducer, scoring, statistics, agents, packages, exclusions, combination, custom designs, microphone consent and shutdown, evidence-ladder and landing-page claims against generated results. |
-| End-to-end (Playwright, Chromium) | The full visitor journey; workbench design → run → export → verify → regenerate; the default batch reproducing, in the browser, the package hash generated in Node; 20,000-trial calibration reproduced in the browser; a complete participant session, withdrawal and resume; microphone consent and shutdown with a synthetic microphone; axe (WCAG 2.2 AA rules) on every route and dialog; keyboard-only decisions; reduced motion; phone layouts. |
+| Unit (Vitest) | RNG reference vectors, canonical JSON, hash chain and tamper detection, every admissibility rule, calibration, guardrails and fallback, manifests, mission reducer rules, replay and version mismatch, world bounds, study reducer, scoring, statistics, agents, packages, exclusions, combination, custom designs, microphone consent and shutdown, evidence-ladder claims against generated results, and the command room's original tests. |
+| End-to-end (Playwright, Chromium) | The command room loads and its views open without errors, its breathing animation reaches only the elements that show it, and the research palette never leaks into it; the explorer journey; workbench design → run → export → verify → regenerate; the default batch reproducing, in the browser, the package hash generated in Node; 20,000-trial calibration reproduced in the browser; a complete participant session, withdrawal and resume; microphone consent and shutdown with a synthetic microphone; axe (WCAG 2.2 AA rules) on every research route and dialog (the command room is restored as it was and is not yet covered); keyboard-only decisions; reduced motion; phone layouts. |
 | Static | `tsc` in strict mode for app, config and tests; ESLint including the determinism rules. |
 | CI | `.github/workflows/ci.yml`: lint, typecheck, unit tests, build, and regeneration of the committed calibration record and baseline results (any difference fails); a second job runs the Playwright suite in Chromium. |
 

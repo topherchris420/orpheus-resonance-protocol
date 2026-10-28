@@ -1,5 +1,6 @@
 import React from 'react';
-import { AlertOctagon, AlertTriangle, CheckCircle2, Info, X } from 'lucide-react';
+import { AlertTriangle, CheckCircle2, Info, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { MissionAlert, MissionSeverity } from '@/lib/missionUx';
 
 interface MissionAlertQueueProps {
@@ -8,46 +9,64 @@ interface MissionAlertQueueProps {
   onDismiss: (alertId: string) => void;
 }
 
-const TONE: Record<MissionSeverity, { className: string; icon: typeof Info; label: string }> = {
-  nominal: { className: 'border-o-teal/40 text-o-teal-strong', icon: Info, label: 'Note' },
-  watch: { className: 'border-o-amber/50 text-o-amber', icon: AlertTriangle, label: 'Watch' },
-  critical: { className: 'border-o-red/60 text-o-red', icon: AlertOctagon, label: 'Attention' },
+const severityTone: Record<MissionSeverity, string> = {
+  nominal: 'border-emerald-400/30 bg-emerald-500/10 text-emerald-100',
+  watch: 'border-amber-400/40 bg-amber-500/10 text-amber-100',
+  critical: 'border-red-400/50 bg-red-500/15 text-red-100',
 };
 
-export const MissionAlertQueue: React.FC<MissionAlertQueueProps> = React.memo(({ alerts, dismissedAlertIds, onDismiss }) => {
-  const visible = alerts.filter((alert) => !dismissedAlertIds.includes(alert.id)).slice(0, 3);
-  if (visible.length === 0) {
+const severityIcon: Record<MissionSeverity, React.ReactNode> = {
+  nominal: <Info className="h-4 w-4" />,
+  watch: <AlertTriangle className="h-4 w-4" />,
+  critical: <AlertTriangle className="h-4 w-4" />,
+};
+
+export const MissionAlertQueue: React.FC<MissionAlertQueueProps> = React.memo(({
+  alerts,
+  dismissedAlertIds,
+  onDismiss,
+}) => {
+  const visibleAlerts = alerts.filter((alert) => !dismissedAlertIds.includes(alert.id)).slice(0, 3);
+
+  if (visibleAlerts.length === 0) {
     return (
-      <div className="flex items-center gap-2 rounded-xl border border-o-line bg-o-s1 px-3 py-2 text-sm text-o-text2">
-        <CheckCircle2 aria-hidden="true" className="h-4 w-4 text-o-teal" /> No active alerts.
+      <div className="border border-emerald-400/25 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-100">
+        <div className="flex items-center gap-2 font-semibold uppercase">
+          <CheckCircle2 className="h-4 w-4" />
+          No active alerts
+        </div>
+        <div className="mt-1 text-emerald-100/70">Continue monitoring telemetry and mission feed.</div>
       </div>
     );
   }
+
   return (
-    <ul className="space-y-2" aria-label="Alerts">
-      {visible.map((alert) => {
-        const { className, icon: Icon, label } = TONE[alert.severity];
-        return (
-          <li key={alert.id} className={`flex items-start justify-between gap-2 rounded-xl border bg-o-s1 px-3 py-2 text-sm ${className.split(' ')[0]}`}>
+    <div className="space-y-2">
+      {visibleAlerts.map((alert) => (
+        <div key={alert.id} className={`border px-3 py-2 text-xs ${severityTone[alert.severity]}`}>
+          <div className="flex items-start justify-between gap-2">
             <div className="flex min-w-0 gap-2">
-              <Icon aria-hidden="true" className={`mt-0.5 h-4 w-4 shrink-0 ${className.split(' ')[1]}`} />
+              <div className="mt-0.5 shrink-0">{severityIcon[alert.severity]}</div>
               <div className="min-w-0">
-                <p className="font-semibold text-o-text">
-                  <span className="sr-only">{label}: </span>
-                  {alert.title}
-                </p>
-                <p className="text-o-text2">{alert.message}</p>
-                <p className="text-xs text-o-text3">{alert.action}</p>
+                <div className="font-semibold uppercase tracking-wide">{alert.title}</div>
+                <div className="mt-1 text-current/75">{alert.message}</div>
+                <div className="mt-1 text-cyan-100">{alert.action}</div>
               </div>
             </div>
-            <button type="button" className="o-button-quiet min-h-9 w-9 shrink-0 px-0" onClick={() => onDismiss(alert.id)} aria-label={`Dismiss ${alert.title}`}>
-              <X aria-hidden="true" className="h-4 w-4" />
-            </button>
-          </li>
-        );
-      })}
-    </ul>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 shrink-0 text-current/70 hover:bg-white/10 hover:text-white"
+              onClick={() => onDismiss(alert.id)}
+              aria-label={`Acknowledge ${alert.title}`}
+              title={`Acknowledge ${alert.title}`}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      ))}
+    </div>
   );
 });
-
-MissionAlertQueue.displayName = 'MissionAlertQueue';

@@ -1,79 +1,148 @@
 import React from 'react';
-import { Waves } from 'lucide-react';
+import { Activity, Waves } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
+import { Button } from '@/components/ui/button';
 import { BREATH_PULSE_PRESETS, BreathPulseControlsState } from '@/hooks/useBreathPulseModulation';
 
 interface BreathPulseControlsProps {
   controls: BreathPulseControlsState;
   liveAvailable: boolean;
+  /** Receives the live breath/pulse CSS variables. */
+  ringRef?: React.Ref<HTMLDivElement>;
 }
 
-/** Visual pacing: sets the rhythm of the ambient animation. It measures nothing about the person. */
-export const BreathPulseControls: React.FC<BreathPulseControlsProps> = React.memo(({ controls, liveAvailable }) => {
-  const { breathRate, breathDepth, pulseTarget, coupling, followLive, setBreathRate, setBreathDepth, setPulseTarget, setCoupling, setFollowLive, applyPreset } = controls;
+export const BreathPulseControls: React.FC<BreathPulseControlsProps> = React.memo(({
+  controls,
+  liveAvailable,
+  ringRef,
+}) => {
+  const {
+    breathRate,
+    breathDepth,
+    pulseTarget,
+    coupling,
+    followLive,
+    setBreathRate,
+    setBreathDepth,
+    setPulseTarget,
+    setCoupling,
+    setFollowLive,
+    applyPreset,
+  } = controls;
+
   const following = followLive && liveAvailable;
+  const cycleSeconds = 60 / breathRate;
+
   return (
-    <section aria-label="Visual pacing" className="flex h-full flex-col gap-3 overflow-y-auto rounded-xl border border-o-line bg-o-s1 p-4">
-      <div className="flex items-center justify-between gap-2 border-b border-o-line pb-2">
-        <h3 className="flex items-center gap-2 text-sm font-semibold text-o-text">
-          <Waves aria-hidden="true" className="h-4 w-4 text-o-teal" /> Visual pacing
-        </h3>
-        <button type="button" className="o-button min-h-9 px-2 text-xs" aria-pressed={following} disabled={!liveAvailable} onClick={() => setFollowLive(!followLive)}>
-          {following ? 'Glow follows audio' : 'Manual'}
-        </button>
+    <div className="flex h-full flex-col gap-3 overflow-y-auto border border-current/25 bg-black/45 p-4 backdrop-blur-sm">
+      <div className="flex items-center justify-between border-b border-current/25 pb-2">
+        <div className="flex items-center gap-2 text-sm font-bold uppercase">
+          <Waves className="h-4 w-4" />
+          Breath &amp; Pulse
+        </div>
+        <Button
+          variant={following ? 'default' : 'outline'}
+          size="sm"
+          disabled={!liveAvailable}
+          onClick={() => setFollowLive(!followLive)}
+          className="h-7 px-2 text-[10px] uppercase"
+        >
+          {following ? 'Audio reactive' : 'Manual'}
+        </Button>
       </div>
+
+      {/* Live-modulated breath ring: driven purely by CSS variables written each frame */}
       <div className="flex items-center gap-3">
         <div
-          aria-hidden="true"
-          className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border border-o-teal/50 text-[0.7rem] uppercase tracking-widest text-o-teal"
+          ref={ringRef}
+          className="relative flex h-16 w-16 shrink-0 items-center justify-center rounded-full border border-cyan-300/40"
           style={{
             transform: 'scale(calc(0.9 + var(--breath-phase, 0.5) * 0.2))',
-            boxShadow: '0 0 calc(6px + var(--pulse-glow, 0) * 22px) hsl(var(--o-teal) / calc(0.15 + var(--interface-intensity, 0.2) * 0.4))',
+            boxShadow: '0 0 calc(6px + var(--pulse-glow, 0) * 26px) rgba(34,211,238,calc(0.15 + var(--interface-intensity, 0.2) * 0.5))',
+            opacity: 'calc(0.55 + var(--interface-intensity, 0.3) * 0.45)',
           }}
         >
-          pace
+          <div className="text-[10px] uppercase tracking-widest text-cyan-200">sync</div>
         </div>
-        <dl className="min-w-0 flex-1 space-y-1 text-xs text-o-text3">
+        <div className="min-w-0 flex-1 space-y-1 text-[11px] uppercase text-current/60">
           <div className="flex justify-between">
-            <dt>Cycle</dt>
-            <dd className="font-mono text-o-text">{(60 / breathRate).toFixed(1)} s</dd>
+            <span>Cycle</span>
+            <span className="text-cyan-200">{cycleSeconds.toFixed(1)} s</span>
           </div>
           <div className="flex justify-between">
-            <dt>Pulse rhythm</dt>
-            <dd className="font-mono text-o-text">{Math.round(pulseTarget)} /min</dd>
+            <span className="flex items-center gap-1"><Activity className="h-3 w-3" />Visual pulse target</span>
+            <span className="text-cyan-200">{Math.round(pulseTarget)} /min</span>
           </div>
           <div className="flex justify-between">
-            <dt>Coupling</dt>
-            <dd className="font-mono text-o-text">{Math.round(coupling * 100)}%</dd>
+            <span>Modulation</span>
+            <span className="text-cyan-200">{Math.round(coupling * 100)}%</span>
           </div>
-        </dl>
+        </div>
       </div>
-      <div role="group" aria-label="Pacing presets" className="grid grid-cols-2 gap-1.5">
+
+      <div className="grid grid-cols-2 gap-1.5">
         {BREATH_PULSE_PRESETS.map((preset) => (
-          <button key={preset.id} type="button" className="o-button min-h-9 px-2 text-xs" aria-pressed={Math.abs(preset.breathRate - breathRate) < 0.05} onClick={() => applyPreset(preset)}>
+          <Button
+            key={preset.id}
+            variant={Math.abs(preset.breathRate - breathRate) < 0.05 ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => applyPreset(preset)}
+            className="h-auto whitespace-normal px-2 py-1 text-[10px] leading-tight"
+          >
             {preset.name}
-          </button>
+          </Button>
         ))}
       </div>
-      {[
-        { label: 'Animation cycles per minute', value: breathRate, min: 3, max: 20, step: 0.5, set: setBreathRate, text: (value: number) => `${value} per minute` },
-        { label: 'Animation depth', value: breathDepth * 100, min: 0, max: 100, step: 1, set: (value: number) => setBreathDepth(value / 100), text: (value: number) => `${value} percent` },
-        { label: 'Pulse rhythm', value: pulseTarget, min: 45, max: 120, step: 1, set: setPulseTarget, text: (value: number) => `${value} per minute` },
-        { label: 'Interface coupling', value: coupling * 100, min: 0, max: 100, step: 1, set: (value: number) => setCoupling(value / 100), text: (value: number) => `${value} percent` },
-      ].map((control) => (
-        <div key={control.label}>
-          <p className="flex justify-between text-xs text-o-text3">
-            <span>{control.label}</span>
-            <span className="font-mono text-o-text">{control.text(Math.round(control.value * 10) / 10)}</span>
-          </p>
-          <Slider label={control.label} valueText={control.text} value={[control.value]} min={control.min} max={control.max} step={control.step} onValueChange={([value]) => control.set(value)} />
+
+      <div className="space-y-3">
+        <div className="space-y-1">
+          <div className="flex justify-between text-[11px] uppercase text-current/60">
+            <span>Breath rate</span>
+            <span className="text-cyan-200">{breathRate.toFixed(1)} /min</span>
+          </div>
+          <Slider
+            value={[breathRate]}
+            min={3}
+            max={20}
+            step={0.5}
+            onValueChange={(value) => setBreathRate(value[0])}
+          />
         </div>
-      ))}
-      <p className="text-xs text-o-text3">
-        These rates pace an animation. With audio on, the glow can follow microphone energy; that does not measure breathing or heart rate, and no calming effect is claimed.
+
+        <div className="space-y-1">
+          <div className="flex justify-between text-[11px] uppercase text-current/60">
+            <span>Breath depth</span>
+            <span className="text-cyan-200">{Math.round(breathDepth * 100)}%</span>
+          </div>
+          <Slider value={[breathDepth * 100]} max={100} step={1} onValueChange={(value) => setBreathDepth(value[0] / 100)} />
+        </div>
+
+        <div className="space-y-1">
+          <div className="flex justify-between text-[11px] uppercase text-current/60">
+            <span>Visual pulse target</span>
+            <span className="text-cyan-200">{Math.round(pulseTarget)} bpm</span>
+          </div>
+          <Slider
+            value={[pulseTarget]}
+            min={45}
+            max={120}
+            step={1}
+            onValueChange={(value) => setPulseTarget(value[0])}
+          />
+        </div>
+
+        <div className="space-y-1">
+          <div className="flex justify-between text-[11px] uppercase text-current/60">
+            <span>Interface coupling</span>
+            <span className="text-cyan-200">{Math.round(coupling * 100)}%</span>
+          </div>
+          <Slider value={[coupling * 100]} max={100} step={1} onValueChange={(value) => setCoupling(value[0] / 100)} />
+        </div>
+      </div>
+
+      <p className="text-[10px] leading-snug text-current/45">
+        Manual rates pace the animation. Audio reactive mode adds a small microphone-energy response to the glow; it does not measure breathing or heart rate.
       </p>
-    </section>
+    </div>
   );
 });
-
-BreathPulseControls.displayName = 'BreathPulseControls';

@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 /** Phone-width layout: no horizontal page scroll, and the three layers stay reachable. */
-for (const route of ['/', '/explore/orientation', '/research', '/research?tab=assumptions', '/study', '/replay', '/method']) {
+for (const route of ['/explore/orientation', '/research', '/research?tab=assumptions', '/study', '/replay', '/method']) {
   test(`${route} fits a phone screen without horizontal scrolling`, async ({ page }) => {
     await page.goto(route);
     await expect(page.getByRole('heading', { level: 1 }).first()).toBeVisible();

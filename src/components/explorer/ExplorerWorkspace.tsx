@@ -3,10 +3,10 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } fro
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { CONDITION_LABEL, CONDITION_SUMMARY, type AssistanceCondition } from '@/assistant/schema';
-import { BiofeedbackConsentDialog } from '@/components/BiofeedbackConsentDialog';
-import { ModeToolbar } from '@/components/ModeToolbar';
-import { NeuroSimFallback } from '@/components/NeuroSimFallback';
-import { VisualOverlays } from '@/components/VisualOverlays';
+import { BiofeedbackConsentDialog } from '@/components/instruments/BiofeedbackConsentDialog';
+import { ModeToolbar } from '@/components/instruments/ModeToolbar';
+import { NeuroSimFallback } from '@/components/instruments/NeuroSimFallback';
+import { VisualOverlays } from '@/components/instruments/VisualOverlays';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,7 +23,7 @@ import { formatSimTime, PLAYBACK_SPEEDS, type PlaybackSpeed } from '@/engine/clo
 import { compareAssistance, summaryMarkdown } from '@/engine/mission/compare';
 import { effectiveCohesion, maxPhase, nextStep, redTeamAvailable, shortlist, specFor } from '@/engine/mission/selectors';
 import type { ResolvedDecision } from '@/engine/mission/types';
-import { useAudioAnalysis } from '@/hooks/useAudioAnalysis';
+import { useAudioAnalysis } from '@/components/instruments/useConsentedAudio';
 import { useBreathPulseModulation } from '@/hooks/useBreathPulseModulation';
 import { usePersistentState } from '@/hooks/usePersistentState';
 import { cn } from '@/lib/utils';
@@ -36,7 +36,7 @@ import { OutcomeDialog, SessionReview } from './Review';
 import { currentTourStep, ORIENTATION_TOUR, type TourTarget } from './tour';
 import { TutorialRail } from './TutorialRail';
 
-const NeuroEmSimulator = lazy(() => import('@/components/NeuroEmSimulator').then((module) => ({ default: module.NeuroEmSimulator })));
+const NeuroEmSimulator = lazy(() => import('@/components/instruments/NeuroEmSimulator').then((module) => ({ default: module.NeuroEmSimulator })));
 
 type Layer = 'situation' | 'evidence' | 'decision';
 

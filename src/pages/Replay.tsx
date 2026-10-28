@@ -6,7 +6,7 @@ import { InfoTip } from '@/components/common/InfoTip';
 import { AssistantPanel } from '@/components/evidence/AssistantPanel';
 import { EvidencePanel } from '@/components/evidence/EvidencePanel';
 import { DecisionOutcome } from '@/components/explorer/Review';
-import { TacticalDataDisplay } from '@/components/TacticalDataDisplay';
+import { TacticalDataDisplay } from '@/components/instruments/TacticalDataDisplay';
 import { formatSimTime } from '@/engine/clock';
 import { importSessionRecord, type ImportResult } from '@/engine/mission/record';
 import { createMissionState, reduceMission } from '@/engine/mission/reducer';

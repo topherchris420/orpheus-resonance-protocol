@@ -194,3 +194,60 @@ stated.
 | Robustness laboratory | Done, with eleven information conditions (including assistant faults) rather than eight. |
 | Explorer Mode and Research workbench | Done. The workbench configures scenarios, assistance conditions and evidence mixes, and reproduces packages. |
 | Strict TypeScript, runtime validation, tests | Done. Unit, end-to-end and automated accessibility tests; no manual assistive-technology testing yet. |
+
+## 11. Update: the original interface is the main experience again
+
+At the owner's request, the original command room (the interface audited in §1–§8) is restored
+unchanged at `/`. The rows above that say "removed" or "replaced" describe the research tools, which
+now live off the main path (`/explore`, `/research`, `/study`, `/replay`, `/method`) with their own copies
+of the instruments. The audit findings in §5–§7 (unsupported labels, accessibility gaps, re-render
+costs) therefore apply to the main experience again and are candidates for improvement in its own
+style. A pixel comparison against the original build (frozen randomness and clock, desktop and phone
+widths) found no difference other than a feed timestamp that also varies between two runs of the
+original build.
+
+## 12. Update: the command room draws for less
+
+At the owner's request ("smoother and lighter", every label kept as it is), the command room now does
+less work for the same picture.
+
+- **Breathing and pulse animation** (not listed in §7). It wrote eight CSS custom properties onto the page
+  root on every frame, so the browser recomputed the styles of the whole page about 60 times a second,
+  even with ambient effects off. The values now go only to the elements that use them: the breathing
+  ring, the ambient overlay and, with ambient effects on, the workspace grid's own transform and filter
+  (`useBreathPulseModulation.ts`).
+- **Microphone** (§7). The audio analysis re-rendered the whole command room 20 times a second. The live
+  level now goes straight to the breathing animation, and the command room re-renders only while the
+  level is above the temporal archive's threshold, the one place that reads it (`useAudioAnalysis.ts`).
+- **Not changed.** The squad cohesion graph still draws every frame: skipping it while scrolled out of
+  view saved about 3%, within measurement noise, and could show one stale frame as it comes into view.
+  Ambient effects stay costly by design; blurring and scaling the whole workspace every frame is the effect.
+
+CPU time per second of use, in milliseconds (headless Chromium with software rendering, 1440×900, median
+of three 10-second windows). The main thread is where page work competes with input; all processes adds
+compositing and rasterization.
+
+| Situation | Main thread, original | Main thread, now | All processes, original | All processes, now |
+| --- | ---: | ---: | ---: | ---: |
+| Focused workspace | 200 | 21 | 274 | 64 |
+| Full control room | 459 | 137 | 547 | 208 |
+| Full control room, microphone on | 541 | 142 | 710 | 287 |
+| Full control room, ambient effects on | 160 | 52 | 1,372 | 1,254 |
+
+How "looks the same" was checked:
+
+- **Pixels.** With randomness and the clock frozen, 16 of the 19 screens that repeat exactly between runs
+  of the original are identical in the new build: welcome, focused workspace and its views, after 30
+  seconds and the full control room at desktop and phone widths, and the phone-width screens with ambient
+  effects. The other three are desktop screens with ambient effects later in a run (see below).
+- **Ambient effects.** In 12 sampled frames, every element the animation touches computes the same
+  transform, filter, opacity and shadow as under the original mechanism. Switched on from the same
+  state in both builds, the effect differs from the original by no more than the original differs from
+  itself between runs (at most 4 of 255 levels, in the blur).
+- **Simulated events.** Later in a run, the cohesion graph and other generated content can come out
+  differently, because the original's events depend on timing: when a simulation timer fires between two
+  animation frames, whether the page re-renders before the next frame changes the order in which random
+  numbers are drawn. The original build changes on the same screens when it merely runs at half speed.
+  With timing held fixed, both builds draw the same 9,854 random numbers in the same order.
+- **Tests.** End-to-end tests check that the breathing animation reaches only the elements that show it
+  and that the microphone still drives the command room.

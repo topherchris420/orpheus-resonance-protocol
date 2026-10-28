@@ -19,9 +19,9 @@ const expectNoViolations = async (page: Page, label: string, include?: string) =
   expect(summary, `${label}: axe violations`).toEqual([]);
 };
 
+/** The research tools. The original app at / is restored unchanged; its accessibility work is tracked separately. */
 test.describe('accessibility (axe, WCAG 2.2 AA rules)', () => {
   for (const [route, label] of [
-    ['/', 'landing'],
     ['/explore/orientation', 'guided scenario'],
     ['/explore/building-47', 'full mission'],
     ['/research', 'research: protocol'],
@@ -34,7 +34,6 @@ test.describe('accessibility (axe, WCAG 2.2 AA rules)', () => {
     ['/study', 'study setup'],
     ['/replay', 'replay (empty)'],
     ['/method', 'method'],
-    ['/missing-page', 'not found'],
   ] as const) {
     test(`${label} has no detectable violations`, async ({ page }) => {
       await page.goto(route);
@@ -93,7 +92,9 @@ test.describe('accessibility (axe, WCAG 2.2 AA rules)', () => {
 
 test.describe('keyboard and motion', () => {
   test('the skip link moves focus to the main content', async ({ page }) => {
-    await page.goto('/');
+    await page.goto('/method');
+    // The research pages load on demand; wait until the page is there before using the keyboard.
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     await page.keyboard.press('Tab');
     const skip = page.getByRole('link', { name: 'Skip to content' });
     await expect(skip).toBeFocused();

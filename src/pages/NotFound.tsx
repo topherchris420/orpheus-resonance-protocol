@@ -1,21 +1,26 @@
-import { Link, useLocation } from 'react-router-dom';
-import { AppShell } from '@/components/common/AppShell';
+import { useLocation } from "react-router-dom";
+import { useEffect } from "react";
 
 const NotFound = () => {
   const location = useLocation();
+
+  useEffect(() => {
+    console.error(
+      "404 Error: User attempted to access non-existent route:",
+      location.pathname
+    );
+  }, [location.pathname]);
+
   return (
-    <AppShell>
-      <div className="mx-auto flex max-w-xl flex-col items-start gap-4 px-4 py-24 sm:px-6">
-        <p className="o-eyebrow text-o-teal">404</p>
-        <h1 className="text-3xl font-semibold text-o-text">This page does not exist</h1>
-        <p className="text-o-text2">
-          Nothing is at <code className="font-mono text-o-text">{location.pathname}</code>.
-        </p>
-        <Link to="/" className="o-button-primary">
-          Return to Orpheus
-        </Link>
+    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="text-center">
+        <h1 className="text-4xl font-bold mb-4">404</h1>
+        <p className="text-xl text-gray-600 mb-4">Oops! Page not found</p>
+        <a href="/" className="text-blue-500 hover:text-blue-700 underline">
+          Return to Home
+        </a>
       </div>
-    </AppShell>
+    </div>
   );
 };
 

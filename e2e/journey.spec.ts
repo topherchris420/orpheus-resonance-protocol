@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { captureJson, commitCourse, watchErrors, watchExternalRequests, writeJson } from './helpers';
 
 /**
- * The end-to-end journey: understand the purpose, launch the guided scenario, meet conflicting
+ * The research explorer's journey (at /explore, off the main path): launch the guided scenario, meet conflicting
  * information, review evidence, see the assistant assess and decline, decide, see consequences,
  * inspect the review, replay, compare an assistant condition, and leave with a verifiable record —
  * without an account, an AI service, special hardware or any network request beyond the app itself.
@@ -11,12 +11,7 @@ test('a first-time visitor completes the guided journey and leaves with a verifi
   const external = watchExternalRequests(page);
   const errors = watchErrors(page);
 
-  await page.goto('/');
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('knowing when not to answer');
-  await expect(page.getByText('No account. No AI service. Microphone off. Nothing leaves your browser.')).toBeVisible();
-  await page.getByRole('link', { name: /Start the 5-minute guided scenario/ }).click();
-
-  await expect(page).toHaveURL(/\/explore\/orientation/);
+  await page.goto('/explore/orientation');
   const tour = page.getByRole('region', { name: 'Guided tour' });
   await expect(tour).toContainText('Start the simulated clock');
   await page.getByRole('button', { name: 'Step one simulated second' }).click();
