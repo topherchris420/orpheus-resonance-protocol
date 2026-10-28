@@ -7,11 +7,14 @@ import { BREATH_PULSE_PRESETS, BreathPulseControlsState } from '@/hooks/useBreat
 interface BreathPulseControlsProps {
   controls: BreathPulseControlsState;
   liveAvailable: boolean;
+  /** Receives the live breath/pulse CSS variables. */
+  ringRef?: React.Ref<HTMLDivElement>;
 }
 
 export const BreathPulseControls: React.FC<BreathPulseControlsProps> = React.memo(({
   controls,
   liveAvailable,
+  ringRef,
 }) => {
   const {
     breathRate,
@@ -51,6 +54,7 @@ export const BreathPulseControls: React.FC<BreathPulseControlsProps> = React.mem
       {/* Live-modulated breath ring: driven purely by CSS variables written each frame */}
       <div className="flex items-center gap-3">
         <div
+          ref={ringRef}
           className="relative flex h-16 w-16 shrink-0 items-center justify-center rounded-full border border-cyan-300/40"
           style={{
             transform: 'scale(calc(0.9 + var(--breath-phase, 0.5) * 0.2))',

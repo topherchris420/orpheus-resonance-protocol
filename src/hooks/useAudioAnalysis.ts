@@ -68,12 +68,29 @@ const mapAudioEnergyToBeatFrequency = (smoothedAudio: number): number => {
   return MAX_BEAT_FREQUENCY - normalized * (MAX_BEAT_FREQUENCY - MIN_BEAT_FREQUENCY);
 };
 
+interface AudioAnalysisOptions {
+  /** Receives the smoothed energy on every analysis frame, without a React render. */
+  liveSignalsRef?: MutableRefObject<{ liveAudioEnvelope: number; liveAvailable: boolean }>;
+  /**
+   * When set, `audioLevel` and `audioEnvelope` re-render the caller only while the level is above this
+   * value (and once as it falls back below), instead of 20 times a second. Use it when nothing reads
+   * the exact level below the threshold.
+   */
+  levelReportThreshold?: number;
+}
+
 export const useAudioAnalysis = (
   enabled: boolean = true,
   modulationRef?: MutableRefObject<BreathPulseModulationValues>,
+  { liveSignalsRef, levelReportThreshold }: AudioAnalysisOptions = {},
 ): AudioAnalysisResult => {
   const modulationSourceRef = useRef(modulationRef);
   modulationSourceRef.current = modulationRef;
+  const liveSignalsTargetRef = useRef(liveSignalsRef);
+  liveSignalsTargetRef.current = liveSignalsRef;
+  const levelThresholdRef = useRef(levelReportThreshold);
+  levelThresholdRef.current = levelReportThreshold;
+  const reportedAboveThresholdRef = useRef(false);
 
   const [analysisState, setAnalysisState] = useState<AnalysisState>(DEFAULT_ANALYSIS_STATE);
   const [activeFrequency, setActiveFrequency] = useState(DEFAULT_BEAT_FREQUENCY);
@@ -130,6 +147,8 @@ export const useAudioAnalysis = (
 
     analyserRef.current = null;
     gainRef.current = null;
+    if (liveSignalsTargetRef.current) liveSignalsTargetRef.current.current = { liveAudioEnvelope: 0, liveAvailable: false };
+    reportedAboveThresholdRef.current = false;
 
     if (audioContextRef.current) {
       void audioContextRef.current.close();
@@ -243,11 +262,20 @@ export const useAudioAnalysis = (
 
         const newAudioEnvelope = smoothedAudioEnergy;
 
-        setAnalysisState((prev) => ({
-          ...prev,
-          audioLevel: newAudioLevel,
-          audioEnvelope: newAudioEnvelope,
-        }));
+        if (liveSignalsTargetRef.current) {
+          liveSignalsTargetRef.current.current = { liveAudioEnvelope: newAudioEnvelope, liveAvailable: true };
+        }
+
+        const threshold = levelThresholdRef.current;
+        const above = threshold !== undefined && newAudioLevel > threshold;
+        if (threshold === undefined || above || reportedAboveThresholdRef.current) {
+          reportedAboveThresholdRef.current = above;
+          setAnalysisState((prev) => ({
+            ...prev,
+            audioLevel: newAudioLevel,
+            audioEnvelope: newAudioEnvelope,
+          }));
+        }
 
         animationFrameRef.current = requestAnimationFrame(analyze);
       };

@@ -60,6 +60,9 @@ const BASE_ARTIFACTS: Chronoartifact[] = [
   }
 ];
 
+/** Audio level above which the memory corridor responds. Below it the archive ignores the exact level. */
+export const ARCHIVE_AUDIO_THRESHOLD = 0.8;
+
 export const TemporalArchive: React.FC<TemporalArchiveProps> = ({
   phase,
   currentTimeline,
@@ -81,7 +84,7 @@ export const TemporalArchive: React.FC<TemporalArchiveProps> = ({
   }, [phase, currentTimeline, temporalMoment]);
 
   useEffect(() => {
-    if (audioLevel > 0.8 && phase >= 3) {
+    if (audioLevel > ARCHIVE_AUDIO_THRESHOLD && phase >= 3) {
       const corridorEntries = [
         "Memory corridor opening...",
         "Accessing parallel timeline data...",

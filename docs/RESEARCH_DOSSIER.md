@@ -343,7 +343,7 @@ Full tables, including the protocol-materials run and the robustness laboratory,
 
 #### 15.3 Software verification
 
-At the time of writing: 163 unit tests and 38 end-to-end tests pass; ESLint and strict TypeScript pass;
+At the time of writing: 163 unit tests and 40 end-to-end tests pass; ESLint and strict TypeScript pass;
 axe reports no WCAG 2.2 AA rule violations on any research route, dialog or study screen tested; the workbench's
 default batch (1,920 trials) produces the same package hash in Chromium as in Node; the committed results
 regenerate byte-identically.

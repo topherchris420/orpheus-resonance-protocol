@@ -4,7 +4,7 @@ import { OperatorVitalsCognitiveLoadMonitor } from './OperatorVitalsCognitiveLoa
 import { SitRepIntelFeed } from './SitRepIntelFeed';
 import { TouchInterface } from './TouchInterface';
 import { DecisionMatrixSimulator } from './DecisionMatrixSimulator';
-import { TemporalArchive } from './TemporalArchive';
+import { ARCHIVE_AUDIO_THRESHOLD, TemporalArchive } from './TemporalArchive';
 import { SquadCohesionIndex } from './SquadCohesionIndex';
 import { VisualOverlays } from './VisualOverlays';
 import { MissionCommandStrip } from './MissionCommandStrip';
@@ -17,7 +17,7 @@ import { useAudioAnalysis } from '../hooks/useAudioAnalysis';
 import { usePhaseProgression } from '../hooks/usePhaseProgression';
 import { useInteractionState } from '../hooks/useInteractionState';
 import { useRedTeamSimulation } from '../hooks/useRedTeamSimulation';
-import { useBreathPulseModulation } from '../hooks/useBreathPulseModulation';
+import { useBreathPulseModulation, useBreathTargetRef } from '../hooks/useBreathPulseModulation';
 import { BreathPulseControls } from './BreathPulseControls';
 import { usePersistentState } from '../hooks/usePersistentState';
 import { dataGenerator } from '../data/realisticData';
@@ -112,24 +112,25 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
   const {
     controls: breathPulseControls,
     modulationRef: breathModulationRef,
-    surfaceRef,
     liveSignalsRef,
+    targets: breathTargets,
   } = useBreathPulseModulation();
+  // The breath values go only to the elements that use them (see useBreathPulseModulation).
+  const breathRingRef = useBreathTargetRef(breathTargets);
+  const breathOverlayRef = useBreathTargetRef(breathTargets);
+  const breathTransformRef = useBreathTargetRef(breathTargets, 'transform');
 
   const {
     audioLevel,
-    audioEnvelope,
     activeFrequency: audioFrequency,
     microphoneConnected,
     audioError,
     volume,
     setVolume,
-  } = useAudioAnalysis(audioEnabled && appConfig.features.enableAudioBiofeedback, breathModulationRef);
-
-  liveSignalsRef.current = {
-    liveAudioEnvelope: audioEnvelope,
-    liveAvailable: microphoneConnected,
-  };
+  } = useAudioAnalysis(audioEnabled && appConfig.features.enableAudioBiofeedback, breathModulationRef, {
+    liveSignalsRef,
+    levelReportThreshold: ARCHIVE_AUDIO_THRESHOLD,
+  });
 
 
   const { acclimatizationLevel, simulationMode, handleAcclimatizationAdvance, autoAdvance, setAutoAdvance } = usePhaseProgression(onAccessLevelChange);
@@ -538,6 +539,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
     <BreathPulseControls
       controls={breathPulseControls}
       liveAvailable={microphoneConnected}
+      ringRef={breathRingRef}
     />
   );
 
@@ -550,7 +552,6 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
 
   return (
     <div
-      ref={surfaceRef}
       className={`dark font-sans min-h-screen ${getAcclimatizationStyles()} transition-colors duration-500 relative overflow-hidden`}
     >
       <SessionControls
@@ -588,12 +589,9 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
         </div>
       ) : !isMobile ? (
         <div
+          ref={ambient ? breathTransformRef : undefined}
           className="relative z-10 mx-auto grid max-w-[1500px] grid-cols-12 items-start gap-4 p-6"
-          style={ambient ? {
-            transform: 'scale(var(--breath-scale, 1)) translateY(var(--breath-lift, 0px))',
-            filter: 'blur(var(--breath-blur, 0px))',
-            willChange: 'transform, filter',
-          } : undefined}
+          style={ambient ? { willChange: 'transform, filter' } : undefined}
         >
           <MissionCommandStrip mission={mission} pulseRate={squadPositions[0]?.vitals.heartRate ?? 72} coherenceLevel={effectiveCohesion} activeFrequency={bioResonanceFrequency} />
           <div className="col-span-12">{renderModeToolbar()}</div>
@@ -694,7 +692,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({
         onConfirm={handleConfirmBiofeedback}
       />
 
-      {ambient && <div className="ambient-overlays"><VisualOverlays phase={acclimatizationLevel} coherenceLevel={effectiveCohesion} redTeamIntensity={redTeamIntensity} /></div>}
+      {ambient && <div className="ambient-overlays"><VisualOverlays phase={acclimatizationLevel} coherenceLevel={effectiveCohesion} redTeamIntensity={redTeamIntensity} breathRef={breathOverlayRef} /></div>}
     </div>
   );
 };

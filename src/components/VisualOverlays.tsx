@@ -4,17 +4,20 @@ interface VisualOverlaysProps {
   phase: number;
   coherenceLevel: number;
   redTeamIntensity?: number;
+  /** Receives the live breath/pulse CSS variables. */
+  breathRef?: React.Ref<HTMLDivElement>;
 }
 
 export const VisualOverlays: React.FC<VisualOverlaysProps> = ({
   phase,
   coherenceLevel,
   redTeamIntensity = 0,
+  breathRef,
 }) => {
   return (
     <>
       {/* Breath/pulse driven ambience — values come from live CSS variables */}
-      <div className="pointer-events-none absolute inset-0 z-10">
+      <div ref={breathRef} className="pointer-events-none absolute inset-0 z-10">
         <div
           className="absolute inset-0"
           style={{
