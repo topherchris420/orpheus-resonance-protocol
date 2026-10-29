@@ -148,12 +148,13 @@ const INTEL_TEMPLATES = [
   'Resupply drop confirmed for LZ {zone} at {time} minutes',
   'Electronic interference detected; frequency change recommended',
 ];
-const LOCATIONS = ['Building 47', 'Overpass Delta', 'Market Square', 'Industrial Complex', 'Riverside'];
-const ROUTES = ['Phoenix', 'Viper', 'Eagle', 'Falcon', 'Hawk'];
-const GRIDS = ['334521', '445632', '556743', '667854', '778965'];
-const SECTORS = ['A-7', 'B-3', 'C-9', 'D-5', 'E-1'];
+// Exported so presentation code can recognize the same named entities (see src/tradecraft/admiralty.ts).
+export const LOCATIONS = ['Building 47', 'Overpass Delta', 'Market Square', 'Industrial Complex', 'Riverside'];
+export const ROUTES = ['Phoenix', 'Viper', 'Eagle', 'Falcon', 'Hawk'];
+export const GRIDS = ['334521', '445632', '556743', '667854', '778965'];
+export const SECTORS = ['A-7', 'B-3', 'C-9', 'D-5', 'E-1'];
 const WEATHER = ['sandstorm', 'fog', 'rain', 'dust clouds'];
-const INTEL_SOURCES = ['SIGINT', 'HUMINT', 'IMINT', 'OSINT', 'FIELD'];
+export const INTEL_SOURCES = ['SIGINT', 'HUMINT', 'IMINT', 'OSINT', 'FIELD'];
 const letter = (rng: Rng) => String.fromCharCode(65 + rng.int(0, 4));
 
 export const generateIntel = (rng: Rng, id: string, tick: number, phase: number): IntelItem => {
