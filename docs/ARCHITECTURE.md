@@ -4,15 +4,15 @@ Orpheus is a single-page React 18 + TypeScript + Vite application with no server
 simulation, the evidence analysis, the assistant, the experiments and their statistics — runs in the
 browser, and the same modules run in Node for tests and for the result-generating scripts.
 
-The main experience at `/` is the original Orpheus command room (`pages/Index.tsx`,
-`components/PegasusSimulation.tsx` and its instruments), restored with its own state and generators. It
-looks and reads as it did; the only later changes make it cheaper to draw (`docs/AUDIT.md` §12).
-Everything below describes the research tools, which live at addresses that the command room does not
-link to and which run on a separate deterministic core.
+The main experience at `/` is the Orpheus command room in its original terminal form: the ORPHEUS
+ACCESS TERMINAL, then the twelve-column command grid (`pages/Index.tsx`,
+`components/PegasusSimulation.tsx`). It runs on the same deterministic core as the research tools,
+which live at addresses the command room does not link to (§9). Section 8 describes the layers that are
+specific to the command room.
 
-The design rule for the research tools is that **the interface never owns truth**. A deterministic core decides what happens;
-the interface renders it and sends commands. That is what makes sessions replayable, experiments
-reproducible and claims checkable.
+The design rule for the whole application is that **the interface never owns truth**. A deterministic
+core decides what happens; the interface renders it and sends commands. That is what makes sessions
+replayable, experiments reproducible and claims checkable.
 
 ```mermaid
 flowchart TB
@@ -29,6 +29,12 @@ flowchart TB
     sense["sensing/ — signal registry, consent-gated microphone sensor"]
     ui["pages/ + components/ — Explorer, Research, Study, Replay, Method"]
   end
+  subgraph room["Command room (/)"]
+    trade["tradecraft/ — date-time groups, precedence, Admiralty, ICD 203"]
+    integ["integrity/ — power-on self-tests, EMCON monitor, chain seal"]
+    model["command-room/ — view model shared by panels and console"]
+    term["components/ + room/ + console/ — access terminal, grid, operator console"]
+  end
   prim --> evid --> asst
   prim --> mission
   scen --> mission
@@ -39,6 +45,10 @@ flowchart TB
   mission --> store --> ui
   exp --> store
   sense --> ui
+  evid --> trade --> model
+  mission --> model --> term
+  store --> term
+  prim --> integ --> term
 ```
 
 ## 1. Deterministic engine primitives (`src/engine/`)
@@ -158,7 +168,66 @@ with method, unit, what it indicates and what it does not. `microphone.ts` is th
 processes audio locally (low-frequency energy, quality flag, timestamps), never stores samples, and
 `stop()` ends every track and the audio context. Generated tones start silent and are capped.
 
-## 8. Browser shell (`src/state/`, `src/pages/`, `src/components/`)
+## 8. Command room (`components/PegasusSimulation.tsx`, `components/room/`, `command-room/`, `console/`, `tradecraft/`, `integrity/`)
+
+The command room keeps the look of the original (green on black, monospace, square bordered panels, the
+twelve-column grid of September 2026) and replaces everything underneath it.
+
+- **Access terminal** (`components/AccessTerminal.tsx`). The original boot sequence, typed line by line
+  (Enter skips it; reduced motion prints it at once). The phrase is public (`HELP` prints it unless
+  `VITE_ACCESS_HINT=false`) and grants nothing. After the phrase, the power-on self-tests run in the two
+  seconds the original spent waiting.
+- **Power-on self-tests** (`integrity/selftest.ts`), in the spirit of FIPS 140-3 known-answer tests:
+  SHA-256 against FIPS 180-4 vectors; a differential test against the browser's WebCrypto on 4 KiB of
+  random input (skipped outside secure contexts); the sfc32 stream for a fixed seed; canonical JSON key
+  order; tamper detection (an edited log entry must be caught at its sequence number); a scripted
+  Building 47 run whose final state hash is pinned (`PROBE_FINAL_STATE_HASH`); replay verification of
+  that run; and the entropy source. A failure does not lock the room, but it is printed and shown in the
+  status line, because records made by that browser may not verify elsewhere. An intended change to the
+  engine or the manifest changes the pinned hash; `integrity.test.ts` fails until it is updated.
+- **Engine binding** (`components/room/panels.tsx`). `pages/Index.tsx` creates a `MissionStore` for
+  Building 47 with a fresh CSPRNG seed (or `?seed=`), with the uncertainty-aware analyst (condition D).
+  The pacer records one `advance` per second, paused while the tab is hidden. Each panel subscribes to the
+  smallest stable slice it shows (tracks, squad, vitals, metrics, timeline), so a tick re-renders only
+  what changed. Operator actions (commits, phases, red team, microphone, NeuroSim, touch input at most
+  every two seconds, calibration, export) are engine commands or notes in the hash-chained log.
+- **View model** (`command-room/model.ts`). Pure functions shared by the panels and the console: the
+  numbered shortlist, what each course assumes (commit, act on a report, verify, hedge), the analyst view,
+  SITREP lines, the mission strip's input and the temporal archive's coordinates (one timeline per
+  committed decision; the moment cycles through the phase's auto-advance window).
+- **Tradecraft** (`tradecraft/`, under the determinism lint rules).
+  - Date-time groups `DDHHMMZ MON YY` in Zulu, computed with integer civil-calendar arithmetic (no
+    `Date`); tick 0 is anchored to the wall clock when the room opens, for display only.
+  - Precedence: CRITICAL, HIGH, MEDIUM, LOW → FLASH (Z), IMMEDIATE (O), PRIORITY (P), ROUTINE (R).
+  - Admiralty grades: reliability from a declared source record; credibility from corroboration. For a
+    decision's evidence, an admissible item's digit follows the balance of independent origins that agree
+    minus those that disagree (≥2 → 1, 1 → 2, 0 → 3, −1 → 4, ≤−2 → 5); a failed integrity or plausibility
+    check gives 5; an unweighable, expired or reassessed source gives 6; a repeated origin takes its
+    original's grade; context items are not graded. For the generated SITREP, reports corroborate each
+    other when a different discipline names the same place, grid, route, sector or zone; red-team
+    injections are F6; your own recorded courses are marked OWN.
+  - ICD 203: a probability is put into words (e.g. "likely, 55–80%") only when the assistant itself
+    reports it, that is, when it is calibrated for the conditions. Analytic confidence is stated
+    separately: low when the evidence establishes nothing; high only with two or more independent origins
+    behind the leading interpretation and no conflict, model misfit, missing observation or aging item.
+- **Operator console** (`console/`, `components/room/OperatorConsole.tsx`). A command line over the same
+  context the panels use, opened with the backtick key: tokenizer, tab completion, history, and a
+  `[y/N]` confirmation for anything that changes the record (`commit`, `new`). `verify` re-executes the
+  live session from its seed and compares every checkpoint; `seal` prints the chain head; `egress`,
+  `selftest`, `sitrep`, `brief`, `log` and the rest read state without changing it.
+- **Integrity in view.** The status line shows the seed, mission time, date-time group, phase, chain
+  length and head fingerprint, the EMCON state (`integrity/egress.ts`: Resource Timing plus CSP violation
+  reports) and the self-test result; each opens the console on the command that explains it.
+- **Delivery.** One production Content-Security-Policy (`config/securityPolicy.ts`) is written into
+  `index.html` at build time and sent by `vercel.json` with `frame-ancestors 'none'`; a unit test keeps
+  them identical. `vercel.json` also serves the single-page app for deep links and caches hashed assets
+  for a year. React, zod, three.js and the 3D renderer are separate chunks, so three.js loads only when the
+  NeuroSim view opens.
+- **Drawing.** The tactical map and cohesion field redraw on canvas only when their data change. The
+  breathing animation is paced at 30 updates a second and reaches only the ring, the ambient overlay and
+  the grid's transform (never a blur, which re-rasterizes every frame and softens text).
+
+## 9. Browser shell (`src/state/`, `src/pages/`, `src/components/`)
 
 - `state/missionStore.ts` owns the mission session and exposes slices through `useSyncExternalStore`;
   `usePacer` turns wall-clock playback into recorded `advance` commands.
@@ -167,40 +236,49 @@ processes audio locally (low-frequency energy, quality flag, timestamps), never 
 - `state/studyProgress.ts` keeps an in-progress participant session (configuration and log only) in
   session storage so a reload resumes by replay; `state/packageStore.ts` hands a package to the
   workbench in memory.
-- Routes: `/` is the original command room. The research tools load lazily at `/explore/:scenarioId`
+- Routes: `/` is the command room (§8). The research tools load lazily at `/explore/:scenarioId`
   (Explorer; `orientation` is the guided five-minute scenario), `/research` (workbench tabs: Protocol,
   Simulate, Human study, Results, Calibration, Reproduce, Assumptions), `/study` (participant runner),
-  `/replay` and `/method`. They use their own copies of the instruments (`components/instruments/`) so
-  the command room's components stay exactly as they were.
-- Visual system: design tokens in `index.css` and `tailwind.config.ts` (graphite surfaces, spectral teal,
-  amber for AI statements). The research palette is scoped: `AppShell` adds the `o-theme` class to
-  `<html>` while a research page is open, so the command room keeps its original styles; provenance badges carry icon + label + border style so status never depends
+  `/replay` and `/method`. They keep their own instrument components (`components/instruments/`) in the
+  research palette; the command room's panels in `components/` carry the terminal styling.
+- Visual system: design tokens in `index.css` and `tailwind.config.ts`. The default tokens are the
+  terminal palette (phosphor green on black, square corners), so every shadcn primitive renders dark in
+  the command room. The research palette (graphite surfaces, spectral teal, amber for AI statements) is
+  scoped: `AppShell` adds the `o-theme` class to `<html>` while a research page is open; provenance badges carry icon + label + border style so status never depends
   on color; charts (forest plot, reliability diagram) use a palette validated for color-vision deficiency
   and contrast, with focusable marks, tooltips and table twins.
 
-## 9. Privacy and security
+## 10. Privacy and security
 
-- No accounts, no analytics, no network calls: the Content-Security-Policy in `index.html` limits
-  connections to the app's own origin, and the end-to-end journey test asserts that no request leaves it.
+- No accounts, no analytics, no network calls: the production Content-Security-Policy
+  (`config/securityPolicy.ts`, in the page and as a header) denies everything but the app's own origin,
+  the EMCON monitor reports anything that left or was blocked, and end-to-end tests assert that no request
+  leaves the origin.
 - Stored locally: display preferences (`localStorage`), an in-progress study session (`sessionStorage`,
   cleared with the tab). Records and packages leave the browser only when the user downloads them.
 - Exports never contain raw audio, names, contact details, free text or device identifiers.
-- The theatrical terminal on the main page is fiction: its phrase is public and it grants nothing.
+- The access terminal on the main page is fiction: its phrase is public and it grants nothing. The
+  seal and the checkpoint hashes detect alteration of a record; they do not authenticate who made it.
 
-## 10. Verification
+## 11. Verification
 
 | Layer | What runs |
 | --- | --- |
-| Unit (Vitest) | RNG reference vectors, canonical JSON, hash chain and tamper detection, every admissibility rule, calibration, guardrails and fallback, manifests, mission reducer rules, replay and version mismatch, world bounds, study reducer, scoring, statistics, agents, packages, exclusions, combination, custom designs, microphone consent and shutdown, evidence-ladder claims against generated results, and the command room's original tests. |
-| End-to-end (Playwright, Chromium) | The command room loads and its views open without errors, its breathing animation reaches only the elements that show it, and the research palette never leaks into it; the explorer journey; workbench design → run → export → verify → regenerate; the default batch reproducing, in the browser, the package hash generated in Node; 20,000-trial calibration reproduced in the browser; a complete participant session, withdrawal and resume; microphone consent and shutdown with a synthetic microphone; axe (WCAG 2.2 AA rules) on every research route and dialog (the command room is restored as it was and is not yet covered); keyboard-only decisions; reduced motion; phone layouts. |
+| Unit (Vitest) | RNG reference vectors, canonical JSON, hash chain and tamper detection, every admissibility rule, calibration, guardrails and fallback, manifests, mission reducer rules, replay and version mismatch, world bounds, study reducer, scoring, statistics, agents, packages, exclusions, combination, custom designs, microphone consent and shutdown, evidence-ladder claims against generated results; for the command room: the self-tests and the pinned engine probe (plus the million-character FIPS vector and WebCrypto agreement across lengths), date-time groups against the host calendar over four centuries, precedence, Admiralty grading and ICD 203 terms, the EMCON monitor, the seal, every console command, the view model, the classic terminal copy, and the build policy (chunks, CSP, `vercel.json`). |
+| End-to-end (Playwright, Chromium) | The access terminal's sequence, help, lockout counter and self-tests; every view of the command room without errors, with three.js loading only for the 3D view; no overlapping panels at 1280×800, 1440×900 and 1920×1080; commits only after confirmation; the console's brief, commit, verify and egress; the same seed producing a bit-identical state hash in two independent sessions; an exported record verifying in `/replay` and an edited copy failing; the breathing animation reaching only what shows it, without blur; reduced motion; microphone consent and shutdown; the research palette never leaking in. The explorer journey; workbench design → run → export → verify → regenerate; the default batch reproducing, in the browser, the package hash generated in Node; 20,000-trial calibration reproduced in the browser; a complete participant session, withdrawal and resume; axe (WCAG 2.2 AA rules) on the access terminal, the command room, its decision matrix, console, review and consent dialog, and on every research route and dialog; keyboard-only decisions; phone layouts, including every tab of the command room. |
 | Static | `tsc` in strict mode for app, config and tests; ESLint including the determinism rules. |
 | CI | `.github/workflows/ci.yml`: lint, typecheck, unit tests, build, and regeneration of the committed calibration record and baseline results (any difference fails); a second job runs the Playwright suite in Chromium. |
 
-## 11. Known limitations
+## 12. Known limitations
 
 - Replay determinism is designed to hold across JavaScript engines but has been exercised only in Node
   and Chromium.
 - The study runner is untested with people; timing is measured with `performance.now()` in the page.
 - The external-model adapter is not connected (see §3).
 - The three.js scene is a decorative view driven by display settings; it writes nothing to the engine and
-  is not part of replay.
+  is not part of replay. The same holds for the command room's display-only state: the breath and pulse
+  settings, the frequency marker, the baseline calibration window and the console's scrollback.
+- Date-time groups anchor tick 0 to the wall clock when the room opens. Records keep the export time but
+  not that anchor, so a replay shows mission time (T+) rather than the original date-time groups.
+- SITREP credibility uses a declared, deliberately simple proxy (another discipline naming the same
+  place); it is not a model of real source reporting.
