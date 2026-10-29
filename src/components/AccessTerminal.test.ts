@@ -14,4 +14,20 @@ describe('AccessTerminal copy', () => {
   it('does not show the demo-flow security disclaimer', () => {
     expect(accessTerminalSource).not.toContain(forbiddenDisclaimer);
   });
+
+  it('keeps the classic boot sequence and title', () => {
+    for (const line of [
+      'ORPHEUS ACCESS TERMINAL',
+      'CLASSIFIED SYSTEM ACCESS',
+      'VERS3D+S - R.A.I.N. RESEARCH DIVISION',
+      'WARNING: AUTHORIZED PERSONNEL ONLY',
+      'Scanning for clearance level...',
+      'Biometric signature detected...',
+      'Access granted to SUBPROTOCOL ORPHEUS',
+      'Enter activation phrase to continue:',
+      'EXECUTE',
+    ]) {
+      expect(accessTerminalSource).toContain(line);
+    }
+  });
 });

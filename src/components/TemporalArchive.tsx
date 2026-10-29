@@ -1,11 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 
 interface TemporalArchiveProps {
   phase: number;
+  /** Simulation tick; picks the memory-corridor entry, so the archive reads the same on replay. */
+  tick: number;
+  /** One timeline per committed decision (see command-room/model). */
   currentTimeline: number;
   temporalMoment: number;
   audioLevel: number;
+  /** Rendered in the panel header, e.g. tabs that share this slot. */
+  header?: React.ReactNode;
 }
 
 interface Chronoartifact {
@@ -63,41 +68,40 @@ const BASE_ARTIFACTS: Chronoartifact[] = [
 /** Audio level above which the memory corridor responds. Below it the archive ignores the exact level. */
 export const ARCHIVE_AUDIO_THRESHOLD = 0.8;
 
+const CORRIDOR_ENTRIES = [
+  "Memory corridor opening...",
+  "Accessing parallel timeline data...",
+  "Temporal echo detected: 'The resonance is spreading'",
+  "Chronoartifact fragment: Timeline convergence imminent",
+  "Voice pattern matches historical Orpheus signature",
+  "Accessing restricted Vers3Dynamics temporal logs..."
+];
+
+/** Artifacts surface near the current timeline and moment once the interface adapts (phase 2+). */
+const unlockedArtifacts = (phase: number, currentTimeline: number, temporalMoment: number): Chronoartifact[] =>
+  BASE_ARTIFACTS.map(artifact => ({
+    ...artifact,
+    unlocked: (phase >= 2 && Math.abs(artifact.timeline - currentTimeline) <= 1 && Math.abs(artifact.moment - temporalMoment) < 0.2) || artifact.timeline < phase,
+  }));
+
 export const TemporalArchive: React.FC<TemporalArchiveProps> = ({
   phase,
+  tick,
   currentTimeline,
   temporalMoment,
-  audioLevel
+  audioLevel,
+  header,
 }) => {
-  const [chronoartifacts, setChronoartifacts] = useState<Chronoartifact[]>([]);
+  const chronoartifacts = useMemo(() => unlockedArtifacts(phase, currentTimeline, temporalMoment), [phase, currentTimeline, temporalMoment]);
   const [selectedArtifact, setSelectedArtifact] = useState<Chronoartifact | null>(null);
-  const [memoryCorridor, setMemoryCorridor] = useState<string[]>([]);
+  const [memoryCorridor, setMemoryCorridor] = useState<Array<{ tick: number; text: string }>>([]);
 
   useEffect(() => {
-    setChronoartifacts(BASE_ARTIFACTS.map(artifact => ({
-      ...artifact,
-      unlocked: phase >= 2 && (
-        Math.abs(artifact.timeline - currentTimeline) <= 1 &&
-        Math.abs(artifact.moment - temporalMoment) < 0.2
-      ) || artifact.timeline < phase
-    })));
-  }, [phase, currentTimeline, temporalMoment]);
-
-  useEffect(() => {
-    if (audioLevel > ARCHIVE_AUDIO_THRESHOLD && phase >= 3) {
-      const corridorEntries = [
-        "Memory corridor opening...",
-        "Accessing parallel timeline data...",
-        "Temporal echo detected: 'The resonance is spreading'",
-        "Chronoartifact fragment: Timeline convergence imminent",
-        "Voice pattern matches historical Orpheus signature",
-        "Accessing restricted Vers3Dynamics temporal logs..."
-      ];
-      
-      const randomEntry = corridorEntries[Math.floor(Math.random() * corridorEntries.length)];
-      setMemoryCorridor(prev => [...prev.slice(-4), randomEntry]);
-    }
-  }, [audioLevel, phase]);
+    if (audioLevel <= ARCHIVE_AUDIO_THRESHOLD || phase < 3) return;
+    setMemoryCorridor(previous =>
+      previous.some(entry => entry.tick === tick) ? previous : [...previous.slice(-4), { tick, text: CORRIDOR_ENTRIES[tick % CORRIDOR_ENTRIES.length] }],
+    );
+  }, [audioLevel, phase, tick]);
 
   const getArtifactColor = (type: string) => {
     switch (type) {
@@ -125,18 +129,18 @@ export const TemporalArchive: React.FC<TemporalArchiveProps> = ({
   };
 
   return (
-    <div className="h-full border border-current/30 bg-black/40 backdrop-blur-sm p-4 space-y-4">
-      <div className="text-sm font-bold border-b border-current/30 pb-2">
-        TEMPORAL ARCHIVE
+    <section aria-label="Temporal archive" tabIndex={0} className="h-full space-y-4 overflow-y-auto border border-current/30 bg-black/40 p-4">
+      <div className="border-b border-current/30 pb-2 text-sm font-bold">
+        {header ?? <h2>TEMPORAL ARCHIVE</h2>}
       </div>
 
-      <div className="text-xs opacity-70 mb-4">
+      <div className="mb-4 text-xs text-current/80">
         {getPhaseDescription()}
       </div>
 
       {/* Current Position */}
       <div className="space-y-2">
-        <div className="text-xs opacity-70">TEMPORAL COORDINATES</div>
+        <div className="text-xs text-current/80">TEMPORAL COORDINATES</div>
         <div className="text-sm font-mono">
           Timeline: {currentTimeline}
         </div>
@@ -148,7 +152,7 @@ export const TemporalArchive: React.FC<TemporalArchiveProps> = ({
       {/* Chronoartifacts */}
       {phase >= 2 && (
         <div className="space-y-2">
-          <div className="text-xs opacity-70">CHRONOARTIFACTS</div>
+          <div className="text-xs text-current/80">CHRONOARTIFACTS</div>
           <div className="space-y-1 max-h-32 overflow-y-auto">
             {chronoartifacts.filter(artifact => artifact.unlocked).map((artifact) => (
               <Button
@@ -160,7 +164,7 @@ export const TemporalArchive: React.FC<TemporalArchiveProps> = ({
               >
                 <div className="flex flex-col items-start">
                   <div className="font-bold">{artifact.type.toUpperCase()}</div>
-                  <div className="opacity-70 text-xs">
+                  <div className="text-xs text-current/80">
                     T{artifact.timeline}:M{artifact.moment.toFixed(1)}
                   </div>
                 </div>
@@ -197,9 +201,9 @@ export const TemporalArchive: React.FC<TemporalArchiveProps> = ({
             MEMORY CORRIDOR ACTIVE
           </div>
           <div className="space-y-1 max-h-24 overflow-y-auto">
-            {memoryCorridor.map((entry, index) => (
-              <div key={index} className="text-xs opacity-80 text-purple-300">
-                &gt; {entry}
+            {memoryCorridor.map((entry) => (
+              <div key={entry.tick} className="text-xs text-purple-300">
+                &gt; {entry.text}
               </div>
             ))}
           </div>
@@ -215,11 +219,11 @@ export const TemporalArchive: React.FC<TemporalArchiveProps> = ({
           <div className="text-xs opacity-90 text-center">
             You are now synchronized with the distributed consciousness network
           </div>
-          <div className="text-xs opacity-70 text-center">
+          <div className="text-center text-xs text-current/80">
             Temporal navigation beyond linear time achieved
           </div>
         </div>
       )}
-    </div>
+    </section>
   );
 };

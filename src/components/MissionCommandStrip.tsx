@@ -28,7 +28,7 @@ export const MissionCommandStrip: React.FC<MissionCommandStripProps> = React.mem
   activeFrequency,
 }) => {
   return (
-    <section className="col-span-12 row-span-1 border border-current/20 bg-black/65 backdrop-blur-md px-4 py-3">
+    <section aria-label="Mission status" className="col-span-12 row-span-1 border border-current/20 bg-black/65 px-4 py-3">
       <div className="flex h-full min-h-0 flex-col justify-center gap-2 lg:flex-row lg:items-center lg:justify-between">
         <div className="flex min-w-0 flex-1 items-center gap-3">
           <div className={`flex h-10 w-10 shrink-0 items-center justify-center border ${severityStyles[mission.threatLevel]}`}>
@@ -42,8 +42,8 @@ export const MissionCommandStrip: React.FC<MissionCommandStripProps> = React.mem
               <span className={`border px-1.5 py-0.5 ${severityStyles[mission.threatLevel]}`}>
                 {severityLabel[mission.threatLevel]}
               </span>
-              <span className="border border-cyan-400/50 px-1.5 py-0.5 text-cyan-200" title="Mission and vital signals are generated. Microphone mode responds to local audio energy only.">
-                Simulated · mic audio only
+              <span className="border border-cyan-400/50 px-1.5 py-0.5 text-cyan-200" title="Exercise traffic: mission and vital signals are generated. Microphone mode responds to local audio energy only.">
+                Exercise · simulated
               </span>
             </div>
             <div className="mt-1 flex min-w-0 items-center gap-2 text-sm font-semibold text-white">
@@ -68,7 +68,7 @@ export const MissionCommandStrip: React.FC<MissionCommandStripProps> = React.mem
           <div className="border border-current/15 bg-white/[0.03] px-2 py-1.5">
             <div className="flex items-center gap-1 text-current/50">
               <RadioTower className="h-3.5 w-3.5" />
-              Visual marker
+              Resonance
             </div>
             <div className="text-sm text-cyan-200">{activeFrequency.toFixed(1)} Hz</div>
           </div>

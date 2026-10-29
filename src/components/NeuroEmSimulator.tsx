@@ -195,11 +195,11 @@ export const NeuroEmSimulator: React.FC<NeuroEmSimulatorProps> = React.memo(({ b
           <div className={styles.controls}>
             <div className={styles.control}>
               <Label htmlFor="frequency">Frequency: {frequency.toFixed(1)} Hz</Label>
-              <Slider id="frequency" min={1} max={40} step={0.5} value={[frequency]} onValueChange={([val]) => setFrequency(val)} />
+              <Slider id="frequency" label="Stimulation frequency" min={1} max={40} step={0.5} value={[frequency]} onValueChange={([val]) => setFrequency(val)} />
             </div>
             <div className={styles.control}>
               <Label htmlFor="amplitude">Amplitude: {amplitude.toFixed(2)}</Label>
-              <Slider id="amplitude" min={0} max={1} step={0.05} value={[amplitude]} onValueChange={([val]) => setAmplitude(val)} />
+              <Slider id="amplitude" label="Stimulation amplitude" min={0} max={1} step={0.05} value={[amplitude]} onValueChange={([val]) => setAmplitude(val)} />
             </div>
             <div className={styles.control}>
               <Label>Waveform</Label>

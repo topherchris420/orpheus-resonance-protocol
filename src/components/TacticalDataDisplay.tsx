@@ -1,24 +1,54 @@
-import React, { useRef, useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
+import type { Point, SquadMember, Track } from '@/engine/mission/types';
+import { MAP_SIZE } from '@/engine/mission/world';
 
 interface TacticalDataDisplayProps {
-  threatIndicators: Array<{ id: string; position: { x: number; y: number }; type: 'hostile' | 'unknown' | 'friendly'; confidence?: number }>;
-  optimalPathing: Array<{ x: number; y: number }>;
-  squadPositions: Array<{ id: string; position: { x: number; y: number } }>;
+  tracks: Track[];
+  route: Point[];
+  squad: SquadMember[];
+  /** A fabricated contact shown while a red-team injection is live. */
+  injectedContact?: boolean;
 }
 
-export const TacticalDataDisplay: React.FC<TacticalDataDisplayProps> = React.memo(({
-  threatIndicators,
-  optimalPathing,
-  squadPositions,
-}) => {
+const COLORS = {
+  hostile: 'rgba(248, 113, 113, 0.9)',
+  unknown: 'rgba(251, 191, 36, 0.9)',
+  friendly: 'rgba(16, 185, 129, 0.8)',
+  squad: 'rgba(16, 185, 129, 0.85)',
+  label: 'rgba(209, 250, 229, 0.9)',
+  route: 'rgba(34, 211, 238, 0.75)',
+  grid: 'rgba(255, 255, 255, 0.08)',
+};
+
+/** Hostile ▲, unknown ◆, friendly ■: the type reads from the shape as well as the color. Sizes in CSS pixels. */
+const drawContact = (ctx: CanvasRenderingContext2D, kind: Track['kind'], x: number, y: number) => {
+  ctx.beginPath();
+  if (kind === 'hostile') {
+    ctx.moveTo(x, y - 6);
+    ctx.lineTo(x - 6, y + 6);
+    ctx.lineTo(x + 6, y + 6);
+  } else if (kind === 'unknown') {
+    ctx.moveTo(x, y - 7);
+    ctx.lineTo(x + 7, y);
+    ctx.lineTo(x, y + 7);
+    ctx.lineTo(x - 7, y);
+  } else {
+    ctx.rect(x - 5, y - 5, 10, 10);
+  }
+  ctx.closePath();
+  ctx.fillStyle = COLORS[kind];
+  ctx.fill();
+};
+
+export const TacticalDataDisplay: React.FC<TacticalDataDisplayProps> = React.memo(({ tracks, route, squad, injectedContact = false }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const hostileCount = useMemo(() => threatIndicators.filter((threat) => threat.type === 'hostile').length, [threatIndicators]);
-  const unknownCount = useMemo(() => threatIndicators.filter((threat) => threat.type === 'unknown').length, [threatIndicators]);
-  const mapRecommendation = hostileCount >= 3
-    ? 'Re-route before movement.'
-    : hostileCount > 0
-      ? 'Confirm path confidence.'
-      : 'Path remains clear.';
+  const contacts = useMemo(
+    () => (injectedContact ? [...tracks, { id: 'red-team-injection', kind: 'hostile' as const, x: MAP_SIZE / 2, y: MAP_SIZE / 2, quality: 90, updatedTick: 0 }] : tracks),
+    [injectedContact, tracks],
+  );
+  const hostileCount = contacts.filter((track) => track.kind === 'hostile').length;
+  const unknownCount = contacts.filter((track) => track.kind === 'unknown').length;
+  const mapRecommendation = hostileCount >= 3 ? 'Re-route before movement.' : hostileCount > 0 ? 'Confirm path confidence.' : 'Path remains clear.';
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -26,83 +56,83 @@ export const TacticalDataDisplay: React.FC<TacticalDataDisplayProps> = React.mem
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    // Redrawn only when the picture or the element's size changes; there is no animation loop. The map
+    // fills the panel: world positions scale to its width and height, symbols keep their pixel size.
     const draw = () => {
-      const size = Math.max(1, Math.round(Math.min(canvas.clientWidth, canvas.clientHeight) * Math.min(window.devicePixelRatio || 1, 2)));
-      canvas.width = size;
-      canvas.height = size;
-      ctx.setTransform(size / 400, 0, 0, size / 400, 0, 0);
-      ctx.clearRect(0, 0, 400, 400);
+      const ratio = Math.min(window.devicePixelRatio || 1, 2);
+      const width = Math.max(1, canvas.clientWidth);
+      const height = Math.max(1, canvas.clientHeight);
+      if (canvas.width !== Math.round(width * ratio)) canvas.width = Math.round(width * ratio);
+      if (canvas.height !== Math.round(height * ratio)) canvas.height = Math.round(height * ratio);
+      ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+      ctx.clearRect(0, 0, width, height);
+      const sx = width / MAP_SIZE;
+      const sy = height / MAP_SIZE;
 
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.08)';
-      for (let i = 0; i < 400; i += 20) {
-        ctx.beginPath();
-        ctx.moveTo(i, 0);
-        ctx.lineTo(i, 400);
-        ctx.stroke();
+      ctx.strokeStyle = COLORS.grid;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let i = 0; i <= MAP_SIZE; i += 20) {
+        ctx.moveTo(Math.round(i * sx) + 0.5, 0);
+        ctx.lineTo(Math.round(i * sx) + 0.5, height);
+        ctx.moveTo(0, Math.round(i * sy) + 0.5);
+        ctx.lineTo(width, Math.round(i * sy) + 0.5);
       }
-      for (let i = 0; i < 400; i += 20) {
-        ctx.beginPath();
-        ctx.moveTo(0, i);
-        ctx.lineTo(400, i);
-        ctx.stroke();
-      }
+      ctx.stroke();
 
-      if (optimalPathing.length > 0) {
-        ctx.strokeStyle = 'rgba(34, 211, 238, 0.75)';
+      if (route.length > 0) {
+        ctx.strokeStyle = COLORS.route;
         ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.moveTo(optimalPathing[0].x, optimalPathing[0].y);
-        for (let i = 1; i < optimalPathing.length; i++) {
-          ctx.lineTo(optimalPathing[i].x, optimalPathing[i].y);
-        }
+        ctx.moveTo(route[0].x * sx, route[0].y * sy);
+        for (let i = 1; i < route.length; i++) ctx.lineTo(route[i].x * sx, route[i].y * sy);
         ctx.stroke();
       }
 
-      squadPositions.forEach((member) => {
-        ctx.fillStyle = 'rgba(16, 185, 129, 0.85)';
+      ctx.font = '11px monospace';
+      for (const member of squad) {
+        const x = member.x * sx;
+        const y = member.y * sy;
+        ctx.fillStyle = member.status === 'wounded' ? COLORS.unknown : COLORS.squad;
+        ctx.globalAlpha = member.status === 'offline' ? 0.4 : 1;
         ctx.beginPath();
-        ctx.arc(member.position.x, member.position.y, 5, 0, Math.PI * 2);
+        ctx.arc(x, y, 5, 0, Math.PI * 2);
         ctx.fill();
-        ctx.fillStyle = 'rgba(209, 250, 229, 0.9)';
-        ctx.font = '10px monospace';
-        ctx.fillText(member.id, member.position.x + 8, member.position.y - 8);
-      });
+        ctx.fillStyle = COLORS.label;
+        ctx.fillText(member.status === 'active' ? member.callSign : `${member.callSign} ${member.status.toUpperCase()}`, x + 8, y - 8);
+        ctx.globalAlpha = 1;
+      }
 
-      threatIndicators.forEach((threat) => {
-        if (threat.type === 'hostile') {
-          ctx.fillStyle = 'rgba(248, 113, 113, 0.9)';
-        } else if (threat.type === 'unknown') {
-          ctx.fillStyle = 'rgba(251, 191, 36, 0.9)';
-        } else {
-          ctx.fillStyle = 'rgba(16, 185, 129, 0.75)';
-        }
-        ctx.beginPath();
-        ctx.moveTo(threat.position.x, threat.position.y - 6);
-        ctx.lineTo(threat.position.x - 6, threat.position.y + 6);
-        ctx.lineTo(threat.position.x + 6, threat.position.y + 6);
-        ctx.closePath();
-        ctx.fill();
-      });
+      for (const contact of contacts) drawContact(ctx, contact.kind, contact.x * sx, contact.y * sy);
     };
 
     draw();
     const observer = new ResizeObserver(draw);
     observer.observe(canvas);
     return () => observer.disconnect();
-  }, [threatIndicators, optimalPathing, squadPositions]);
+  }, [contacts, route, squad]);
+
+  const wounded = squad.filter((member) => member.status !== 'active').map((member) => `${member.callSign} ${member.status}`);
 
   return (
-    <div className="relative w-full h-full rounded-xl border border-current/20 bg-black/30 overflow-hidden">
-      <canvas ref={canvasRef} role="img" aria-label={`Generated situation map: ${hostileCount} hostile contacts, ${unknownCount} unknown contacts, ${squadPositions.length} squad members. Cyan line shows the modeled route.`} className="w-full h-full object-contain" width="400" height="400" />
-      <div className="absolute top-2 left-2 border border-current/20 bg-black/70 px-3 py-2 text-xs backdrop-blur-sm">
-        <div className="font-bold uppercase">Situation map</div>
-        <div className="mt-1 text-current/65">{mapRecommendation}</div>
+    <div className="relative h-full w-full overflow-hidden border border-current/25 bg-black/45">
+      <canvas
+        ref={canvasRef}
+        role="img"
+        aria-label={`Tactical map: ${hostileCount} hostile, ${unknownCount} unknown and ${contacts.length - hostileCount - unknownCount} friendly contacts; squad of ${squad.length}${wounded.length ? ` (${wounded.join(', ')})` : ''}. The cyan line is the planned route.`}
+        className="block h-full w-full"
+      />
+      <div className="absolute left-2 top-2 border border-current/20 bg-black/70 px-3 py-2 text-xs">
+        <h2 className="font-bold uppercase">Tactical Map</h2>
+        <div className="mt-1 text-current/80">{mapRecommendation}</div>
       </div>
-      <div className="absolute bottom-2 right-2 grid grid-cols-3 gap-1 text-[10px] uppercase">
-        <span className="border border-red-400/30 bg-red-500/10 px-2 py-1 text-red-200">Hostile {hostileCount}</span>
-        <span className="border border-amber-400/30 bg-amber-500/10 px-2 py-1 text-amber-200">Unknown {unknownCount}</span>
-        <span className="border border-emerald-400/30 bg-emerald-500/10 px-2 py-1 text-emerald-200">Squad {squadPositions.length}</span>
+      <div className="absolute bottom-2 right-2 grid grid-cols-3 gap-1 text-[10px] uppercase" aria-hidden="true">
+        <span className="border border-red-400/30 bg-red-500/10 px-2 py-1 text-red-200" title="Hostile contacts (▲)">H {hostileCount}</span>
+        <span className="border border-amber-400/30 bg-amber-500/10 px-2 py-1 text-amber-200" title="Unknown contacts (◆)">U {unknownCount}</span>
+        <span className="border border-emerald-400/30 bg-emerald-500/10 px-2 py-1 text-emerald-200" title="Squad members (●)">S {squad.length}</span>
       </div>
     </div>
   );
 });
+
+TacticalDataDisplay.displayName = 'TacticalDataDisplay';

@@ -3,7 +3,7 @@ import { BrainCircuit } from 'lucide-react';
 
 export const NeuroSimFallback: React.FC = () => {
   return (
-    <div className="h-full w-full border border-current/25 bg-black/45 p-4 backdrop-blur-sm">
+    <div className="h-full w-full border border-current/25 bg-black/45 p-4">
       <div className="flex h-full min-h-[220px] flex-col justify-between">
         <div className="flex items-center gap-2 text-sm font-bold uppercase">
           <BrainCircuit className="h-4 w-4 text-cyan-300" />

@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test, type Page } from '@playwright/test';
+import { enterCommandRoom, runConsole } from './helpers';
 
 const WCAG = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
 
@@ -19,7 +20,43 @@ const expectNoViolations = async (page: Page, label: string, include?: string) =
   expect(summary, `${label}: axe violations`).toEqual([]);
 };
 
-/** The research tools. The original app at / is restored unchanged; its accessibility work is tracked separately. */
+/** The command room at /: the access terminal, the room, its dialogs and the operator console. */
+test.describe('command room accessibility (axe, WCAG 2.2 AA rules)', () => {
+  test('the access terminal has no detectable violations', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.getByRole('log', { name: 'Terminal output' })).toContainText('CLASSIFIED SYSTEM ACCESS');
+    await page.keyboard.press('Enter');
+    await expect(page.getByLabel('Activation phrase')).toBeVisible();
+    await expectNoViolations(page, 'access terminal');
+  });
+
+  test('the command room has no detectable violations', async ({ page }) => {
+    await enterCommandRoom(page);
+    await expectNoViolations(page, 'command room');
+  });
+
+  test('the decision matrix, the console and the after-action review have no detectable violations', async ({ page }) => {
+    await enterCommandRoom(page);
+    await page.getByRole('button', { name: /^Decisions/ }).click();
+    await expect(page.getByRole('heading', { name: 'DECISION MATRIX SIMULATOR' })).toBeVisible();
+    await expectNoViolations(page, 'decision matrix', '#command-surface');
+    await runConsole(page, 'brief 1');
+    await expectNoViolations(page, 'operator console', '[aria-label="Operator console"]');
+    await page.getByLabel('Console command').press('Escape');
+    await page.getByRole('button', { name: /^After-action/ }).click();
+    await expect(page.getByRole('dialog', { name: 'AFTER-ACTION REVIEW' })).toBeVisible();
+    await expectNoViolations(page, 'after-action review', '[role="dialog"]');
+  });
+
+  test('the microphone consent dialog has no detectable violations', async ({ page }) => {
+    await enterCommandRoom(page);
+    await page.getByRole('button', { name: 'Start local audio response' }).click();
+    await expect(page.getByRole('dialog', { name: 'Enable local audio response' })).toBeVisible();
+    await expectNoViolations(page, 'consent dialog', '[role="dialog"]');
+  });
+});
+
+/** The research tools. */
 test.describe('accessibility (axe, WCAG 2.2 AA rules)', () => {
   for (const [route, label] of [
     ['/explore/orientation', 'guided scenario'],

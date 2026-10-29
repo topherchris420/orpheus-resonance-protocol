@@ -100,10 +100,10 @@ export const getTelemetryAssessment = ({
 
   const recommendation =
     severity === 'critical'
-      ? 'Scenario hint: pause the simulation and review the generated inputs.'
+      ? 'Pause escalation, reduce operator load, and stabilize breathing cadence.'
       : severity === 'watch'
-        ? 'Scenario hint: inspect the generated stress and mission variables.'
-        : 'Scenario hint: continue exploring the simulated mission.';
+        ? 'Reduce task load and shift bio-resonance support toward calm.'
+        : 'Maintain current cadence and continue monitoring.';
 
   return {
     severity,

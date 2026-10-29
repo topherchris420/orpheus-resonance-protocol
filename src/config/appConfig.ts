@@ -39,6 +39,8 @@ export const appConfig = {
   features: {
     requireAccessGate: toBoolean(import.meta.env.VITE_REQUIRE_ACCESS_GATE, true),
     enableAudioBiofeedback: toBoolean(import.meta.env.VITE_ENABLE_AUDIO_BIOFEEDBACK, true),
+    /** Typing HELP at the access terminal prints the activation phrase. */
+    revealPhraseOnHelp: toBoolean(import.meta.env.VITE_ACCESS_HINT, true),
   },
   limits: {
     maxIntelFeedItems: clamp(toNumber(import.meta.env.VITE_MAX_INTEL_FEED_ITEMS, 10), 5, 50),

@@ -1,14 +1,15 @@
 import React, { useMemo, useState } from 'react';
-import { MetricSample } from '../hooks/useMetricsHistory';
+import type { MetricSample } from '@/engine/mission/types';
 import { applyBaseline, OperatorBaseline } from '../hooks/useOperatorBaseline';
 
 interface OperatorMetricsDashboardProps {
   history: MetricSample[];
+  tickSeconds: number;
   baseline?: OperatorBaseline | null;
   calibrationSlot?: React.ReactNode;
 }
 
-type MetricKey = 'stress' | 'cohesion' | 'hostilePressure' | 'intelAccuracy';
+type MetricKey = 'stress' | 'cohesion' | 'hostilePressure' | 'feedReliability';
 
 interface MetricSpec {
   key: MetricKey;
@@ -22,7 +23,7 @@ const METRICS: MetricSpec[] = [
   { key: 'stress', label: 'Operator Stress', hue: 8, inverted: true },
   { key: 'cohesion', label: 'Squad Cohesion', hue: 140, inverted: false },
   { key: 'hostilePressure', label: 'Hostile Pressure', hue: 32, inverted: true },
-  { key: 'intelAccuracy', label: 'Intel Accuracy', hue: 190, inverted: false },
+  { key: 'feedReliability', label: 'Feed Reliability', hue: 190, inverted: false },
 ];
 
 const WIDTH = 100;
@@ -49,6 +50,7 @@ const trendOf = (values: number[]): number => {
 
 export const OperatorMetricsDashboard: React.FC<OperatorMetricsDashboardProps> = React.memo(({
   history,
+  tickSeconds,
   baseline,
   calibrationSlot,
 }) => {
@@ -77,20 +79,20 @@ export const OperatorMetricsDashboard: React.FC<OperatorMetricsDashboardProps> =
   );
 
   const spanSeconds = history.length > 1
-    ? Math.round((history[history.length - 1].timestamp - history[0].timestamp) / 1000)
+    ? Math.round((history[history.length - 1].tick - history[0].tick) * tickSeconds)
     : 0;
 
   return (
-    <div className="flex h-full flex-col overflow-y-auto border border-current/20 bg-black/60 p-3 font-mono text-xs">
+    <section aria-labelledby="metrics-heading" className="flex h-full flex-col overflow-y-auto border border-current/20 bg-black/60 p-3 font-mono text-xs">
       <div className="mb-2 flex items-center justify-between border-b border-current/15 pb-1">
-        <h3 className="text-[11px] uppercase tracking-widest opacity-90">Operator Metrics</h3>
+        <h2 id="metrics-heading" className="text-[11px] uppercase tracking-widest opacity-90">Operator Metrics</h2>
         <div className="flex items-center gap-2">
-          <span className="text-[10px] opacity-60">{spanSeconds}s window · {history.length} samples</span>
+          <span className="text-[10px] text-current/75">{spanSeconds}s window · {history.length} samples</span>
           {baseline && (
             <button
               type="button"
               onClick={() => setCalibrated((previous) => !previous)}
-              className={`border px-1.5 py-0.5 text-[9px] uppercase tracking-wider ${calibrationActive ? 'border-current/50 bg-current/10' : 'border-current/20 opacity-60'}`}
+              className={`border px-1.5 py-0.5 text-[9px] uppercase tracking-wider ${calibrationActive ? 'border-current/50 bg-current/10' : 'border-current/20 text-current/75'}`}
               aria-pressed={calibrationActive}
             >
               Calibrated
@@ -105,7 +107,7 @@ export const OperatorMetricsDashboard: React.FC<OperatorMetricsDashboardProps> =
         {series.map(({ metric, line, area, current, delta, average, good, bad }) => (
           <div key={metric.key} className="border border-current/10 bg-black/40 p-2">
             <div className="flex items-baseline justify-between">
-              <span className="text-[10px] uppercase tracking-wider opacity-75">{metric.label}</span>
+              <span className="text-[10px] uppercase tracking-wider text-current/80">{metric.label}</span>
               <span
                 className="text-sm tabular-nums"
                 style={{ color: `hsl(${metric.hue} 80% 62%)` }}
@@ -132,7 +134,7 @@ export const OperatorMetricsDashboard: React.FC<OperatorMetricsDashboardProps> =
               />
             </svg>
 
-            <div className="mt-1 flex items-center justify-between text-[10px] opacity-70">
+            <div className="mt-1 flex items-center justify-between text-[10px] text-current/80">
               <span>avg {(average * 100).toFixed(0)}%</span>
               <span className={good ? 'text-emerald-400' : bad ? 'text-red-400' : ''}>
                 {delta > 0.02 ? '▲' : delta < -0.02 ? '▼' : '■'} {(Math.abs(delta) * 100).toFixed(0)}%
@@ -141,7 +143,7 @@ export const OperatorMetricsDashboard: React.FC<OperatorMetricsDashboardProps> =
           </div>
         ))}
       </div>
-    </div>
+    </section>
   );
 });
 
