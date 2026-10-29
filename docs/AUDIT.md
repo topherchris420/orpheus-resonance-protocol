@@ -251,3 +251,63 @@ How "looks the same" was checked:
   With timing held fixed, both builds draw the same 9,854 random numbers in the same order.
 - **Tests.** End-to-end tests check that the breathing animation reaches only the elements that show it
   and that the microphone still drives the command room.
+
+## 13. Update: the terminal look returns, on the deterministic engine
+
+The owner asked for the look the site had before the October redesign, "a very cool terminal/matrix
+look", with the engineering behind it raised to a standard an intelligence agency would respect.
+
+**What the history shows.** From June 2025 to September 2026 the site was a terminal: a green-on-black
+access terminal typing "CLASSIFIED SYSTEM ACCESS" line by line, then a dense twelve-column command grid.
+Commit `0bc2e28` (23 October 2026) replaced the terminal with a sans-serif landing page ("Every choice
+leaves a trace"), rounded cards and a scrolling "full control room". §11 restored the state *after*
+that commit, so the redesign stayed. This update restores the access terminal's copy as of June 2026
+(`454b712`, after the owner removed its disclaimer) and the command grid as of September 2026 (`7dd523a`),
+with the in-world panel wording of June. Builds of eleven historical revisions were screenshotted to fix
+the target.
+
+**Defects in the original terminal UI, now fixed without changing the look.**
+
+| Defect | Cause | Fix |
+| --- | --- | --- |
+| White buttons in a black terminal (EXECUTE, mode toolbar, presets) | shadcn primitives used the light default theme | The terminal palette is now the default theme; the research palette stays scoped to `o-theme` |
+| Panels drawn over their neighbors (vitals over alerts, toolbar over resonance control) | Grid cells without `min-h-0`, panels without their own scrolling | Every cell is bounded and scrolls internally; an end-to-end test checks for overlaps at three desktop sizes |
+| All text slightly blurred | The whole grid carried a 0.4–1.1 px blur every frame | The grid keeps its breathing scale and lift; the blur is gone |
+| SITREP vanished at phase 2 | The temporal archive replaced the feed in the same slot | The slot has tabs, and the feed counts what arrived while hidden |
+| Temporal archive stuck at "Timeline 0, Moment 0.000" | Its coordinates were never updated | They follow committed decisions and the phase window |
+| Tactile pad ignored touch screens | Mouse events only | Pointer events, plus Enter/Space from the keyboard |
+| Squad links flickered at random every frame | `Math.random()` in a 60 fps loop | Drawn from the squad's map positions when data change |
+| No way in without being told the phrase | The phrase appeared nowhere | `HELP` prints it (configurable) |
+| Small text below WCAG contrast; scrolling panels unreachable by keyboard | 40–55 % opacity text; no focusable scroll regions | Text at 75 % or more; scroll regions focusable; axe reports no violations on the terminal, the room, its dialogs and the console |
+
+**Engineering.** The room now runs on the research tools' deterministic engine (Building 47, seeded,
+hash-chained, replayable), and the random generators it used (`data/realisticData.ts`,
+`data/decisionScenarios.ts`, `hooks/useMissionScenario.ts`, `usePhaseProgression`, `useRedTeamSimulation`,
+`useInteractionState`, `useMetricsHistory`, `lib/missionSession`, `lib/sessionRecord`,
+`lib/sessionGuidance`, `SessionControls`) are removed. New: power-on self-tests, Admiralty-graded evidence
+and SITREP, ICD 203 assessments with separate confidence, date-time groups and precedence, the operator
+console, an EMCON monitor, the chain seal in the timeline and status line, an after-action review that
+compares each course's assumption with ground truth, and `?seed=` worlds. Details in
+`docs/ARCHITECTURE.md` §8.
+
+**Delivery.** Production served every deep link (`/research`, `/replay`, …) as a 404, sent no security
+headers, and preloaded three.js (about 740 kB) on every visit because React had been bundled into the 3D
+chunk. `vercel.json` now serves the single-page app, sends one strict Content-Security-Policy (shared with
+the page through `config/securityPolicy.ts`) and hardening headers, and the 3D code loads only when the
+NeuroSim view opens. The unused React Query provider and duplicate toast system were removed. Initial
+JavaScript: 1.20 MB before (with three.js preloaded), 0.60 MB now.
+
+CPU time per second of use, in milliseconds, measured as in §12 (headless Chromium with software
+rendering, 1440×900, median of three 10-second windows), against the September terminal build:
+
+| Situation | Main thread, September | Main thread, now | All processes, September | All processes, now |
+| --- | ---: | ---: | ---: | ---: |
+| Command room, situation map | 130 | 68 | 1,283 | 692 |
+| Command room, decisions | 135 | 71 | 1,270 | 694 |
+| Command room, microphone on | 150 | 75 | 1,324 | 756 |
+
+Most of the remaining all-process time is software compositing of the two full-screen effects the
+original look depends on, the breathing grid and the ambient overlay (without both: about 140 ms). The
+breathing loop now updates 30 times a second, and the per-panel backdrop blur, which blurred only the
+solid background behind the panels, is gone; with GPU compositing these effects are cheap. Reduced
+motion turns both off.

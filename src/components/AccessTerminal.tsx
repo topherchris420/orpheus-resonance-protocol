@@ -1,162 +1,224 @@
-import { useEffect, useState } from 'react';
-import { ArrowRight, Compass, GitBranch, History, Waves } from 'lucide-react';
-import { appConfig } from '@/config/appConfig';
+import React, { useCallback, useEffect, useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { appConfig } from "@/config/appConfig";
+import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
+import { allPassed, runSelfTests, runWebCryptoDifferential, type SelfTestResult } from "@/integrity/selftest";
 
 interface AccessTerminalProps {
-  onAccess: () => void;
+  onAccess: (selfTests: SelfTestResult[]) => void;
 }
 
-export const AccessTerminal = ({ onAccess }: AccessTerminalProps) => {
-  const [input, setInput] = useState('');
-  const [attempts, setAttempts] = useState(0);
-  const [lockedUntil, setLockedUntil] = useState(0);
+const TERMINAL_SEQUENCE = [
+  "CLASSIFIED SYSTEM ACCESS",
+  "VERS3D+S - R.A.I.N. RESEARCH DIVISION",
+  "WARNING: AUTHORIZED PERSONNEL ONLY",
+  "",
+  "Scanning for clearance level...",
+  "Biometric signature detected...",
+  "Access granted to SUBPROTOCOL ORPHEUS",
+  "",
+  "Enter activation phrase to continue:",
+];
+
+const LINE_INTERVAL_MS = 800;
+const POST_LINE_INTERVAL_MS = 140;
+
+type Tone = "boot" | "echo" | "granted" | "denied" | "hint" | "ok" | "fail" | "skip";
+
+interface TerminalLine {
+  text: string;
+  tone: Tone;
+}
+
+const toneClass: Record<Tone, string> = {
+  boot: "",
+  echo: "text-yellow-400",
+  granted: "text-cyan-400 animate-pulse",
+  denied: "text-red-400",
+  hint: "text-green-300",
+  ok: "text-green-300",
+  fail: "text-red-400",
+  skip: "text-green-400/70",
+};
+
+const postLine = (result: SelfTestResult): TerminalLine => ({
+  text: `[${result.status === "pass" ? " OK " : result.status === "skip" ? "SKIP" : "FAIL"}] ${result.label} · ${result.detail}`,
+  tone: result.status === "pass" ? "ok" : result.status === "skip" ? "skip" : "fail",
+});
+
+const bootLines = (count: number): TerminalLine[] => TERMINAL_SEQUENCE.slice(0, count).map((text) => ({ text, tone: text.startsWith("Access granted") ? "granted" : "boot" }));
+
+export const AccessTerminal: React.FC<AccessTerminalProps> = ({ onAccess }) => {
+  const reducedMotion = usePrefersReducedMotion();
+  const [typed, setTyped] = useState(reducedMotion ? TERMINAL_SEQUENCE.length : 0);
+  const [responses, setResponses] = useState<TerminalLine[]>([]);
+  const [input, setInput] = useState("");
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [lockUntilMs, setLockUntilMs] = useState(0);
   const [now, setNow] = useState(Date.now());
-  const [message, setMessage] = useState('The terminal is optional. Enter the demo phrase to begin.');
-  const locked = lockedUntil > now;
+  const [granted, setGranted] = useState(false);
+  const selfTests = useRef<SelfTestResult[] | null>(null);
+  const differential = useRef<Promise<SelfTestResult> | null>(null);
+  const outputRef = useRef<HTMLDivElement>(null);
+
+  const maxAttempts = appConfig.limits.maxAccessAttempts;
+  const lockoutMs = appConfig.limits.accessLockoutMs;
+  const accessPhrase = appConfig.accessPhrase.toLowerCase();
+  const isLocked = lockUntilMs > now;
+  const booted = typed >= TERMINAL_SEQUENCE.length;
+  const remainingAttempts = Math.max(0, maxAttempts - failedAttempts);
+  const secondsRemaining = Math.max(0, Math.ceil((lockUntilMs - now) / 1000));
+  const lines = [...bootLines(typed), ...responses];
+
+  // Power-on self-tests run once, off the first paint, while the boot sequence types.
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      selfTests.current = runSelfTests();
+      differential.current = runWebCryptoDifferential();
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
-    if (!locked) return;
-    const timer = window.setInterval(() => setNow(Date.now()), 250);
-    return () => window.clearInterval(timer);
-  }, [locked]);
+    if (reducedMotion) setTyped(TERMINAL_SEQUENCE.length);
+  }, [reducedMotion]);
 
-  const enter = (event: React.FormEvent) => {
-    event.preventDefault();
-    if (locked) return;
-    if (input.trim().toLowerCase() === appConfig.accessPhrase.toLowerCase()) {
-      onAccess();
+  useEffect(() => {
+    if (booted) return;
+    const timer = window.setTimeout(() => setTyped((previous) => previous + 1), LINE_INTERVAL_MS);
+    return () => window.clearTimeout(timer);
+  }, [booted, typed]);
+
+  // Enter (or a click on the terminal) skips the boot sequence, as on a real console.
+  useEffect(() => {
+    if (booted) return;
+    const skip = (event: KeyboardEvent) => {
+      if (event.key === "Enter") setTyped(TERMINAL_SEQUENCE.length);
+    };
+    window.addEventListener("keydown", skip);
+    return () => window.removeEventListener("keydown", skip);
+  }, [booted]);
+
+  useEffect(() => {
+    if (!isLocked) return;
+    const lockoutTimer = window.setInterval(() => setNow(Date.now()), 250);
+    return () => window.clearInterval(lockoutTimer);
+  }, [isLocked]);
+
+  useEffect(() => {
+    const output = outputRef.current;
+    if (output) output.scrollTop = output.scrollHeight;
+  }, [lines.length]);
+
+  const respond = useCallback((...next: TerminalLine[]) => setResponses((previous) => [...previous, ...next]), []);
+
+  const enter = useCallback(async () => {
+    setGranted(true);
+    respond({ text: "Access granted. Initializing Subprotocol Orpheus...", tone: "granted" }, { text: "POWER-ON SELF-TEST", tone: "boot" });
+    const results = [...(selfTests.current ?? runSelfTests()), await (differential.current ?? runWebCryptoDifferential())];
+    const passed = allPassed(results);
+    const report = [
+      ...results.map(postLine),
+      passed
+        ? { text: "ALL SELF-TESTS PASSED · OPENING COMMAND SURFACE", tone: "ok" as const }
+        : { text: "SELF-TEST FAILURE · DEGRADED MODE: records from this terminal may not verify elsewhere", tone: "fail" as const },
+    ];
+    const pace = reducedMotion ? 0 : POST_LINE_INTERVAL_MS;
+    report.forEach((line, index) => window.setTimeout(() => respond(line), pace * (index + 1)));
+    window.setTimeout(() => onAccess(results), pace * (report.length + 1) + (reducedMotion ? 300 : passed ? 600 : 2400));
+  }, [onAccess, reducedMotion, respond]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (isLocked || granted) {
       return;
     }
-    const next = attempts + 1;
-    if (next >= appConfig.limits.maxAccessAttempts) {
-      setLockedUntil(Date.now() + appConfig.limits.accessLockoutMs);
-      setNow(Date.now());
-      setAttempts(0);
-      setMessage('Terminal cooling down. You can still use Enter simulation above.');
-    } else {
-      setAttempts(next);
-      setMessage(
-        `That phrase did not match. Use the demo phrase shown below. ${appConfig.limits.maxAccessAttempts - next} attempts remaining.`,
+
+    const normalizedInput = input.trim().toLowerCase();
+    setInput("");
+
+    if (normalizedInput === "help" || normalizedInput === "?") {
+      respond(
+        { text: `> ${input}`, tone: "echo" },
+        appConfig.features.revealPhraseOnHelp
+          ? { text: `Activation phrase for this terminal: ${appConfig.accessPhrase}`, tone: "hint" }
+          : { text: "Activation phrases are issued by the R.A.I.N. Research Division.", tone: "hint" },
       );
+      return;
     }
-    setInput('');
+
+    if (normalizedInput === accessPhrase) {
+      respond({ text: `> ${input}`, tone: "echo" });
+      void enter();
+      return;
+    }
+
+    const nextAttempts = failedAttempts + 1;
+
+    if (nextAttempts >= maxAttempts) {
+      const nextLockUntil = Date.now() + lockoutMs;
+      setLockUntilMs(nextLockUntil);
+      setNow(Date.now());
+      setFailedAttempts(0);
+      respond({ text: `> ${input}`, tone: "echo" }, { text: `Access denied. Lockout enabled for ${Math.ceil(lockoutMs / 1000)} seconds.`, tone: "denied" });
+    } else {
+      setFailedAttempts(nextAttempts);
+      respond({ text: `> ${input}`, tone: "echo" }, { text: nextAttempts === 1 ? "Access denied. Type HELP for assistance." : "Access denied.", tone: "denied" });
+    }
   };
 
   return (
-    <main className="orpheus-welcome min-h-screen px-5 py-8 text-slate-100 sm:px-10 sm:py-12">
-      <div className="mx-auto max-w-6xl">
-        <header className="flex flex-wrap items-center justify-between gap-4 border-b border-white/10 pb-6">
-          <span className="flex items-center gap-3 text-sm font-semibold tracking-[0.2em]">
-            <Waves aria-hidden="true" className="text-emerald-300" /> ORPHEUS
-          </span>
-          <span className="text-xs text-slate-400">Vers3Dynamics · R.A.I.N. Research Division</span>
-        </header>
-        <section className="grid gap-12 py-14 lg:grid-cols-[1.3fr_1fr] lg:items-center lg:py-24">
-          <div>
-            <p className="mb-6 text-xs uppercase tracking-[0.25em] text-emerald-300">
-              An interactive decision laboratory
-            </p>
-            <h1 className="max-w-2xl font-sans text-5xl font-medium leading-[1.08] tracking-tight sm:text-7xl">
-              Every choice
-              <br />
-              leaves a <span className="text-emerald-300">trace.</span>
-            </h1>
-            <p className="mt-6 max-w-xl font-sans text-lg leading-relaxed text-slate-300">
-              Step into a fictional command room. Read the situation, weigh the tradeoffs, and follow the
-              consequences of your decisions.
-            </p>
-            <button
-              type="button"
-              onClick={onAccess}
-              className="mt-8 inline-flex min-h-12 items-center gap-6 rounded-lg bg-emerald-300 px-6 py-3 font-sans font-semibold text-slate-950 hover:bg-emerald-200"
-            >
-              Enter simulation <ArrowRight aria-hidden="true" className="h-5 w-5" />
-            </button>
-            <p className="mt-4 text-xs leading-relaxed text-slate-400">
-              No account. No setup. Microphone off by default.
-              <br />
-              Start with a focused workspace; explore the full control room anytime.
-            </p>
+    <div className="min-h-screen bg-black p-4 font-mono text-green-400 sm:p-8">
+      <div className="mx-auto max-w-4xl">
+        <div className="border border-green-400 bg-black/50 p-6" onClick={() => !booted && setTyped(TERMINAL_SEQUENCE.length)}>
+          <div className="mb-6 text-center">
+            <h1 className="mb-2 animate-pulse text-2xl">ORPHEUS ACCESS TERMINAL</h1>
+            <div className="text-xs text-green-400/75">R.A.I.N Research Division - Vers3Dynamics Lab</div>
+            <div className="mt-1 text-xs text-green-400/65">The Orpheus Continuum by Vers3Dynamics</div>
           </div>
-          <div className="rounded-2xl border border-emerald-300/20 bg-slate-950/60 p-6 sm:p-8">
-            <div className="mb-8 flex items-center justify-between text-xs uppercase tracking-widest">
-              <span className="text-emerald-300">Your first session</span>
-              <span className="text-slate-400">At your pace</span>
-            </div>
-            <ol className="space-y-8">
-              {[
-                {
-                  icon: Compass,
-                  title: 'Read the room',
-                  detail: 'Explore a generated situation map and the latest fictional reports.',
-                },
-                {
-                  icon: GitBranch,
-                  title: 'Make the call',
-                  detail: 'Compare possible effects. Review your choice before you commit.',
-                },
-                {
-                  icon: History,
-                  title: 'See what changed',
-                  detail: 'Review your decision trail and download a record of the session.',
-                },
-              ].map(({ icon: Icon, title, detail }, index) => (
-                <li key={title} className="flex gap-4">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-emerald-300/20 text-emerald-300">
-                    <Icon className="h-4 w-4" aria-hidden="true" />
-                  </div>
-                  <div>
-                    <h2 className="font-sans font-medium">
-                      {String(index + 1).padStart(2, '0')} / {title}
-                    </h2>
-                    <p className="mt-2 font-sans text-sm leading-relaxed text-slate-400">{detail}</p>
-                  </div>
-                </li>
-              ))}
-            </ol>
+
+          <div ref={outputRef} role="log" aria-live="polite" aria-label="Terminal output" tabIndex={0} className="mb-6 h-96 space-y-2 overflow-y-auto">
+            {lines.map((line, index) => (
+              <div key={index} className={`min-h-[1.5rem] break-words ${toneClass[line.tone]}`}>
+                {line.text}
+              </div>
+            ))}
+            {!booted && <span aria-hidden="true" className="terminal-caret" />}
           </div>
-        </section>
-        <div className="grid gap-6 border-t border-white/10 pt-6 md:grid-cols-2">
-          <p className="font-sans text-sm leading-relaxed text-slate-400">
-            <strong className="font-medium text-slate-200">Fictional world. Inspectable choices.</strong>{' '}
-            Events, vitals, and recommendations are generated. This is a simulation for exploration, not a
-            measure of your health or performance. Session records stay in memory until you download them.
-          </p>
-          <details className="rounded-lg border border-white/10 p-4 text-sm text-slate-300">
-            <summary className="cursor-pointer">Optional theatrical terminal</summary>
-            <p className="my-4 text-xs leading-relaxed">
-              Demo phrase: <code className="text-emerald-300">{appConfig.accessPhrase}</code>. This local
-              terminal is part of the fiction, not access control.
-            </p>
-            <form onSubmit={enter} className="flex flex-wrap gap-2">
-              <label htmlFor="demo-phrase" className="sr-only">
-                Demo activation phrase
-              </label>
-              <input
-                id="demo-phrase"
+
+          {booted && (
+            <form onSubmit={handleSubmit} className="flex gap-2">
+              <Input
                 value={input}
-                onChange={(event) => setInput(event.target.value)}
-                disabled={locked}
-                className="min-h-11 min-w-0 flex-1 rounded border border-white/20 bg-black/40 px-3"
-                placeholder="Enter demo phrase"
+                onChange={(e) => setInput(e.target.value)}
+                className="border-green-400 bg-black font-mono text-green-400 placeholder:text-green-400/60"
+                placeholder="Enter activation phrase"
+                aria-label="Activation phrase"
                 autoComplete="off"
+                autoCapitalize="off"
+                spellCheck={false}
+                autoFocus
+                disabled={isLocked || granted}
               />
-              <button
+              <Button
                 type="submit"
-                disabled={locked}
-                className="rounded border border-emerald-300/40 px-4 py-3 disabled:opacity-50"
+                variant="outline"
+                className="border-green-400 bg-black text-green-400 hover:bg-green-400 hover:text-black"
+                disabled={isLocked || granted}
               >
-                Enter
-              </button>
+                EXECUTE
+              </Button>
             </form>
-            <p role="status" className="mt-3 text-xs text-slate-400">
-              {locked
-                ? `Retry in ${Math.ceil((lockedUntil - now) / 1000)}s. You can enter the simulation above.`
-                : message}
-            </p>
-          </details>
+          )}
+
+          {booted && (
+            <div role="status" className="mt-3 text-xs text-green-400/75">
+              {isLocked ? `Terminal lockout active: retry in ${secondsRemaining}s` : granted ? "Clearance accepted" : `Attempts remaining: ${remainingAttempts}`}
+            </div>
+          )}
         </div>
       </div>
-    </main>
+    </div>
   );
 };

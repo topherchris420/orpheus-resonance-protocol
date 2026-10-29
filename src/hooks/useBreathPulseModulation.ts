@@ -6,8 +6,10 @@ import { usePersistentState } from './usePersistentState';
  * use them (instead of a large ancestor) keeps the browser from restyling the whole page every frame.
  * - `variables`: the element gets the --breath-*, --pulse-* and --interface-* custom properties.
  * - `transform`: the element gets the breathing scale, lift and blur as its own transform and filter.
+ * - `motion`: the scale and lift only. Compositor-only, so it costs no repaint; blur re-rasterizes
+ *   the element every frame and softens its text.
  */
-export type BreathTargetKind = 'variables' | 'transform';
+export type BreathTargetKind = 'variables' | 'transform' | 'motion';
 
 export interface BreathTargets {
   add(element: HTMLElement, kind: BreathTargetKind): void;
@@ -40,6 +42,16 @@ const writeVariables = (element: HTMLElement, frame: BreathFrame) => {
 const writeTransform = (element: HTMLElement, frame: BreathFrame) => {
   element.style.transform = frame.transform;
   element.style.filter = frame.filter;
+};
+
+const writeMotion = (element: HTMLElement, frame: BreathFrame) => {
+  element.style.transform = frame.transform;
+};
+
+const WRITERS: Record<BreathTargetKind, (element: HTMLElement, frame: BreathFrame) => void> = {
+  variables: writeVariables,
+  transform: writeTransform,
+  motion: writeMotion,
 };
 
 export interface BreathPulseModulationValues {
@@ -86,6 +98,9 @@ const STORAGE = {
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 
+/** Slightly under 1000/30, so a 60 Hz display updates on every second frame without beating. */
+const FRAME_INTERVAL_MS = 30;
+
 interface UseBreathPulseModulationOptions {
   /** Microphone-derived audio energy proxy (0..1), not measured respiration. */
   liveAudioEnvelope?: number;
@@ -116,20 +131,19 @@ export const useBreathPulseModulation = ({
 
   /** Local audio envelope, updated after render without re-subscribing the loop. */
   const liveSignalsRef = useRef({ liveAudioEnvelope, liveAvailable });
-  const variableTargetsRef = useRef(new Set<HTMLElement>());
-  const transformTargetsRef = useRef(new Set<HTMLElement>());
+  const targetsRef = useRef<Record<BreathTargetKind, Set<HTMLElement>>>({ variables: new Set(), transform: new Set(), motion: new Set() });
   const latestFrameRef = useRef<BreathFrame | null>(null);
   const targets = useMemo<BreathTargets>(
     () => ({
       add: (element, kind) => {
-        (kind === 'transform' ? transformTargetsRef : variableTargetsRef).current.add(element);
+        targetsRef.current[kind].add(element);
         // Apply the latest values at once, so a newly shown element never paints a stale frame.
         const frame = latestFrameRef.current;
-        if (frame) (kind === 'transform' ? writeTransform : writeVariables)(element, frame);
+        if (frame) WRITERS[kind](element, frame);
       },
       remove: (element, kind) => {
-        (kind === 'transform' ? transformTargetsRef : variableTargetsRef).current.delete(element);
-        if (kind === 'transform') {
+        targetsRef.current[kind].delete(element);
+        if (kind !== 'variables') {
           element.style.transform = '';
           element.style.filter = '';
         }
@@ -148,6 +162,12 @@ export const useBreathPulseModulation = ({
     let last = performance.now();
 
     const tick = (now: number) => {
+      // 30 updates a second: the slowest preset moves the ring well under a pixel per update, and every
+      // update makes the compositor redraw full-screen layers, so 60 would double the work for nothing.
+      if (now - last < FRAME_INTERVAL_MS) {
+        frame = requestAnimationFrame(tick);
+        return;
+      }
       const deltaSeconds = Math.min(0.1, (now - last) / 1000);
       last = now;
 
@@ -210,8 +230,9 @@ export const useBreathPulseModulation = ({
 
       const surface = surfaceRef.current;
       if (surface) writeVariables(surface, frameValues);
-      for (const element of variableTargetsRef.current) writeVariables(element, frameValues);
-      for (const element of transformTargetsRef.current) writeTransform(element, frameValues);
+      for (const kind of ['variables', 'transform', 'motion'] as const) {
+        for (const element of targetsRef.current[kind]) WRITERS[kind](element, frameValues);
+      }
 
       frame = requestAnimationFrame(tick);
     };

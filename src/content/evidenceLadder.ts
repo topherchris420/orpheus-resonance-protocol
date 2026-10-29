@@ -90,8 +90,8 @@ export const EVIDENCE_LADDER: LadderEntry[] = [
     capability: 'Accessibility',
     stage: 'tested',
     evidence:
-      'Automated axe scans (WCAG 2.2 AA rule set) report no violations on every research route, dialog and study screen; keyboard-only decisions, the skip link, reduced motion and phone-width layouts are tested there.',
-    notYet: 'Automated rules cover only part of WCAG. The original command room is restored as it was and not yet covered. No sessions with screen-reader or other assistive-technology users yet.',
+      'Automated axe scans (WCAG 2.2 AA rule set) report no violations on the access terminal, the command room and its dialogs and console, and on every research route, dialog and study screen; keyboard-only decisions, the skip link, reduced motion and phone-width layouts are tested.',
+    notYet: 'Automated rules cover only part of WCAG. No sessions with screen-reader or other assistive-technology users yet.',
   },
   {
     capability: 'Microphone consent and shutdown',

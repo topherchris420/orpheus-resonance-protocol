@@ -34,12 +34,12 @@ export const BreathPulseControls: React.FC<BreathPulseControlsProps> = React.mem
   const cycleSeconds = 60 / breathRate;
 
   return (
-    <div className="flex h-full flex-col gap-3 overflow-y-auto border border-current/25 bg-black/45 p-4 backdrop-blur-sm">
+    <section aria-labelledby="breath-heading" className="flex h-full flex-col gap-3 overflow-y-auto border border-current/25 bg-black/45 p-4">
       <div className="flex items-center justify-between border-b border-current/25 pb-2">
-        <div className="flex items-center gap-2 text-sm font-bold uppercase">
-          <Waves className="h-4 w-4" />
+        <h2 id="breath-heading" className="flex items-center gap-2 text-sm font-bold uppercase">
+          <Waves className="h-4 w-4" aria-hidden="true" />
           Breath &amp; Pulse
-        </div>
+        </h2>
         <Button
           variant={following ? 'default' : 'outline'}
           size="sm"
@@ -64,7 +64,7 @@ export const BreathPulseControls: React.FC<BreathPulseControlsProps> = React.mem
         >
           <div className="text-[10px] uppercase tracking-widest text-cyan-200">sync</div>
         </div>
-        <div className="min-w-0 flex-1 space-y-1 text-[11px] uppercase text-current/60">
+        <div className="min-w-0 flex-1 space-y-1 text-[11px] uppercase text-current/80">
           <div className="flex justify-between">
             <span>Cycle</span>
             <span className="text-cyan-200">{cycleSeconds.toFixed(1)} s</span>
@@ -96,11 +96,12 @@ export const BreathPulseControls: React.FC<BreathPulseControlsProps> = React.mem
 
       <div className="space-y-3">
         <div className="space-y-1">
-          <div className="flex justify-between text-[11px] uppercase text-current/60">
+          <div className="flex justify-between text-[11px] uppercase text-current/80">
             <span>Breath rate</span>
             <span className="text-cyan-200">{breathRate.toFixed(1)} /min</span>
           </div>
           <Slider
+            label="Breath rate"
             value={[breathRate]}
             min={3}
             max={20}
@@ -110,19 +111,20 @@ export const BreathPulseControls: React.FC<BreathPulseControlsProps> = React.mem
         </div>
 
         <div className="space-y-1">
-          <div className="flex justify-between text-[11px] uppercase text-current/60">
+          <div className="flex justify-between text-[11px] uppercase text-current/80">
             <span>Breath depth</span>
             <span className="text-cyan-200">{Math.round(breathDepth * 100)}%</span>
           </div>
-          <Slider value={[breathDepth * 100]} max={100} step={1} onValueChange={(value) => setBreathDepth(value[0] / 100)} />
+          <Slider label="Breath depth" value={[breathDepth * 100]} max={100} step={1} onValueChange={(value) => setBreathDepth(value[0] / 100)} />
         </div>
 
         <div className="space-y-1">
-          <div className="flex justify-between text-[11px] uppercase text-current/60">
+          <div className="flex justify-between text-[11px] uppercase text-current/80">
             <span>Visual pulse target</span>
             <span className="text-cyan-200">{Math.round(pulseTarget)} bpm</span>
           </div>
           <Slider
+            label="Visual pulse target"
             value={[pulseTarget]}
             min={45}
             max={120}
@@ -132,17 +134,17 @@ export const BreathPulseControls: React.FC<BreathPulseControlsProps> = React.mem
         </div>
 
         <div className="space-y-1">
-          <div className="flex justify-between text-[11px] uppercase text-current/60">
+          <div className="flex justify-between text-[11px] uppercase text-current/80">
             <span>Interface coupling</span>
             <span className="text-cyan-200">{Math.round(coupling * 100)}%</span>
           </div>
-          <Slider value={[coupling * 100]} max={100} step={1} onValueChange={(value) => setCoupling(value[0] / 100)} />
+          <Slider label="Interface coupling" value={[coupling * 100]} max={100} step={1} onValueChange={(value) => setCoupling(value[0] / 100)} />
         </div>
       </div>
 
-      <p className="text-[10px] leading-snug text-current/45">
+      <p className="text-[10px] leading-snug text-current/75">
         Manual rates pace the animation. Audio reactive mode adds a small microphone-energy response to the glow; it does not measure breathing or heart rate.
       </p>
-    </div>
+    </section>
   );
 });

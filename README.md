@@ -5,7 +5,7 @@
 [![CI](https://github.com/topherchris420/orpheus-resonance-protocol/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/topherchris420/orpheus-resonance-protocol/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-3fbfa8.svg)](LICENSE)
 
-Orpheus is an open-source, browser-based simulation and research workbench from **Vers3Dynamics**. Enter a fictional command room, weigh competing reports, commit a decision, and inspect its consequences. Then open the research tools to examine a deeper question:
+Orpheus is an open-source, browser-based simulation and research workbench from **Vers3Dynamics**. Clear the access terminal, enter a fictional command room, weigh graded intelligence, commit a decision, and verify its consequences. Then open the research tools to examine a deeper question:
 
 > When should an assistant advise, when should it explain, and when should it say the evidence is insufficient?
 
@@ -21,24 +21,25 @@ Orpheus has two independent experiences. The homepage opens the original command
 
 | Start here | What you can do | How to open it |
 | --- | --- | --- |
-| **Command room** | Read the situation map, compare courses of action, advance phases, and review your decision trail. | `/` → **Enter simulation** |
+| **Command room** | Clear the access terminal, read the tactical map and SITREP, brief decisions on graded evidence, commit courses, and verify the session from its seed. | `/` → activation phrase |
 | **Guided evidence explorer** | Follow a five-minute scenario with visible evidence, assistant explanations, and explicit abstention. | `/explore/orientation` |
 | **Research workbench** | Inspect the study protocol, run simulated participants, examine calibration, and verify result packages. | `/research` |
 | **Participant runner** | Walk through consent, practice, four counterbalanced blocks, and questionnaires. | `/study` |
-| **Replay** | Verify and step through records exported from the research explorer. | `/replay` |
+| **Replay** | Verify and step through records exported from the command room or the research explorer. | `/replay` |
 | **Method** | Inspect the evidence ladder and what remains unestablished. | `/method` |
 
-Use these paths on the hosted app or append them to your local development URL. If a host does not support direct route loading, use the local setup below.
+Use these paths on the hosted app or append them to your local development URL. The included `vercel.json` serves these deep links on Vercel; other hosts need a single-page-app fallback (see [deployment](#signals-privacy-and-deployment)).
 
 ### Your first command-room session
 
-1. **Enter simulation.** Begin with the situation map, objectives, and recent reports. The theatrical terminal is optional; no account or microphone is needed.
-2. **Compare before committing.** Open **Decisions**, inspect the tradeoffs, select **Review course**, then **Confirm choice**. **Keep comparing** returns you to the alternatives without recording a decision.
-3. **Advance deliberately.** Use **Advance phase** to reveal later events and unlock red-team controls. Manual progression is the default; optional **Auto advance** moves phases every 30 seconds.
-4. **Read the consequences.** Switch between the map and decisions. Open **After-action** to inspect the phase, timestamp, effects, and objective progress associated with your choices.
-5. **Keep the record.** Choose **Download session JSON** or **Save record** before refreshing. **New session** offers a download before clearing the session and stopping audio.
+1. **Clear the access terminal.** The boot sequence types itself out (Enter skips it). Type the activation phrase: `1912` by default, or type `HELP` if you do not have it. Power-on self-tests then check the hash function, the seeded generator and the simulation engine before the room opens.
+2. **Read the room.** The tactical map, operator vitals, squad cohesion and the SITREP feed run on one seeded world. Every report carries a date-time group, a message precedence and an Admiralty grade.
+3. **Decide on evidence.** Open **Decisions**. Each decision point shows its intel basis, graded A1–F6, and the uncertainty-aware analyst's assessment in ICD 203 terms, or its reason for withholding one. **Commit course**, then **Confirm commit**: the course is recorded in the hash-chained log.
+4. **Advance deliberately.** **Advance phase** reveals later decision points and, from phase 2, the red-team simulation. **Auto advance** moves phases every 30 seconds.
+5. **Review and verify.** **After-action** compares what each course assumed with what was actually true. **Download session record**, or **Verify in replay**: the record re-executes from its seed and must match every checkpoint.
+6. **Work from the console.** Press `` ` `` (backtick) for the operator console: `help`, `status`, `sitrep`, `brief 1`, `commit 1 3`, `verify`, `seal`, `egress`, `selftest`.
 
-The optional **full control room** adds generated vitals, charts, pacing controls, and a touch surface. **Guide** remains available. Ambient effects start off, and reduced-motion preferences suppress interface movement and overlays.
+Open `/?seed=7F3A-91C2` (any seed) to rebuild the same world exactly, for a second operator or a rerun. Reduced-motion preferences print the terminal at once and stop the interface's breathing and overlays.
 
 ### Your first research session
 
@@ -48,27 +49,29 @@ For batch experiments, open `/research`: inspect **Protocol**, run **Simulate**,
 
 ## What makes Orpheus worth exploring
 
-- **Decisions leave a trace.** The command room records one course per event, rejects repeated or conflicting commitments, and applies bounded, authored effects to simulated pressure, stress, cohesion, and objectives.
+- **Decisions leave a trace.** Every command in the room is validated by the engine and appended to a SHA-256 hash chain. One course per decision point; repeated or conflicting commitments are rejected; effects are bounded and authored.
+- **Intelligence reads like intelligence.** Reports carry Zulu date-time groups, FLASH/IMMEDIATE/PRIORITY/ROUTINE precedence and Admiralty grades. Credibility is computed from corroboration by independent origins, never assigned by hand. Analyst assessments use ICD 203 estimative language and state confidence separately.
+- **The terminal checks itself.** Power-on self-tests run FIPS 180-4 known-answer vectors, a differential test against the browser's WebCrypto, a hash-chain tamper probe and a scripted engine run that must reproduce a pinned state hash. An EMCON monitor shows every request that left, or tried to leave, the page.
 - **Evidence can be challenged.** The research engine checks source reliability records, freshness, integrity, repeated origins, and changing assumptions. Excluded reports remain visible with reasons.
 - **Abstention is an explicit result.** In the uncertainty-aware condition, insufficient evidence, unresolved conflict, or model misfit can prevent a conclusion. A displayed probability must pass calibration and domain checks.
 - **Assistant statements cannot become evidence.** The research pipeline separates reports from assistant output. Proposals pass verification rules; unsupported output can be repaired or rejected, with a deterministic fallback.
 - **Research records can be checked.** Seeded scenarios, command logs, state checkpoints, and versioned manifests support replay. Research packages carry the inputs and definitions needed to inspect their results.
 - **Sensory feedback stays optional.** With explicit consent, microphone audio energy can modulate visuals and generated tones locally. The core experience works without it.
 
-## One repository, two simulation models
+## One engine, two experiences
 
-The distinction matters when interpreting a session or an exported file.
+The command room and the research tools now run on the same deterministic engine, so a command-room session is as checkable as a research session.
 
 | Property | Command room at `/` | Research explorer and workbench |
 | --- | --- | --- |
-| World generation | Randomized tactical world and telemetry | Seeded scenarios and deterministic state transitions |
-| Decisions | Authored effects; displayed weights are metadata, not calibrated success probabilities | Evidence assessment, assistance conditions, declared ground truth, and explicit scoring |
-| Session record | JSON snapshot of decisions, objectives, up to 120 recent events, and 48 chart samples | Command log, seed, versions, manifest identity, and state checkpoints |
-| Replay | A full session is not deterministically replayable | Exact replay checks compatible records against their checkpoints |
-| Integrity | Snapshot, not an authenticated audit log | Hash-chain and content checks; these do not authenticate the author |
-| Persistence | Refresh starts a fresh decision session; display preferences may persist | Export records to keep them; an in-progress participant study can resume from session storage in the same tab |
+| World generation | Seeded Building 47 mission (`?seed=` reproduces it) | Seeded scenarios, including the guided orientation |
+| Decisions | Admiralty-graded evidence and the uncertainty-aware analyst (condition D) | Four assistance conditions, declared ground truth, and explicit scoring |
+| Session record | `orpheus.session.v2`: seed, versions, manifest identity, hash-chained command log, state checkpoints | The same format, plus research packages |
+| Replay | Exact: the `verify` console command and `/replay` re-execute the record and compare every checkpoint | Exact, with the same checks |
+| Integrity | Hash chain and checkpoint hashes; they detect alteration, they do not authenticate the author | The same |
+| Persistence | Refresh starts a new session; export a record to keep it; display preferences may persist | Export records to keep them; an in-progress participant study can resume from session storage in the same tab |
 
-Command-room objective percentages are scenario bookkeeping, not validated performance scores. Its after-action view remains live while the world advances. Research replay establishes that a computation can be reproduced; it does not establish that the simulation describes the real world.
+Command-room objective percentages are scenario bookkeeping, not validated performance scores, and its vitals belong to a fictional operator. Records from builds before the shared engine (`orpheus.simulation-session.v1`) can still be read in `/replay` but not replayed. Replay establishes that a computation can be reproduced; it does not establish that the simulation describes the real world.
 
 ## The research question
 
@@ -119,12 +122,13 @@ These variables configure the app and the original command room. `VITE_` values 
 | --- | --- | --- |
 | `VITE_APP_NAME` | `Orpheus` | App display name |
 | `VITE_SUPPORT_EMAIL` | `support@example.com` | Contact in fatal-error fallback states |
-| `VITE_REQUIRE_ACCESS_GATE` | `true` | Show the optional theatrical terminal |
+| `VITE_REQUIRE_ACCESS_GATE` | `true` | Show the access terminal before the command room |
 | `VITE_ENABLE_AUDIO_BIOFEEDBACK` | `true` | Make the command room's consent-gated audio-energy feature available |
 | `VITE_MAX_INTEL_FEED_ITEMS` | `10` | Intel-feed history retained in memory |
 | `VITE_MAX_ACCESS_ATTEMPTS` | `5` | Terminal attempts before its cooldown |
 | `VITE_ACCESS_LOCKOUT_MS` | `30000` | Terminal cooldown in milliseconds |
 | `VITE_ACCESS_PASSPHRASE` | `1912` | Public demo phrase; provides no authentication |
+| `VITE_ACCESS_HINT` | `true` | Typing `HELP` at the terminal prints the phrase |
 
 </details>
 
@@ -161,7 +165,8 @@ Built with **React 18, TypeScript, Vite, Tailwind CSS, Radix UI, Recharts, and T
 
 | Area | Responsibility |
 | --- | --- |
-| [`src/components/PegasusSimulation.tsx`](src/components/PegasusSimulation.tsx), `src/data`, `src/hooks`, `src/lib` | Original command room, generated world, interaction, and snapshot exports |
+| [`src/components/PegasusSimulation.tsx`](src/components/PegasusSimulation.tsx), [`src/components/room`](src/components/room), [`src/command-room`](src/command-room) | The command room: terminal-styled panels bound to the engine, and the view model they share with the console |
+| [`src/console`](src/console), [`src/tradecraft`](src/tradecraft), [`src/integrity`](src/integrity) | Operator console; date-time groups, precedence, Admiralty and ICD 203; self-tests, EMCON monitor, chain seal |
 | [`src/engine`](src/engine) | Seeded randomness, simulated clock, command logs, mission transitions, and replay |
 | [`src/evidence`](src/evidence) and [`src/assistant`](src/assistant) | Evidence assessment, calibration gating, proposals, verification, and fallback |
 | [`src/scenarios`](src/scenarios) and [`src/experiment`](src/experiment) | Scenario manifests, controlled trials, study protocol, scoring, statistics, and packages |
@@ -178,7 +183,8 @@ An [OpenAI-compatible model adapter](src/assistant/providers/externalModel.ts) e
 - **Audio controls:** generated tones start at zero gain and have an output cap. Stopping the microphone stops the audio layer; choose a comfortable device volume before enabling it.
 - **Local records:** preferences use local storage; an in-progress participant study uses session storage. Download a record or research package to keep it. Exports exclude raw microphone samples and the activation phrase.
 - **Access control:** the terminal and its public phrase are theatrical. A protected deployment needs server-enforced identity and authorization.
-- **Hosting:** serve the production build as a single-page app and configure non-asset routes to return `index.html`, so direct research links work. The Vite dev server uses localhost by default; expose it with `--host 0.0.0.0` only for intentional device testing.
+- **No egress:** the production Content-Security-Policy ([`securityPolicy.ts`](src/config/securityPolicy.ts)) lets the page load and contact only its own origin. The EMCON monitor (`egress` in the console) shows anything that left or was blocked.
+- **Hosting:** [`vercel.json`](vercel.json) serves the app as a single-page app (direct research links work), sends the same policy as a header with `frame-ancestors 'none'`, and adds `nosniff`, `no-referrer`, a microphone-only permissions policy and a same-origin opener policy. On other hosts, configure non-asset routes to return `index.html` and send equivalent headers. The Vite dev server uses localhost by default; expose it with `--host 0.0.0.0` only for intentional device testing.
 
 <details>
 <summary><strong>Troubleshooting</strong></summary>
@@ -186,8 +192,9 @@ An [OpenAI-compatible model adapter](src/assistant/providers/externalModel.ts) e
 - **Port occupied:** run `npm run dev -- --port 5174`.
 - **Configuration unchanged:** restart Vite after editing `.env`.
 - **Microphone unavailable:** check browser permissions and, for the command room, `VITE_ENABLE_AUDIO_BIOFEEDBACK`. The simulation remains usable without audio.
-- **A research route returns 404:** configure the host's single-page-app fallback or open the route through the local Vite server.
-- **Replay rejected:** check the reported engine version or manifest mismatch. Command-room snapshots do not provide exact research replay.
+- **A research route returns 404:** on Vercel, check that `vercel.json` was deployed; elsewhere, configure the host's single-page-app fallback or open the route through the local Vite server.
+- **Replay rejected:** check the reported engine version or manifest mismatch. Records made before the shared engine (`orpheus.simulation-session.v1`) can be read but not replayed.
+- **A self-test fails:** the browser computes something differently from the reference; records it makes may not verify elsewhere. Run `selftest` in the console and report the failing line.
 
 </details>
 

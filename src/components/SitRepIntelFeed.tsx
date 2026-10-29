@@ -1,55 +1,61 @@
 import React from 'react';
-
-interface IntelUpdate {
-  id: string;
-  timestamp: number;
-  message: string;
-  clearanceLevel: number;
-  priority?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
-  source?: string;
-}
+import type { FeedLine } from '@/command-room/model';
+import { CREDIBILITY_LABEL, RELIABILITY_LABEL } from '@/tradecraft/admiralty';
 
 interface SitRepIntelFeedProps {
-  intelFeed: IntelUpdate[];
-  currentClearance: number;
+  feed: FeedLine[];
+  /** Rendered in the panel header, e.g. tabs that share this slot. */
+  header?: React.ReactNode;
 }
 
-export const SitRepIntelFeed: React.FC<SitRepIntelFeedProps> = React.memo(({
-  intelFeed,
-  currentClearance,
-}) => {
-  const visibleUpdates = intelFeed.filter(update => update.clearanceLevel <= currentClearance).slice().reverse();
+const PRIORITY_TEXT = {
+  CRITICAL: 'text-red-400',
+  HIGH: 'text-yellow-400',
+  MEDIUM: 'text-blue-300',
+  LOW: 'text-green-400',
+} as const;
 
-  return (
-    <div className="flex h-full min-h-0 flex-col rounded-xl border border-current/20 bg-black/30 p-4">
-      <div className="font-bold border-b border-current/30 pb-2 mb-4">LATEST REPORTS · SIMULATED</div>
-      <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pr-1">
-        {visibleUpdates.length === 0 && <p className="py-4 text-sm leading-relaxed text-slate-400">No reports available in this phase yet. New fictional reports arrive as the simulation runs; you can explore decisions now.</p>}
-        {visibleUpdates.map(update => (
-            <div key={update.id} className={`p-2 border rounded-md bg-black/30 ${
-              update.priority === 'CRITICAL' ? 'border-red-500/70' : 
-              update.priority === 'HIGH' ? 'border-yellow-500/70' : 
-              'border-current/30'
-            }`}>
-              <div className="flex flex-wrap justify-between gap-2 text-xs opacity-70">
-                <span>{new Date(update.timestamp).toLocaleTimeString()}</span>
-                <div className="flex flex-wrap gap-2">
-                  {update.priority && (
-                    <span className={`${
-                      update.priority === 'CRITICAL' ? 'text-red-400' :
-                      update.priority === 'HIGH' ? 'text-yellow-400' :
-                      update.priority === 'MEDIUM' ? 'text-blue-400' :
-                      'text-green-400'
-                    }`}>[{update.priority}]</span>
-                  )}
-                  <span>CLEARANCE {update.clearanceLevel}</span>
-                  {update.source && <span>({update.source})</span>}
-                </div>
-              </div>
-              <p className="text-sm mt-1">{update.message}</p>
-            </div>
-          ))}
-      </div>
+const PRIORITY_BORDER = {
+  CRITICAL: 'border-red-500/70',
+  HIGH: 'border-yellow-500/70',
+  MEDIUM: 'border-current/30',
+  LOW: 'border-current/30',
+} as const;
+
+const gradeTitle = (entry: FeedLine) =>
+  entry.grade.kind === 'own'
+    ? entry.grade.basis
+    : `${entry.code}: ${RELIABILITY_LABEL[entry.grade.reliability]} source, ${CREDIBILITY_LABEL[entry.grade.credibility].toLowerCase()}. ${entry.grade.basis}`;
+
+/** SITREP/INTEL feed, newest first. Precedence, Admiralty grade and clearance are printed on every report. */
+export const SitRepIntelFeed: React.FC<SitRepIntelFeedProps> = React.memo(({ feed, header }) => (
+  <section aria-label="SITREP/Intel feed" className="flex h-full min-h-0 flex-col border border-current/30 bg-black/40 p-4">
+    <div className="mb-4 flex items-center justify-between gap-2 border-b border-current/30 pb-2">
+      {header ?? <h2 className="font-bold">SITREP/INTEL FEED</h2>}
+      <span className="shrink-0 text-[10px] uppercase text-current/75">{feed.length} {feed.length === 1 ? 'report' : 'reports'}</span>
     </div>
-  );
-});
+    <div role="region" aria-label="Reports, newest first" tabIndex={0} className="min-h-0 flex-1 space-y-2 overflow-y-auto pr-1">
+      {feed.length === 0 && <p className="text-xs text-current/75">Awaiting traffic. First reports arrive within seconds.</p>}
+      {feed.map((entry) => (
+        <article key={entry.item.id} className={`border bg-black/30 p-2 ${entry.item.origin === 'red-team' ? 'border-red-500/70' : PRIORITY_BORDER[entry.item.priority]}`}>
+          <div className="flex flex-wrap justify-between gap-x-2 text-xs text-current/80">
+            <span>
+              {entry.dtg} · {entry.elapsed}
+            </span>
+            <div className="flex flex-wrap gap-2">
+              <span className={PRIORITY_TEXT[entry.item.priority]} title={entry.precedence.handling}>
+                [{entry.precedence.label}]
+              </span>
+              <span title={gradeTitle(entry)}>{entry.code}</span>
+              <span>CLR {entry.item.clearance}</span>
+              <span>({entry.item.source})</span>
+            </div>
+          </div>
+          <p className="mt-1 text-sm">{entry.item.message}</p>
+        </article>
+      ))}
+    </div>
+  </section>
+));
+
+SitRepIntelFeed.displayName = 'SitRepIntelFeed';

@@ -42,3 +42,29 @@ export const watchErrors = (page: Page) => {
   });
   return errors;
 };
+
+/**
+ * Opens the access terminal, skips the boot sequence (Enter, as on a real console), enters the
+ * activation phrase, and waits until the power-on self-tests have passed and the command room is up.
+ */
+export const enterCommandRoom = async (page: Page, seed?: string) => {
+  await page.goto(seed ? `/?seed=${encodeURIComponent(seed)}` : '/');
+  await expect(page.getByRole('log', { name: 'Terminal output' })).toContainText('CLASSIFIED SYSTEM ACCESS');
+  await page.keyboard.press('Enter');
+  const phrase = page.getByLabel('Activation phrase');
+  await phrase.fill('1912');
+  await phrase.press('Enter');
+  await expect(page.getByRole('navigation', { name: 'Session views' })).toBeVisible();
+};
+
+/** Opens the operator console (backtick) and runs one command; returns the console output region. */
+export const runConsole = async (page: Page, command: string) => {
+  const input = page.getByLabel('Console command');
+  if (!(await input.isVisible())) {
+    await page.locator('body').press('`');
+    await expect(input).toBeFocused();
+  }
+  await input.fill(command);
+  await input.press('Enter');
+  return page.getByRole('log', { name: 'Console output' });
+};

@@ -387,7 +387,7 @@ experiments only) → Externally validated. The canonical, test-checked version 
 | Study runner, scoring and analysis pipeline | Tested | Unit tests; complete participant session in the browser, withdrawal, resume. | Not piloted with people. |
 | Human–AI teaming effects in people (H1–H7) | Proposed | Preregistered hypotheses only. | No human data. |
 | Effect of ambient sensory feedback | Proposed | Implemented as a study factor. | No data; no benefit assumed. |
-| Accessibility | Tested | axe scans of all research routes and dialogs; keyboard, reduced motion, phone layouts. | Original command room not yet covered; no assistive-technology user testing. |
+| Accessibility | Tested | axe scans of the access terminal, the command room and its dialogs and console, and of all research routes and dialogs; keyboard, reduced motion, phone layouts. | No assistive-technology user testing. |
 | Microphone consent and shutdown | Tested | Unit tests; browser tests with a synthetic microphone. | Real hardware and mobile browsers untested. |
 | Optional language-model assistant | Tested | Adapter tests with simulated endpoints and fallback. | Not connected; never run with a real model. |
 | Physiological sensing | Proposed | Sensor interface pattern (consent, quality, disconnect). | No biosensor; nothing measured or inferred. |

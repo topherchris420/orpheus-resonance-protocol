@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
 
@@ -26,15 +26,26 @@ export const TouchInterface: React.FC<TouchInterfaceProps> = React.memo(({
     { name: "Transformation", freq: 741, desc: "Cleansing" }
   ];
 
-  const handleTouchArea = (e: React.MouseEvent<HTMLDivElement>) => {
+  const lastPoint = useRef<{ x: number; y: number } | null>(null);
+
+  // Pointer events cover mouse, touch and pen. Intensity follows how fast the operator moves.
+  const handleTouchArea = (e: React.PointerEvent<HTMLDivElement>) => {
     if (!touchActive) return;
-    
+
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
-    const intensity = Math.random() * 0.5 + 0.5;
-    
+    const previous = lastPoint.current;
+    const travel = previous ? Math.hypot(x - previous.x, y - previous.y) : 0;
+    lastPoint.current = { x, y };
+    const intensity = Math.min(1, 0.5 + travel / 80);
+
     onTouch({ x, y, intensity });
+  };
+
+  const release = () => {
+    setTouchActive(false);
+    lastPoint.current = null;
   };
 
   const handleFrequencyChange = (value: number[]) => {
@@ -44,26 +55,40 @@ export const TouchInterface: React.FC<TouchInterfaceProps> = React.memo(({
   };
 
   return (
-    <div className="h-full border border-current/30 bg-black/40 backdrop-blur-sm p-4 space-y-4">
-      <div className="text-sm font-bold border-b border-current/30 pb-2">
+    <section aria-labelledby="resonance-heading" className="h-full space-y-4 overflow-y-auto border border-current/30 bg-black/40 p-4">
+      <h2 id="resonance-heading" className="border-b border-current/30 pb-2 text-sm font-bold">
         RESONANCE CONTROL
-      </div>
+      </h2>
 
       {/* Touch Activation Area */}
       <div className="space-y-2">
-        <div className="text-xs opacity-70">TACTILE INTERFACE</div>
+        <div id="tactile-label" className="text-xs text-current/80">TACTILE INTERFACE</div>
         <div
-          className={`h-32 border-2 border-dashed transition-all duration-300 cursor-pointer ${
-            touchActive 
-              ? 'border-current bg-current/10' 
+          role="button"
+          tabIndex={0}
+          aria-labelledby="tactile-label"
+          aria-pressed={touchActive}
+          className={`h-32 touch-none border-2 border-dashed transition-all duration-300 cursor-pointer ${
+            touchActive
+              ? 'border-current bg-current/10'
               : 'border-current/30 hover:border-current/50'
           }`}
-          onMouseDown={() => setTouchActive(true)}
-          onMouseUp={() => setTouchActive(false)}
-          onMouseLeave={() => setTouchActive(false)}
-          onMouseMove={handleTouchArea}
+          onPointerDown={(e) => {
+            e.currentTarget.setPointerCapture?.(e.pointerId);
+            setTouchActive(true);
+          }}
+          onPointerUp={release}
+          onPointerCancel={release}
+          onPointerLeave={release}
+          onPointerMove={handleTouchArea}
+          onKeyDown={(e) => {
+            if (e.key !== 'Enter' && e.key !== ' ') return;
+            e.preventDefault();
+            const rect = e.currentTarget.getBoundingClientRect();
+            onTouch({ x: rect.width / 2, y: rect.height / 2, intensity: 0.75 });
+          }}
         >
-          <div className="h-full flex items-center justify-center text-xs opacity-70">
+          <div className="flex h-full items-center justify-center text-xs text-current/80">
             {touchActive ? 'TOUCH ACTIVE' : 'PRESS & MOVE TO INTERACT'}
           </div>
         </div>
@@ -71,10 +96,11 @@ export const TouchInterface: React.FC<TouchInterfaceProps> = React.memo(({
 
       {/* Frequency Control */}
       <div className="space-y-3">
-        <div className="text-xs opacity-70">HARMONIC FREQUENCY</div>
+        <div className="text-xs text-current/80">HARMONIC FREQUENCY</div>
         <div className="text-lg font-mono">{frequency}Hz</div>
         
         <Slider
+          label="Harmonic frequency"
           value={[frequency]}
           onValueChange={handleFrequencyChange}
           min={20}
@@ -87,7 +113,7 @@ export const TouchInterface: React.FC<TouchInterfaceProps> = React.memo(({
       {/* Frequency Presets */}
       {phase >= 2 && (
         <div className="space-y-2">
-          <div className="text-xs opacity-70">SACRED FREQUENCIES</div>
+          <div className="text-xs text-current/80">SACRED FREQUENCIES</div>
           <div className="space-y-1">
             {frequencyPresets.map((preset, index) => (
               <Button
@@ -104,7 +130,7 @@ export const TouchInterface: React.FC<TouchInterfaceProps> = React.memo(({
               >
                 <div className="flex flex-col items-start">
                   <div>{preset.name} - {preset.freq}Hz</div>
-                  <div className="opacity-60 text-xs">{preset.desc}</div>
+                  <div className="text-xs text-current/75">{preset.desc}</div>
                 </div>
               </Button>
             ))}
@@ -138,11 +164,11 @@ export const TouchInterface: React.FC<TouchInterfaceProps> = React.memo(({
           <div className="text-xs text-red-400 text-center animate-pulse">
             ◊ ORPHEUS PROTOCOL ACTIVE ◊
           </div>
-          <div className="text-xs opacity-70 text-center">
+          <div className="text-center text-xs text-current/80">
             You are now part of the resonance network
           </div>
         </div>
       )}
-    </div>
+    </section>
   );
 });

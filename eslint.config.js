@@ -61,6 +61,7 @@ export default tseslint.config(
       "src/assistant/**/*.ts",
       "src/scenarios/**/*.ts",
       "src/experiment/**/*.ts",
+      "src/tradecraft/**/*.ts",
     ],
     ignores: ["**/*.test.ts", "src/assistant/providers/externalModel.ts", "src/engine/pacer.ts"],
     rules: determinismRules,
