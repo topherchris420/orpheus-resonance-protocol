@@ -37,9 +37,13 @@ test('the access terminal types the classic sequence, helps the lost, and runs i
   expect(external).toEqual([]);
 });
 
-test('every view of the command room opens without errors', async ({ page }) => {
+test('every view of the command room opens without errors, and three.js loads only for the 3D view', async ({ page }) => {
   const errors = watchErrors(page);
   const external = watchExternalRequests(page);
+  const threeRequests: string[] = [];
+  page.on('request', (request) => {
+    if (/\/assets\/(three|react-three)-/.test(request.url())) threeRequests.push(request.url());
+  });
   await enterCommandRoom(page);
   const views = page.getByRole('navigation', { name: 'Session views' });
   await views.getByRole('button', { name: /^Decisions/ }).click();
@@ -50,7 +54,9 @@ test('every view of the command room opens without errors', async ({ page }) => 
   await expect(page.getByRole('dialog', { name: 'AFTER-ACTION REVIEW' })).toBeVisible();
   await page.keyboard.press('Escape');
 
+  expect(threeRequests).toEqual([]);
   await page.getByRole('button', { name: 'Show NeuroSim' }).click();
+  await expect.poll(() => threeRequests.length).toBeGreaterThan(0);
   await page.getByRole('button', { name: 'Hide NeuroSim' }).click();
   await expect(page.getByRole('img', { name: /^Tactical map:/ })).toBeVisible();
   expect(errors).toEqual([]);
