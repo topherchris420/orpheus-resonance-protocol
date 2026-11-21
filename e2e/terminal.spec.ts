@@ -16,6 +16,7 @@ test('the access terminal types the classic sequence, helps the lost, and runs i
   await expect(output).toContainText('Enter activation phrase to continue:', { timeout: 12_000 });
 
   const phrase = page.getByLabel('Activation phrase');
+  await expect(phrase).toBeFocused();
   await phrase.fill('0000');
   await phrase.press('Enter');
   await expect(output).toContainText('Access denied. Type HELP for assistance.');
@@ -234,6 +235,9 @@ test('with reduced motion the terminal prints at once and nothing breathes', asy
 test('the microphone starts only after consent, drives the breathing ring, and stops completely', async ({ page }) => {
   const errors = watchErrors(page);
   await enterCommandRoom(page);
+  const marker = page.getByRole('slider', { name: 'Harmonic frequency' });
+  await page.getByRole('button', { name: 'Focus', exact: true }).click();
+  await expect(marker).toHaveAttribute('aria-valuenow', '40');
   const follow = page.getByRole('button', { name: 'Manual' });
   await expect(follow).toBeDisabled();
   await page.getByRole('button', { name: 'Start local audio response' }).click();
@@ -244,6 +248,7 @@ test('the microphone starts only after consent, drives the breathing ring, and s
   await expect(page.getByRole('region', { name: 'Operator Event Timeline' })).toContainText('Microphone enabled');
   await page.getByRole('button', { name: 'Stop microphone and tones' }).click();
   await expect(page.getByRole('button', { name: 'Manual' })).toBeDisabled();
+  await expect(marker).toHaveAttribute('aria-valuenow', '40');
   expect(errors).toEqual([]);
 });
 
@@ -257,4 +262,47 @@ test('the research palette never leaks into the command room', async ({ page }) 
   await expect(page.getByRole('heading', { name: 'ORPHEUS ACCESS TERMINAL' })).toBeVisible();
   await expect(html).not.toHaveClass(/o-theme/);
   expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor)).toBe('rgb(0, 0, 0)');
+});
+
+test('the access prompt prints real diagnostics and the demo phrase passes the usual checks', async ({ page }) => {
+  await page.goto('/');
+  const execute = page.getByRole('button', { name: 'EXECUTE', exact: true });
+  const phrase = page.getByLabel('Activation phrase');
+  const output = page.getByRole('log', { name: 'Terminal output' });
+  await execute.click();
+  await expect(page.getByRole('alert')).toContainText('Enter a phrase');
+  await page.getByRole('button', { name: 'Run self-test' }).click();
+  await expect(output).toContainText('[ OK ] SHA-256 known-answer test (FIPS 180-4)');
+  await expect(output).toContainText('[ OK ] SHA-256 differential vs WebCrypto');
+  await expect(page.getByRole('status')).toHaveText('Attempts remaining: 5');
+  await page.getByRole('button', { name: 'Use demo phrase' }).click();
+  await expect(phrase).toBeFocused();
+  await expect(phrase).toHaveValue('1912');
+  await execute.click();
+  await expect(page.getByRole('contentinfo', { name: 'System status' })).toContainText('POST ✓ 8/8');
+});
+
+test('the pad responds to keys and the reduced-motion 3D view redraws on explicit input', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await enterCommandRoom(page);
+  const pad = page.getByRole('button', { name: 'Resonance pad', exact: true });
+  const trace = pad.locator('canvas');
+  const pixels = (canvas: typeof trace) => canvas.evaluate((element: HTMLCanvasElement) => element.toDataURL());
+  const initialPad = await pixels(trace);
+  await pad.press('ArrowRight');
+  await expect.poll(() => pixels(trace)).not.toBe(initialPad);
+  await pad.press('Enter');
+  await expect(page.getByRole('region', { name: 'Operator Event Timeline' })).toContainText('Touch input');
+  await page.getByRole('button', { name: 'Show NeuroSim' }).click();
+  const volume = page.getByRole('img', { name: /^Three-dimensional resonance contours/ });
+  await expect(volume).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Pause rotation' })).toHaveCount(0);
+  const still = await pixels(volume);
+  await volume.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+  expect(await pixels(volume)).toBe(still);
+  await page.getByRole('button', { name: 'Turn model 30 degrees' }).click();
+  await expect.poll(() => pixels(volume)).not.toBe(still);
+  const turned = await pixels(volume);
+  await page.getByRole('button', { name: 'Square', exact: true }).click();
+  await expect.poll(() => pixels(volume)).not.toBe(turned);
 });

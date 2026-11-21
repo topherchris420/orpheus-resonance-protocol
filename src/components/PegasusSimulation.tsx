@@ -94,6 +94,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({ store, epo
   const [consoleOpen, setConsoleOpen] = useState(false);
   const [queued, setQueued] = useState<{ id: number; command: string } | null>(null);
   const view: View = showNeuroSim ? 'neurosim' : primaryView;
+  const sceneVisible = showNeuroSim && (wide || mobileTab === 'map' || mobileTab === 'sim');
 
   const note = useCallback(
     (label: string, detail: string, severity: Extract<MissionCommand, { type: 'note' }>['severity'] = 'nominal') => {
@@ -120,12 +121,10 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({ store, epo
     levelReportThreshold: ARCHIVE_AUDIO_THRESHOLD,
   });
 
-  useEffect(() => {
-    setDisplayMarker(audioFrequency);
-  }, [audioFrequency]);
+  const activeFrequency = microphoneConnected ? audioFrequency : displayMarker;
 
   const audioStatus = useMemo(() => ({ enabled: audioEnabled, connected: microphoneConnected, error: audioError }), [audioEnabled, microphoneConnected, audioError]);
-  const uxInput = useMission(store, (state) => missionUxInput(state, audioStatus, displayMarker));
+  const uxInput = useMission(store, (state) => missionUxInput(state, audioStatus, activeFrequency));
   const mission = useMemo(() => deriveMissionUx(uxInput), [uxInput]);
 
   useEffect(() => {
@@ -170,10 +169,12 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({ store, epo
   );
 
   const handleToggleNeuroSim = useCallback(() => {
-    const next = !showNeuroSim;
+    const next = !sceneVisible;
+    if (next) setMobileTab('map');
+    if (next === showNeuroSim) return;
     setShowNeuroSim(next);
     note(next ? 'NeuroSim enabled' : 'NeuroSim hidden', next ? '3D neuro-emulation layer is active.' : 'Primary display returned to tactical surface.');
-  }, [note, setShowNeuroSim, showNeuroSim]);
+  }, [note, sceneVisible, setMobileTab, setShowNeuroSim, showNeuroSim]);
 
   const handleToggleRedTeam = useCallback(() => {
     dispatchOrToast({ type: 'toggleRedTeam' });
@@ -265,7 +266,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({ store, epo
   const renderModeToolbar = () => (
     <ModeToolbar
       audioEnabled={audioEnabled}
-      showNeuroSim={showNeuroSim}
+      showNeuroSim={sceneVisible}
       redTeamActive={redTeamActive}
       redTeamAvailable={redTeamOpen}
       onRequestBiofeedback={handleRequestBiofeedback}
@@ -278,7 +279,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({ store, epo
 
   const renderNeuroEmSimulator = () => (
     <Suspense fallback={<NeuroSimFallback />}>
-      <NeuroEmSimulator bioResonanceFrequency={displayMarker} />
+      <NeuroEmSimulator bioResonanceFrequency={activeFrequency} />
     </Suspense>
   );
 
@@ -288,8 +289,8 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({ store, epo
   const renderBreathPulsePanel = () => <BreathPulseControls controls={breathPulseControls} liveAvailable={microphoneConnected} ringRef={breathRingRef} />;
   const renderTimeline = () => <TimelinePanel store={store} onInspectChain={inspectChain} />;
   const renderMetricsPanel = () => <MetricsPanel store={store} note={note} />;
-  const renderTouch = () => <TouchInterface phase={phase} onTouch={handleOperatorTouch} onFrequencyChange={setDisplayMarker} />;
-  const renderStrip = () => <MissionCommandStrip mission={mission} pulseRate={pulseRate} coherenceLevel={cohesion} activeFrequency={displayMarker} />;
+  const renderTouch = () => <TouchInterface frequency={displayMarker} phase={phase} onTouch={handleOperatorTouch} onFrequencyChange={setDisplayMarker} />;
+  const renderStrip = () => <MissionCommandStrip mission={mission} pulseRate={pulseRate} coherenceLevel={cohesion} activeFrequency={activeFrequency} />;
   const renderAlerts = () => <MissionAlertQueue alerts={mission.alerts} dismissedAlertIds={dismissedAlertIds} onDismiss={(id) => setDismissedAlertIds((previous) => [...new Set([...previous, id])])} />;
   const microphoneStatus = audioEnabled && (
     <p role="status" className="sr-only">
@@ -300,7 +301,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({ store, epo
   return (
     // Wide screens get a definite height, so the grid's fractional rows resolve against it and the room
     // fits a 900px-tall display; below 800px the page scrolls. On phones the page simply scrolls.
-    <div className={`relative flex flex-col overflow-hidden font-mono ${wide ? 'h-screen min-h-[800px]' : 'min-h-screen'} ${getAcclimatizationStyles()} transition-colors duration-500`}>
+    <div className={`orpheus-room relative flex flex-col overflow-hidden font-mono ${wide ? 'h-screen min-h-[800px]' : 'min-h-screen'} ${getAcclimatizationStyles()} transition-colors duration-500`}>
       <a href="#command-surface" className="skip-link">
         Skip to command surface
       </a>
@@ -350,15 +351,16 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({ store, epo
         <main id="command-surface" tabIndex={-1} className="relative z-10 flex flex-1 flex-col gap-2 p-2 pb-4">
           {renderStrip()}
           {renderModeToolbar()}
-          {renderAlerts()}
+          <details className="room-alert-details">
+            <summary>Session alerts <span>{mission.alerts.filter((alert) => !dismissedAlertIds.includes(alert.id)).length}</span></summary>
+            {renderAlerts()}
+          </details>
 
           <Tabs value={mobileTab} onValueChange={setMobileTab} className="flex min-h-0 flex-1 flex-col">
-            <TabsList className="grid h-auto w-full grid-cols-5 rounded-none border border-current/15 bg-black/50 p-1 text-[10px]">
-              <TabsTrigger value="map" className="px-1 py-2 text-[10px]">Map</TabsTrigger>
-              <TabsTrigger value="vitals" className="px-1 py-2 text-[10px]">Vitals</TabsTrigger>
-              <TabsTrigger value="intel" className="px-1 py-2 text-[10px]">Intel</TabsTrigger>
-              <TabsTrigger value="sim" className="px-1 py-2 text-[10px]">Sim</TabsTrigger>
-              <TabsTrigger value="events" className="px-1 py-2 text-[10px]">Events</TabsTrigger>
+            <TabsList aria-label="Instruments" className="room-tabs grid h-auto w-full grid-cols-5">
+              {MOBILE_TABS.map((name) => (
+                <TabsTrigger key={name} value={name}>{name[0].toUpperCase() + name.slice(1)}</TabsTrigger>
+              ))}
             </TabsList>
 
             <TabsContent value="map" className="mt-2 min-h-[58vh] flex-1">

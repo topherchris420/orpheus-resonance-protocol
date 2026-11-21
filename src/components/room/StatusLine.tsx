@@ -33,7 +33,7 @@ export const StatusLine: React.FC<StatusLineProps> = ({ store, epochMs, playing,
   const external = egress.external.length;
 
   return (
-    <footer aria-label="System status" className="relative z-10 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-current/20 bg-black px-4 py-1.5 text-[11px] uppercase tracking-wider text-current/85">
+    <footer aria-label="System status" className="room-status relative z-10 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-current/20 bg-black px-4 py-1.5 text-[11px] uppercase tracking-wider text-current/85">
       <span className="font-semibold text-current">Orpheus</span>
       <button type="button" className={SEGMENT} onClick={() => onCommand('seed')} title="Session seed: the same seed always builds the same world">
         Seed {seed}

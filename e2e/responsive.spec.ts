@@ -40,3 +40,17 @@ test('the explorer switches between layers on a phone', async ({ page }) => {
   await layers.getByRole('button', { name: 'Situation' }).click();
   await expect(page.getByRole('heading', { name: 'Situation map' })).toBeVisible();
 });
+
+test('opening the 3D instrument from another phone tab reveals its controls', async ({ page }) => {
+  await enterCommandRoom(page);
+  await page.getByRole('tab', { name: 'Events' }).click();
+  await page.getByRole('button', { name: 'Show NeuroSim' }).click();
+  await expect(page.getByRole('tab', { name: 'Map' })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByRole('img', { name: /^Three-dimensional resonance contours/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Turn model 30 degrees' })).toBeVisible();
+  await page.getByRole('tab', { name: 'Events' }).click();
+  await page.getByRole('button', { name: 'Show NeuroSim' }).click();
+  await expect(page.getByRole('tab', { name: 'Map' })).toHaveAttribute('aria-selected', 'true');
+  await expect(page.getByRole('button', { name: 'Hide NeuroSim' })).toBeVisible();
+  expect(await horizontalOverflow(page)).toBeLessThanOrEqual(1);
+});

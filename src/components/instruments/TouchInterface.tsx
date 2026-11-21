@@ -1,8 +1,10 @@
 import React, { useRef, useState } from 'react';
+import { ResonanceTrace } from './ResonanceTrace';
 import { Slider } from '@/components/common/Slider';
 
 interface TouchInterfaceProps {
   phase: number;
+  frequency: number;
   onTouch: (point: { x: number; y: number; intensity: number }) => void;
   onFrequencyChange: (frequency: number) => void;
 }
@@ -14,13 +16,12 @@ const PRESETS = [7.83, 432, 528, 741, 963];
  * A fictional resonance pad. It responds to pointer, touch and keyboard input and changes a display
  * marker; it controls nothing in the simulation and measures nothing about the person using it.
  */
-export const TouchInterface: React.FC<TouchInterfaceProps> = React.memo(({ phase, onTouch, onFrequencyChange }) => {
-  const [frequency, setFrequency] = useState(432);
+export const TouchInterface: React.FC<TouchInterfaceProps> = React.memo(({ phase, frequency, onTouch, onFrequencyChange }) => {
   const [active, setActive] = useState(false);
   const [cursor, setCursor] = useState({ x: 0.5, y: 0.5 });
   const [harmonic, setHarmonic] = useState(false);
   const padRef = useRef<HTMLDivElement>(null);
-  const lastReport = useRef(0);
+  const lastReport = useRef(-Infinity);
 
   const report = (x: number, y: number, intensity: number) => {
     const now = performance.now();
@@ -35,11 +36,6 @@ export const TouchInterface: React.FC<TouchInterfaceProps> = React.memo(({ phase
     const y = Math.min(1, Math.max(0, (event.clientY - rect.top) / rect.height));
     setCursor({ x, y });
     return { x: x * rect.width, y: y * rect.height, intensity: event.pressure > 0 ? event.pressure : 0.75 };
-  };
-
-  const changeFrequency = (value: number) => {
-    setFrequency(value);
-    onFrequencyChange(value);
   };
 
   return (
@@ -57,7 +53,9 @@ export const TouchInterface: React.FC<TouchInterfaceProps> = React.memo(({ phase
         aria-valuenow={Math.round(cursor.x * 100)}
         aria-valuemin={0}
         aria-valuemax={100}
-        className={`relative h-28 cursor-crosshair touch-none rounded-lg border-2 border-dashed ${active ? 'border-o-teal bg-o-teal-dim/30' : 'border-o-line-strong'}`}
+        className="resonance-pad"
+        onBlur={() => setActive(false)}
+        onLostPointerCapture={() => setActive(false)}
         onPointerDown={(event) => {
           event.currentTarget.setPointerCapture(event.pointerId);
           setActive(true);
@@ -87,28 +85,24 @@ export const TouchInterface: React.FC<TouchInterfaceProps> = React.memo(({ phase
           if (event.key === 'Enter' || event.key === ' ') setActive(false);
         }}
       >
-        <span
-          aria-hidden="true"
-          className="absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full bg-o-teal"
-          style={{ left: `${cursor.x * 100}%`, top: `${cursor.y * 100}%` }}
-        />
-        <span className="pointer-events-none absolute inset-0 flex items-center justify-center text-xs text-o-text3">
-          {active ? 'Pressed' : 'Press, drag, or use arrow keys and Enter'}
-        </span>
+        <ResonanceTrace frequency={frequency} x={cursor.x} y={cursor.y} harmonic={harmonic} />
+        <span className="pad-readout" aria-hidden="true">{frequency} Hz</span>
+        <span className="pad-position" aria-hidden="true" style={{ left: `${cursor.x * 100}%`, top: `${cursor.y * 100}%` }} />
+        <span className="pad-instructions">{active ? 'Contact · drag to shape' : 'Drag or use arrow keys · Enter to press'}</span>
       </div>
       <div className="space-y-2">
         <p className="flex justify-between text-xs text-o-text3">
           <span>Display marker</span>
           <span className="font-mono text-o-text">{frequency} Hz</span>
         </p>
-        <Slider label="Display marker frequency" valueText={(value) => `${value} hertz`} value={[frequency]} onValueChange={([value]) => changeFrequency(value)} min={20} max={2000} step={1} />
+        <Slider label="Display marker frequency" valueText={(value) => `${value} hertz`} value={[frequency]} onValueChange={([value]) => onFrequencyChange(value)} min={1} max={2000} step={1} />
       </div>
       {phase >= 2 && (
         <div className="space-y-2">
           <p className="text-xs text-o-text3">Display presets</p>
           <div className="flex flex-wrap gap-1.5">
             {PRESETS.map((preset) => (
-              <button key={preset} type="button" className="o-button min-h-9 px-2.5 text-xs" aria-pressed={Math.abs(frequency - preset) < 1} onClick={() => changeFrequency(preset)}>
+              <button key={preset} type="button" className="o-button min-h-9 px-2.5 text-xs" aria-pressed={Math.abs(frequency - preset) < 1} onClick={() => onFrequencyChange(preset)}>
                 {preset} Hz
               </button>
             ))}

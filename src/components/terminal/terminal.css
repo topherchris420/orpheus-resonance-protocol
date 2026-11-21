@@ -1,0 +1,94 @@
+.access-page {
+  --phosphor: #96e6ac;
+  --quiet: #9bb29d;
+  --rule: #35513b;
+  min-height: 100svh;
+  padding: clamp(2rem, 8vh, 6rem) 1.25rem;
+  background: #030503;
+  color: var(--phosphor);
+  font-family: ui-monospace, SFMono-Regular, Consolas, 'Liberation Mono', monospace;
+}
+.access-terminal {
+  max-width: 54rem;
+  margin-inline: auto;
+  border: 1px solid var(--rule);
+  background: #070b08;
+}
+.terminal-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: .6rem;
+  padding: .7rem clamp(.85rem, 3vw, 1.8rem);
+  color: #051008;
+  background: #91d19c;
+}
+.terminal-heading h1 { margin: 0; font-size: clamp(.91rem, 2.1vw, 1.2rem); line-height: 1.35; letter-spacing: .035em; font-weight: 700; }
+.terminal-heading > span { font-size: .8rem; font-variant-numeric: tabular-nums; }
+.terminal-byline, .terminal-footer { color: var(--quiet); font-size: .8rem; line-height: 1.5; }
+.terminal-byline { padding: .9rem clamp(.85rem, 3vw, 1.8rem); border-bottom: 1px solid #223326; }
+.terminal-byline span, .terminal-footer span { margin-inline: .3em; }
+.terminal-output {
+  height: clamp(15rem, 31svh, 21rem);
+  padding: 1.25rem clamp(.85rem, 3vw, 1.8rem);
+  overflow-y: auto;
+  overflow-wrap: anywhere;
+  scrollbar-color: #466e4e #080e09;
+  font-size: clamp(.9rem, 1.2vw, 1rem);
+  line-height: 1.7;
+}
+.terminal-break { height: .8em; }
+.terminal-output [data-tone="granted"], .terminal-output [data-tone="ok"] { color: #bef2cb; }
+.terminal-output [data-tone="echo"] { color: #ebdda2; }
+.terminal-output [data-tone="hint"] { color: #a9e5df; }
+.terminal-output [data-tone="denied"], .terminal-output [data-tone="fail"], .terminal-error { color: #ffb1a9; }
+.terminal-output [data-tone="skip"] { color: var(--quiet); }
+.terminal-state {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  min-height: 2rem;
+  margin-inline: clamp(.85rem, 3vw, 1.8rem);
+  color: var(--quiet);
+  font-size: .75rem;
+}
+.terminal-state > span { text-transform: uppercase; letter-spacing: .08em; }
+.terminal-state::after { content: ''; flex: 1; border-top: 1px solid var(--rule); }
+.terminal-state button, .terminal-tools button { text-decoration: underline; text-underline-offset: .2em; }
+.terminal-state button { min-height: 2rem; }
+.terminal-entry { padding: .55rem clamp(.85rem, 3vw, 1.8rem) .7rem; }
+.terminal-entry label { display: block; margin-bottom: .4rem; color: #bcdec2; font-size: .89rem; }
+.terminal-command { display: flex; gap: .65rem; align-items: stretch; }
+.terminal-field {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  gap: .6rem;
+  padding-inline: .75rem;
+  border: 1px solid #62856a;
+  background: #020503;
+}
+.terminal-field input { min-width: 0; width: 100%; min-height: 2.9rem; background: transparent; color: #cbf5d2; font: inherit; font-size: 1rem; border: 0; }
+.terminal-field input:focus { outline: 0; }
+.terminal-field:focus-within { border-color: #b3efbf; outline: 1px solid #b3efbf; }
+.terminal-field input::placeholder { color: #93a197; }
+.terminal-execute { padding: .5rem 1.25rem; color: #081109; background: #a2dfaf; font-size: .875rem; font-weight: 700; letter-spacing: .035em; }
+.terminal-execute:hover:enabled { background: #c7f3cf; }
+.terminal-tools { display: flex; align-items: center; flex-wrap: wrap; gap: 0 1.25rem; font-size: .82rem; }
+.terminal-tools button { min-height: 2.75rem; color: var(--phosphor); }
+.terminal-tools p { margin-left: auto; color: var(--quiet); }
+.terminal-tools button:hover:enabled, .terminal-state button:hover { color: #d5f7dd; }
+.terminal-error { font-size: .86rem; padding-top: .6rem; }
+.terminal-footer { border-top: 1px solid #223326; padding: .55rem clamp(.85rem, 3vw, 1.8rem); }
+.access-terminal button:disabled { opacity: .55; cursor: default; }
+.access-terminal button:focus-visible { outline: 2px solid var(--phosphor); outline-offset: 2px; }
+.terminal-output:focus-visible { outline: 1px solid var(--phosphor); outline-offset: -2px; }
+@media (max-width: 540px) {
+  .access-page { padding: 1.25rem .65rem; }
+  .terminal-heading { flex-wrap: wrap; }
+  .terminal-output { height: clamp(14rem, 37svh, 20rem); padding-block: .9rem; line-height: 1.55; }
+  .terminal-execute { padding-inline: .75rem; }
+  .terminal-tools { gap: 0 1rem; }
+  .terminal-tools p { flex-basis: 100%; margin: 0 0 .25rem; }
+}
