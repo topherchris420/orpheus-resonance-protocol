@@ -94,6 +94,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({ store, epo
   const [consoleOpen, setConsoleOpen] = useState(false);
   const [queued, setQueued] = useState<{ id: number; command: string } | null>(null);
   const view: View = showNeuroSim ? 'neurosim' : primaryView;
+  const sceneVisible = showNeuroSim && (wide || mobileTab === 'map' || mobileTab === 'sim');
 
   const note = useCallback(
     (label: string, detail: string, severity: Extract<MissionCommand, { type: 'note' }>['severity'] = 'nominal') => {
@@ -170,11 +171,12 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({ store, epo
   );
 
   const handleToggleNeuroSim = useCallback(() => {
-    const next = !showNeuroSim;
-    setShowNeuroSim(next);
+    const next = !sceneVisible;
     if (next) setMobileTab('map');
+    if (next === showNeuroSim) return;
+    setShowNeuroSim(next);
     note(next ? 'NeuroSim enabled' : 'NeuroSim hidden', next ? '3D neuro-emulation layer is active.' : 'Primary display returned to tactical surface.');
-  }, [note, setMobileTab, setShowNeuroSim, showNeuroSim]);
+  }, [note, sceneVisible, setMobileTab, setShowNeuroSim, showNeuroSim]);
 
   const handleToggleRedTeam = useCallback(() => {
     dispatchOrToast({ type: 'toggleRedTeam' });
@@ -266,7 +268,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({ store, epo
   const renderModeToolbar = () => (
     <ModeToolbar
       audioEnabled={audioEnabled}
-      showNeuroSim={showNeuroSim}
+      showNeuroSim={sceneVisible}
       redTeamActive={redTeamActive}
       redTeamAvailable={redTeamOpen}
       onRequestBiofeedback={handleRequestBiofeedback}

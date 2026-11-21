@@ -74,8 +74,8 @@
   .room-console-button { grid-column: 2; grid-row: 1; min-height: 2.75rem; }
   .room-views, .room-phase { grid-column: 1 / -1; }
   .room-views .room-button { flex: 1; min-height: 2.65rem; padding-inline: .2rem; }
-  .room-phase { justify-content: space-between; }
-  .room-phase .room-button, .room-phase label { min-height: 2.5rem; }
+  .room-phase { justify-content: space-between; flex-wrap: wrap; gap: .2rem .55rem; }
+  .room-phase .room-button, .room-phase label { min-height: 2.5rem; white-space: nowrap; }
   .room-tools { display: grid; grid-template-columns: repeat(4, minmax(0,1fr)); gap: .25rem; }
   .room-tools button { flex-direction: column; min-width: 0; min-height: 2.85rem; height: auto; padding: .25rem .1rem; gap: .15rem; }
   .room-status { padding: .7rem; row-gap: .4rem; }

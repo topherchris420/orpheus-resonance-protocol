@@ -25,7 +25,7 @@
   font-size: .78rem;
 }
 .access-division { border-left: 1px solid var(--rule); padding-left: 1.4rem; color: var(--ink); }
-.access-local { margin-left: auto; display: flex; align-items: center; gap: .5rem; color: var(--ink); }
+.access-local { white-space: nowrap; margin-left: auto; display: flex; align-items: center; gap: .5rem; color: var(--ink); }
 .access-local svg { color: var(--brass); }
 
 .access-hero {
@@ -149,6 +149,9 @@
   .access-fields input { padding-inline: .65rem; }
   .access-footnotes { font-size: .75rem; }
   .transcript-output { height: 8rem; }
+}
+@media (max-width: 360px) {
+  .access-local svg { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .plate-view:hover img, .plate-view:focus-visible img { transform: none; }
