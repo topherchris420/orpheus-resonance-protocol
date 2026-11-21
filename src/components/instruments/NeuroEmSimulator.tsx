@@ -1,5 +1,5 @@
-import React, { useMemo, useRef, useState } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import React, { useMemo, useState } from 'react';
+import { ResonanceVolume, type Waveform } from './ResonanceVolume';
 import * as THREE from 'three';
 import { Slider } from '@/components/common/Slider';
 import styles from './NeuroEmSimulator.module.css';
@@ -17,50 +17,6 @@ const NODES = {
 } as const;
 
 type NodeName = keyof typeof NODES;
-type Waveform = 'sine' | 'square' | 'sawtooth';
-
-const pulseFor = (elapsed: number, waveform: Waveform) => {
-  const phase = (elapsed * 0.75) % 1;
-  if (waveform === 'square') return phase > 0.5 ? 1 : 0.45;
-  if (waveform === 'sawtooth') return 0.45 + phase * 0.55;
-  return 0.65 + Math.sin(elapsed * 4) * 0.25;
-};
-
-const Node = ({ position, color, activity, waveform }: { position: THREE.Vector3; color: number; activity: number; waveform: Waveform }) => {
-  const meshRef = useRef<THREE.Mesh>(null!);
-  useFrame(({ clock }) => {
-    if (!meshRef.current) return;
-    const pulse = pulseFor(clock.elapsedTime, waveform);
-    const scale = 0.45 + activity * (1.2 + pulse * 0.8);
-    const material = meshRef.current.material as THREE.MeshStandardMaterial;
-    meshRef.current.scale.set(scale, scale, scale);
-    material.opacity = 0.25 + activity * 0.7;
-    material.emissiveIntensity = activity * (0.35 + pulse * 0.35);
-  });
-  return (
-    <mesh ref={meshRef} position={position}>
-      <sphereGeometry args={[0.3, 28, 28]} />
-      <meshStandardMaterial color={color} transparent opacity={0.35} emissive={color} emissiveIntensity={activity * 0.5} />
-    </mesh>
-  );
-};
-
-const Lattice = ({ activity, waveform }: { activity: Record<NodeName, number>; waveform: Waveform }) => {
-  const groupRef = useRef<THREE.Group>(null!);
-  useFrame((_, delta) => {
-    if (!groupRef.current) return;
-    groupRef.current.rotation.y += delta * 0.16;
-    groupRef.current.rotation.x = 0.16;
-  });
-  return (
-    <group ref={groupRef}>
-      {(Object.keys(NODES) as NodeName[]).map((name) => (
-        <Node key={name} position={NODES[name].position} color={NODES[name].color} activity={activity[name]} waveform={waveform} />
-      ))}
-    </group>
-  );
-};
-
 interface NeuroEmSimulatorProps {
   bioResonanceFrequency: number;
 }
@@ -78,7 +34,9 @@ export const NeuroEmSimulator: React.FC<NeuroEmSimulatorProps> = React.memo(({ b
     }
     return levels;
   }, [amplitude, effective]);
-  const lit = (Object.keys(activity) as NodeName[]).filter((name) => activity[name] > 0.1);
+  const nodes = useMemo(() => (Object.keys(NODES) as NodeName[]).map((name) => ({
+    name, ...NODES[name], activity: activity[name],
+  })), [activity]);
 
   return (
     <section aria-label="3D resonance visual" className={styles.container}>
@@ -87,12 +45,8 @@ export const NeuroEmSimulator: React.FC<NeuroEmSimulatorProps> = React.memo(({ b
         <span className="o-chip border-dashed border-o-text3/70 text-o-text2">Decorative</span>
       </div>
       <div className={styles.mainContent}>
-        <div className={styles.visualization} role="img" aria-label={`Rotating lattice of five nodes; lit: ${lit.length ? lit.join(', ') : 'none'}.`}>
-          <Canvas camera={{ position: [0, 0, 3] as [number, number, number], fov: 50 }}>
-            <ambientLight intensity={0.24} />
-            <pointLight position={[10, 10, 10]} intensity={0.8} />
-            <Lattice activity={activity} waveform={waveform} />
-          </Canvas>
+        <div className={styles.visualization}>
+          <ResonanceVolume nodes={nodes} frequency={effective} waveform={waveform} amplitude={amplitude} />
         </div>
         <div className={styles.controlsAndFeedback}>
           <div className={styles.controls}>
@@ -118,8 +72,7 @@ export const NeuroEmSimulator: React.FC<NeuroEmSimulatorProps> = React.memo(({ b
           <div className={styles.feedback}>
             <h3 className={styles.feedbackTitle}>What this is</h3>
             <p className="text-sm text-o-text2">
-              A decorative visualization: node glow follows the sliders and the display marker. It does not model the brain, electromagnetic fields, or any effect on people,
-              and it measures nothing.
+              The frequency and waveform shape the contours. Amplitude changes their depth. The five lights show the response of the simulated nodes.
             </p>
           </div>
         </div>

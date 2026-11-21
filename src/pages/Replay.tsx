@@ -108,7 +108,7 @@ const Replay = () => {
       <div className="mx-auto max-w-[1680px] space-y-6 px-4 py-8 sm:px-6">
         <header className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold text-o-text">Replay a session</h1>
+            <h1 className="research-title text-2xl font-semibold text-o-text">Replay a session</h1>
             <p className="mt-1 max-w-3xl text-sm text-o-text2">
               A session record holds its seed and every input. Orpheus recomputes the whole session and compares state hashes at each checkpoint, then lets you step through it.
             </p>

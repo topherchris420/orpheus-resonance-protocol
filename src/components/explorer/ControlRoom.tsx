@@ -89,7 +89,7 @@ export const ControlRoom = ({ store, breathControls, audio, displayMarker, setDi
           <BreathPulseControls controls={breathControls} liveAvailable={audio.connected} />
         </div>
         <div className="min-h-[22rem]">
-          <TouchInterface phase={state.phase} onTouch={onTouch} onFrequencyChange={setDisplayMarker} />
+          <TouchInterface frequency={displayMarker} phase={state.phase} onTouch={onTouch} onFrequencyChange={setDisplayMarker} />
         </div>
         <div className="min-h-[22rem]">
           <TemporalArchive phase={state.phase} tick={state.tick} audioLevel={audio.level} />

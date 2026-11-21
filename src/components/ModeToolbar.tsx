@@ -34,7 +34,7 @@ export const ModeToolbar: React.FC<ModeToolbarProps> = React.memo(({
   const bioLabel = !appConfig.features.enableAudioBiofeedback ? 'Audio response unavailable in this deployment' : audioEnabled ? 'Stop microphone and tones' : 'Start local audio response';
 
   return (
-    <div className="flex flex-wrap items-center gap-1.5 border border-current/15 bg-black/55 p-1.5 2xl:p-2">
+    <div className="room-tools flex flex-wrap items-center gap-1.5 border border-current/15 bg-black/55 p-1.5 2xl:p-2">
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
@@ -44,10 +44,11 @@ export const ModeToolbar: React.FC<ModeToolbarProps> = React.memo(({
             className="h-7 gap-1.5 px-2.5 text-xs"
             onClick={audioEnabled ? onDisableBiofeedback : onRequestBiofeedback}
             aria-label={bioLabel}
+            aria-pressed={audioEnabled}
             disabled={!appConfig.features.enableAudioBiofeedback}
           >
             {audioEnabled ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-            <span className="hidden sm:inline">{audioEnabled ? 'Stop Audio' : 'Start Audio'}</span>
+            <span>{audioEnabled ? 'Stop Audio' : 'Start Audio'}</span>
           </Button>
         </TooltipTrigger>
         <TooltipContent>{bioLabel}</TooltipContent>
@@ -55,7 +56,7 @@ export const ModeToolbar: React.FC<ModeToolbarProps> = React.memo(({
 
       <Button type="button" variant="outline" size="sm" onClick={onExport} aria-label="Export simulation record" className="h-7 gap-1.5 px-2.5 text-xs">
         <Download className="h-4 w-4" />
-        <span className="hidden sm:inline">Export</span>
+        <span>Export</span>
       </Button>
 
       <Tooltip>
@@ -66,10 +67,11 @@ export const ModeToolbar: React.FC<ModeToolbarProps> = React.memo(({
             size="sm"
             className="h-7 gap-1.5 px-2.5 text-xs"
             onClick={onToggleNeuroSim}
+            aria-pressed={showNeuroSim}
             aria-label={showNeuroSim ? 'Hide NeuroSim' : 'Show NeuroSim'}
           >
             <BrainCircuit className="h-4 w-4" />
-            <span className="hidden sm:inline">{showNeuroSim ? 'Hide Sim' : 'Show Sim'}</span>
+            <span>{showNeuroSim ? 'Hide Sim' : 'Show Sim'}</span>
           </Button>
         </TooltipTrigger>
         <TooltipContent>{showNeuroSim ? 'Hide NeuroSim' : 'Show NeuroSim'}</TooltipContent>
@@ -87,7 +89,7 @@ export const ModeToolbar: React.FC<ModeToolbarProps> = React.memo(({
             aria-label={redTeamActive ? 'Stop Red Team' : 'Start Red Team'}
           >
             <ShieldAlert className="h-4 w-4" />
-            <span className="hidden sm:inline">{redTeamActive ? 'Stop Red' : 'Start Red'}</span>
+            <span>{redTeamActive ? 'Stop Red' : 'Start Red'}</span>
           </Button>
         </TooltipTrigger>
         <TooltipContent>

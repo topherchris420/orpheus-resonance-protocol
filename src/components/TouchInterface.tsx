@@ -1,40 +1,35 @@
-
 import React, { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Slider } from '@/components/ui/slider';
+import { ResonanceTrace } from '@/components/instruments/ResonanceTrace';
 
 interface TouchInterfaceProps {
   phase: number;
+  frequency: number;
   onTouch: (point: {x: number, y: number, intensity: number}) => void;
   onFrequencyChange: (frequency: number) => void;
 }
 
 export const TouchInterface: React.FC<TouchInterfaceProps> = React.memo(({
   phase,
+  frequency,
   onTouch,
   onFrequencyChange
 }) => {
-  const [frequency, setFrequency] = useState(432);
   const [touchActive, setTouchActive] = useState(false);
   const [harmonicMode, setHarmonicMode] = useState(false);
 
-  const frequencyPresets = [
-    { name: "Earth", freq: 7.83, desc: "Schumann Resonance" },
-    { name: "Love", freq: 528, desc: "DNA Repair" },
-    { name: "Harmony", freq: 432, desc: "Natural Tuning" },
-    { name: "Awakening", freq: 963, desc: "Crown Chakra" },
-    { name: "Transformation", freq: 741, desc: "Cleansing" }
-  ];
+  const [cursor, setCursor] = useState({ x: 0.5, y: 0.5 });
+  const frequencyPresets = [7.83, 432, 528, 741, 963];
 
   const lastPoint = useRef<{ x: number; y: number } | null>(null);
 
   // Pointer events cover mouse, touch and pen. Intensity follows how fast the operator moves.
-  const handleTouchArea = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!touchActive) return;
-
+  const handleTouchArea = (e: React.PointerEvent<HTMLButtonElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const x = Math.min(rect.width, Math.max(0, e.clientX - rect.left));
+    const y = Math.min(rect.height, Math.max(0, e.clientY - rect.top));
+    setCursor({ x: x / rect.width, y: y / rect.height });
     const previous = lastPoint.current;
     const travel = previous ? Math.hypot(x - previous.x, y - previous.y) : 0;
     lastPoint.current = { x, y };
@@ -50,49 +45,53 @@ export const TouchInterface: React.FC<TouchInterfaceProps> = React.memo(({
 
   const handleFrequencyChange = (value: number[]) => {
     const newFreq = value[0];
-    setFrequency(newFreq);
     onFrequencyChange(newFreq);
   };
 
   return (
-    <section aria-labelledby="resonance-heading" className="h-full space-y-4 overflow-y-auto border border-current/30 bg-black/40 p-4">
+    <section aria-labelledby="resonance-heading" className="room-instrument h-full space-y-3 overflow-y-auto border border-current/30 bg-black/40 p-3">
       <h2 id="resonance-heading" className="border-b border-current/30 pb-2 text-sm font-bold">
         RESONANCE CONTROL
       </h2>
 
-      {/* Touch Activation Area */}
-      <div className="space-y-2">
-        <div id="tactile-label" className="text-xs text-current/80">TACTILE INTERFACE</div>
-        <div
-          role="button"
-          tabIndex={0}
-          aria-labelledby="tactile-label"
-          aria-pressed={touchActive}
-          className={`h-32 touch-none border-2 border-dashed transition-all duration-300 cursor-pointer ${
-            touchActive
-              ? 'border-current bg-current/10'
-              : 'border-current/30 hover:border-current/50'
-          }`}
-          onPointerDown={(e) => {
-            e.currentTarget.setPointerCapture?.(e.pointerId);
-            setTouchActive(true);
-          }}
-          onPointerUp={release}
-          onPointerCancel={release}
-          onPointerLeave={release}
-          onPointerMove={handleTouchArea}
-          onKeyDown={(e) => {
-            if (e.key !== 'Enter' && e.key !== ' ') return;
-            e.preventDefault();
-            const rect = e.currentTarget.getBoundingClientRect();
-            onTouch({ x: rect.width / 2, y: rect.height / 2, intensity: 0.75 });
-          }}
-        >
-          <div className="flex h-full items-center justify-center text-xs text-current/80">
-            {touchActive ? 'TOUCH ACTIVE' : 'PRESS & MOVE TO INTERACT'}
-          </div>
-        </div>
-      </div>
+      <button
+        type="button"
+        className="resonance-pad"
+        aria-label="Resonance pad"
+        aria-describedby="pad-instructions"
+        onPointerDown={(event) => {
+          if (!event.isPrimary || event.button !== 0) return;
+          event.currentTarget.setPointerCapture(event.pointerId);
+          setTouchActive(true);
+          handleTouchArea(event);
+        }}
+        onPointerMove={(event) => {
+          if (event.currentTarget.hasPointerCapture(event.pointerId)) handleTouchArea(event);
+        }}
+        onPointerUp={release}
+        onPointerCancel={release}
+        onLostPointerCapture={release}
+        onBlur={release}
+        onKeyDown={(event) => {
+          const moves: Record<string, [number, number]> = { ArrowLeft: [-.05, 0], ArrowRight: [.05, 0], ArrowUp: [0, -.05], ArrowDown: [0, .05] };
+          const move = moves[event.key];
+          if (move) {
+            event.preventDefault();
+            setCursor((point) => ({ x: Math.min(1, Math.max(0, point.x + move[0])), y: Math.min(1, Math.max(0, point.y + move[1])) }));
+          }
+        }}
+        onClick={(event) => {
+          // Native button activation also covers keyboards and assistive technology.
+          if (event.detail !== 0) return;
+          const rect = event.currentTarget.getBoundingClientRect();
+          onTouch({ x: cursor.x * rect.width, y: cursor.y * rect.height, intensity: 0.75 });
+        }}
+      >
+        <ResonanceTrace frequency={frequency} x={cursor.x} y={cursor.y} harmonic={harmonicMode} />
+        <span className="pad-readout" aria-hidden="true">{frequency} Hz</span>
+        <span className="pad-position" aria-hidden="true" style={{ left: `${cursor.x * 100}%`, top: `${cursor.y * 100}%` }} />
+        <span className="pad-instructions" id="pad-instructions">{touchActive ? 'Contact · drag to shape' : 'Drag or use arrow keys · Enter to press'}</span>
+      </button>
 
       {/* Frequency Control */}
       <div className="space-y-3">
@@ -103,7 +102,7 @@ export const TouchInterface: React.FC<TouchInterfaceProps> = React.memo(({
           label="Harmonic frequency"
           value={[frequency]}
           onValueChange={handleFrequencyChange}
-          min={20}
+          min={1}
           max={20000}
           step={1}
           className="w-full"
@@ -113,25 +112,12 @@ export const TouchInterface: React.FC<TouchInterfaceProps> = React.memo(({
       {/* Frequency Presets */}
       {phase >= 2 && (
         <div className="space-y-2">
-          <div className="text-xs text-current/80">SACRED FREQUENCIES</div>
-          <div className="space-y-1">
-            {frequencyPresets.map((preset, index) => (
-              <Button
-                key={index}
-                variant="ghost"
-                size="sm"
-                className={`w-full justify-start text-xs ${
-                  Math.abs(frequency - preset.freq) < 1 ? 'bg-current/20' : ''
-                }`}
-                onClick={() => {
-                  setFrequency(preset.freq);
-                  onFrequencyChange(preset.freq);
-                }}
-              >
-                <div className="flex flex-col items-start">
-                  <div>{preset.name} - {preset.freq}Hz</div>
-                  <div className="text-xs text-current/75">{preset.desc}</div>
-                </div>
+          <div className="text-xs text-current/80">DISPLAY PRESETS</div>
+          <div className="flex flex-wrap gap-1.5">
+            {frequencyPresets.map((preset) => (
+              <Button key={preset} type="button" variant="outline" size="sm" aria-pressed={frequency === preset}
+                onClick={() => handleFrequencyChange([preset])}>
+                {preset} Hz
               </Button>
             ))}
           </div>
@@ -145,6 +131,7 @@ export const TouchInterface: React.FC<TouchInterfaceProps> = React.memo(({
             variant={harmonicMode ? "default" : "outline"}
             size="sm"
             className="w-full"
+            aria-pressed={harmonicMode}
             onClick={() => setHarmonicMode(!harmonicMode)}
           >
             {harmonicMode ? 'HARMONIC MODE ACTIVE' : 'ACTIVATE HARMONIC MODE'}
@@ -152,7 +139,7 @@ export const TouchInterface: React.FC<TouchInterfaceProps> = React.memo(({
           
           {harmonicMode && (
             <div className="text-xs opacity-80 text-center animate-pulse">
-              Consciousness synchronization enabled
+              Second harmonic visible
             </div>
           )}
         </div>

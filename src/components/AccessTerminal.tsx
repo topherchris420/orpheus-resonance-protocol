@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { CornerDownLeft, Cpu, KeyRound, Terminal } from "lucide-react";
+import { ProtocolMark } from "@/components/common/ProtocolMark";
+import { ResonancePlate } from "@/components/terminal/ResonancePlate";
+import "./terminal/terminal.css";
 import { appConfig } from "@/config/appConfig";
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
 import { allPassed, runSelfTests, runWebCryptoDifferential, type SelfTestResult } from "@/integrity/selftest";
@@ -21,7 +23,7 @@ const TERMINAL_SEQUENCE = [
   "Enter activation phrase to continue:",
 ];
 
-const LINE_INTERVAL_MS = 800;
+const LINE_INTERVAL_MS = 380;
 const POST_LINE_INTERVAL_MS = 140;
 
 type Tone = "boot" | "echo" | "granted" | "denied" | "hint" | "ok" | "fail" | "skip";
@@ -30,17 +32,6 @@ interface TerminalLine {
   text: string;
   tone: Tone;
 }
-
-const toneClass: Record<Tone, string> = {
-  boot: "",
-  echo: "text-yellow-400",
-  granted: "text-cyan-400 animate-pulse",
-  denied: "text-red-400",
-  hint: "text-green-300",
-  ok: "text-green-300",
-  fail: "text-red-400",
-  skip: "text-green-400/70",
-};
 
 const postLine = (result: SelfTestResult): TerminalLine => ({
   text: `[${result.status === "pass" ? " OK " : result.status === "skip" ? "SKIP" : "FAIL"}] ${result.label} · ${result.detail}`,
@@ -51,7 +42,7 @@ const bootLines = (count: number): TerminalLine[] => TERMINAL_SEQUENCE.slice(0, 
 
 export const AccessTerminal: React.FC<AccessTerminalProps> = ({ onAccess }) => {
   const reducedMotion = usePrefersReducedMotion();
-  const [typed, setTyped] = useState(reducedMotion ? TERMINAL_SEQUENCE.length : 0);
+  const [typed, setTyped] = useState(reducedMotion ? TERMINAL_SEQUENCE.length : 1);
   const [responses, setResponses] = useState<TerminalLine[]>([]);
   const [input, setInput] = useState("");
   const [failedAttempts, setFailedAttempts] = useState(0);
@@ -60,6 +51,7 @@ export const AccessTerminal: React.FC<AccessTerminalProps> = ({ onAccess }) => {
   const [granted, setGranted] = useState(false);
   const selfTests = useRef<SelfTestResult[] | null>(null);
   const differential = useRef<Promise<SelfTestResult> | null>(null);
+  const phraseRef = useRef<HTMLInputElement>(null);
   const outputRef = useRef<HTMLDivElement>(null);
 
   const maxAttempts = appConfig.limits.maxAccessAttempts;
@@ -90,11 +82,14 @@ export const AccessTerminal: React.FC<AccessTerminalProps> = ({ onAccess }) => {
     return () => window.clearTimeout(timer);
   }, [booted, typed]);
 
-  // Enter (or a click on the terminal) skips the boot sequence, as on a real console.
+  // Enter on the terminal background skips the transcript. Controls keep their native keys.
   useEffect(() => {
     if (booted) return;
     const skip = (event: KeyboardEvent) => {
-      if (event.key === "Enter") setTyped(TERMINAL_SEQUENCE.length);
+      if (event.key !== "Enter" || (event.target !== document.body && event.target !== outputRef.current)) return;
+      event.preventDefault();
+      setTyped(TERMINAL_SEQUENCE.length);
+      phraseRef.current?.focus({ preventScroll: true });
     };
     window.addEventListener("keydown", skip);
     return () => window.removeEventListener("keydown", skip);
@@ -136,6 +131,8 @@ export const AccessTerminal: React.FC<AccessTerminalProps> = ({ onAccess }) => {
     }
 
     const normalizedInput = input.trim().toLowerCase();
+    if (!normalizedInput) return;
+    setTyped(TERMINAL_SEQUENCE.length);
     setInput("");
 
     if (normalizedInput === "help" || normalizedInput === "?") {
@@ -168,57 +165,85 @@ export const AccessTerminal: React.FC<AccessTerminalProps> = ({ onAccess }) => {
     }
   };
 
+  const useHint = () => {
+    setTyped(TERMINAL_SEQUENCE.length);
+    if (appConfig.features.revealPhraseOnHelp) {
+      setInput(appConfig.accessPhrase);
+    } else {
+      respond({ text: "Activation phrases are issued by the R.A.I.N. Research Division.", tone: "hint" });
+    }
+    phraseRef.current?.focus({ preventScroll: true });
+  };
+
   return (
-    <div className="min-h-screen bg-black p-4 font-mono text-green-400 sm:p-8">
-      <div className="mx-auto max-w-4xl">
-        <div className="border border-green-400 bg-black/50 p-6" onClick={() => !booted && setTyped(TERMINAL_SEQUENCE.length)}>
-          <div className="mb-6 text-center">
-            <h1 className="mb-2 animate-pulse text-2xl">ORPHEUS ACCESS TERMINAL</h1>
-            <div className="text-xs text-green-400/75">R.A.I.N Research Division - Vers3Dynamics Lab</div>
-            <div className="mt-1 text-xs text-green-400/65">The Orpheus Continuum by Vers3Dynamics</div>
+    <div className="access-page">
+      <a className="skip-link" href="#access-input">Skip to activation phrase</a>
+      <header className="access-mast">
+        <div className="access-brand"><ProtocolMark /><span>Vers3Dynamics</span></div>
+        <span className="access-division">R.A.I.N. Research Division</span>
+        <span className="access-local"><Cpu size={15} aria-hidden="true" /> Local simulation</span>
+      </header>
+
+      <main className="access-main">
+        <div className="access-hero">
+          <div className="access-intro">
+            <h1><span>Orpheus</span><em>Resonance Protocol</em></h1>
+            <p>Enter a fictional command room. Weigh the evidence, make a decision, and replay what followed.</p>
           </div>
-
-          <div ref={outputRef} role="log" aria-live="polite" aria-label="Terminal output" tabIndex={0} className="mb-6 h-96 space-y-2 overflow-y-auto">
-            {lines.map((line, index) => (
-              <div key={index} className={`min-h-[1.5rem] break-words ${toneClass[line.tone]}`}>
-                {line.text}
-              </div>
-            ))}
-            {!booted && <span aria-hidden="true" className="terminal-caret" />}
-          </div>
-
-          {booted && (
-            <form onSubmit={handleSubmit} className="flex gap-2">
-              <Input
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                className="border-green-400 bg-black font-mono text-green-400 placeholder:text-green-400/60"
-                placeholder="Enter activation phrase"
-                aria-label="Activation phrase"
-                autoComplete="off"
-                autoCapitalize="off"
-                spellCheck={false}
-                autoFocus
-                disabled={isLocked || granted}
-              />
-              <Button
-                type="submit"
-                variant="outline"
-                className="border-green-400 bg-black text-green-400 hover:bg-green-400 hover:text-black"
-                disabled={isLocked || granted}
-              >
-                EXECUTE
-              </Button>
-            </form>
-          )}
-
-          {booted && (
-            <div role="status" className="mt-3 text-xs text-green-400/75">
-              {isLocked ? `Terminal lockout active: retry in ${secondsRemaining}s` : granted ? "Clearance accepted" : `Attempts remaining: ${remainingAttempts}`}
-            </div>
-          )}
+          <ResonancePlate />
         </div>
-      </div>
+
+        <section className="access-deck" aria-labelledby="access-heading">
+          <div className="access-entry">
+            <h2 id="access-heading" aria-label="ORPHEUS ACCESS TERMINAL"><Terminal aria-hidden="true" size={20} /> Access terminal</h2>
+            <form onSubmit={handleSubmit}>
+              <label htmlFor="access-input">Activation phrase</label>
+              <div className="access-fields">
+                <input
+                  ref={phraseRef}
+                  id="access-input"
+                  value={input}
+                  onFocus={() => setTyped(TERMINAL_SEQUENCE.length)}
+                  onChange={(event) => setInput(event.target.value)}
+                  placeholder="Type a phrase or HELP"
+                  autoComplete="off"
+                  autoCapitalize="off"
+                  spellCheck={false}
+                  enterKeyHint="go"
+                  required
+                  disabled={isLocked || granted}
+                />
+                <button type="submit" className="access-submit" disabled={isLocked || granted}>
+                  {granted ? "Opening…" : "EXECUTE"} <CornerDownLeft size={16} aria-hidden="true" />
+                </button>
+              </div>
+              <div className="access-footnotes">
+                <button type="button" className="access-hint" onClick={useHint} disabled={isLocked || granted}>
+                  <KeyRound size={14} aria-hidden="true" /> {appConfig.features.revealPhraseOnHelp ? "Use demo phrase" : "Request a hint"}
+                </button>
+                <p role="status">{isLocked ? `Terminal lockout active: retry in ${secondsRemaining}s` : granted ? "Clearance accepted" : `Attempts remaining: ${remainingAttempts}`}</p>
+              </div>
+            </form>
+          </div>
+          <div className="access-transcript">
+            <div className="transcript-head">
+              <h3>System transcript</h3>
+              {!booted ? (
+                <button type="button" onClick={() => { setTyped(TERMINAL_SEQUENCE.length); phraseRef.current?.focus({ preventScroll: true }); }}>Skip boot</button>
+              ) : (
+                <span className="transcript-state"><i aria-hidden="true" />{granted ? "Self-test" : isLocked ? "Locked" : "Ready"}</span>
+              )}
+            </div>
+            <div ref={outputRef} role="log" aria-live="polite" aria-label="Terminal output" tabIndex={0} className="transcript-output">
+              {lines.map((line, index) => (
+                line.text ? <div key={index} data-tone={line.tone}><span className="transcript-prefix" aria-hidden="true">›</span>{line.text}</div>
+                  : <div key={index} className="transcript-break" aria-hidden="true" />
+              ))}
+              {!booted && <span aria-hidden="true" className="terminal-caret" />}
+            </div>
+          </div>
+        </section>
+      </main>
     </div>
   );
 };

@@ -32,12 +32,14 @@ Use these paths on the hosted app or append them to your local development URL. 
 
 ### Your first command-room session
 
-1. **Clear the access terminal.** The boot sequence types itself out (Enter skips it). Type the activation phrase: `1912` by default, or type `HELP` if you do not have it. Power-on self-tests then check the hash function, the seeded generator and the simulation engine before the room opens.
+1. **Clear the access terminal.** Enter the activation phrase (`1912` by default), or select **Use demo phrase** and press **Execute**. You can type while the boot transcript prints. `HELP` still responds according to the deployment’s hint setting. Power-on self-tests then check the hash function, the seeded generator and the simulation engine before the room opens.
 2. **Read the room.** The tactical map, operator vitals, squad cohesion and the SITREP feed run on one seeded world. Every report carries a date-time group, a message precedence and an Admiralty grade.
 3. **Decide on evidence.** Open **Decisions**. Each decision point shows its intel basis, graded A1–F6, and the uncertainty-aware analyst's assessment in ICD 203 terms, or its reason for withholding one. **Commit course**, then **Confirm commit**: the course is recorded in the hash-chained log.
 4. **Advance deliberately.** **Advance phase** reveals later decision points and, from phase 2, the red-team simulation. **Auto advance** moves phases every 30 seconds.
 5. **Review and verify.** **After-action** compares what each course assumed with what was actually true. **Download session record**, or **Verify in replay**: the record re-executes from its seed and must match every checkpoint.
 6. **Work from the console.** Press `` ` `` (backtick) for the operator console: `help`, `status`, `sitrep`, `brief 1`, `commit 1 3`, `verify`, `seal`, `egress`, `selftest`.
+
+Open **Show Sim** to explore the 3D resonance instrument. Frequency, amplitude and waveform change the contours. You can pause rotation or turn the model in 30-degree steps. On the resonance pad, drag or use the arrow keys to reshape the trace.
 
 Open `/?seed=7F3A-91C2` (any seed) to rebuild the same world exactly, for a second operator or a rerun. Reduced-motion preferences print the terminal at once and stop the interface's breathing and overlays.
 

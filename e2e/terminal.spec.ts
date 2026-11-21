@@ -258,3 +258,43 @@ test('the research palette never leaks into the command room', async ({ page }) 
   await expect(html).not.toHaveClass(/o-theme/);
   expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor)).toBe('rgb(0, 0, 0)');
 });
+
+test('the plate viewer returns focus and the demo phrase enters through the usual self-tests', async ({ page }) => {
+  await page.goto('/');
+  const inspect = page.getByRole('button', { name: 'Inspect cymatic plate' });
+  await inspect.click();
+  await expect(page.getByRole('dialog', { name: 'Cymatic plate' })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(inspect).toBeFocused();
+  await page.getByRole('button', { name: 'Execute', exact: true }).click();
+  await expect(page.getByRole('status')).toHaveText('Attempts remaining: 5');
+  await page.getByRole('button', { name: 'Use demo phrase' }).click();
+  await expect(page.getByLabel('Activation phrase')).toHaveValue('1912');
+  await page.getByRole('button', { name: 'Execute', exact: true }).click();
+  await expect(page.getByRole('contentinfo', { name: 'System status' })).toContainText('POST ✓ 8/8');
+});
+
+test('the pad responds to keys and the reduced-motion 3D view redraws on explicit input', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await enterCommandRoom(page);
+  const pad = page.getByRole('button', { name: 'Resonance pad', exact: true });
+  const trace = pad.locator('canvas');
+  const pixels = (canvas: typeof trace) => canvas.evaluate((element: HTMLCanvasElement) => element.toDataURL());
+  const initialPad = await pixels(trace);
+  await pad.press('ArrowRight');
+  await expect.poll(() => pixels(trace)).not.toBe(initialPad);
+  await pad.press('Enter');
+  await expect(page.getByRole('region', { name: 'Operator Event Timeline' })).toContainText('Touch input');
+  await page.getByRole('button', { name: 'Show NeuroSim' }).click();
+  const volume = page.getByRole('img', { name: /^Three-dimensional resonance contours/ });
+  await expect(volume).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Pause rotation' })).toHaveCount(0);
+  const still = await pixels(volume);
+  await volume.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+  expect(await pixels(volume)).toBe(still);
+  await page.getByRole('button', { name: 'Turn model 30 degrees' }).click();
+  await expect.poll(() => pixels(volume)).not.toBe(still);
+  const turned = await pixels(volume);
+  await page.getByRole('button', { name: 'Square', exact: true }).click();
+  await expect.poll(() => pixels(volume)).not.toBe(turned);
+});
