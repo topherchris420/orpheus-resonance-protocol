@@ -2,37 +2,6 @@
 @tailwind components;
 @tailwind utilities;
 
-@font-face {
-  font-family: 'Instrument Serif';
-  src: url('/fonts/instrument-serif-regular.woff2') format('woff2');
-  font-weight: 400;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Instrument Serif';
-  src: url('/fonts/instrument-serif-italic.woff2') format('woff2');
-  font-weight: 400;
-  font-style: italic;
-  font-display: swap;
-}
-
-.protocol-mark {
-  position: relative;
-  display: inline-block;
-  width: 2rem;
-  height: 2rem;
-  flex: none;
-  color: #e8bc7d;
-}
-.protocol-mark i {
-  position: absolute;
-  inset: 0 29%;
-  border: 1.5px solid currentColor;
-  border-radius: 50%;
-}
-.protocol-mark i:nth-child(2) { transform: rotate(60deg); }
-.protocol-mark i:nth-child(3) { transform: rotate(-60deg); }
-
 /*
  * The command room's terminal palette: phosphor green on black, square corners. It is the default for
  * every shadcn primitive (dialogs, buttons, sliders, tabs, tooltips, toasts), so none of them can

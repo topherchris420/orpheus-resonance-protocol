@@ -39,7 +39,7 @@ export const ResonanceTrace = ({ frequency, x, y, harmonic }: TraceProps) => {
         const depth = strand / 24;
         ctx.beginPath();
         ctx.lineWidth = strand === 12 ? 1.4 : .8;
-        ctx.strokeStyle = strand === 12 ? '#ffe0a8' : strand < 12 ? 'rgba(230,183,113,.68)' : 'rgba(145,203,180,.67)';
+        ctx.strokeStyle = strand === 12 ? '#c2ffd2' : strand < 12 ? 'rgba(128,224,151,.72)' : 'rgba(113,167,184,.67)';
         for (let sample = 0; sample <= samples; sample++) {
           const t = sample / samples;
           const envelope = Math.sin(t * Math.PI);

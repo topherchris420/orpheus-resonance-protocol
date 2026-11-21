@@ -13,7 +13,7 @@ const Method = () => (
     <div className="mx-auto max-w-6xl space-y-12 px-4 py-10 sm:px-6">
       <header>
         <p className="o-eyebrow text-o-teal">Method</p>
-        <h1 className="research-title mt-2 text-3xl font-semibold text-o-text">What Orpheus establishes, and what it does not</h1>
+        <h1 className="mt-2 text-3xl font-semibold text-o-text">What Orpheus establishes, and what it does not</h1>
         <p className="mt-3 max-w-3xl text-o-text2">
           Intelligence earns authority through evidence, not confidence. This page applies the same rule to Orpheus itself: every capability is placed on an evidence ladder, every
           displayed signal is labeled measured, simulated or inferred, and every limitation is stated.

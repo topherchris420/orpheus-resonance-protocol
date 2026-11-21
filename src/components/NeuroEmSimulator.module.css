@@ -7,16 +7,16 @@
   min-width: 0;
   overflow-y: auto;
   padding: .75rem;
-  border: 1px solid #4b5346;
-  background: #101512;
-  color: #e7e9dc;
+  border: 1px solid #37523e;
+  background: #090e0a;
+  color: #c1dbc8;
 }
 .heading { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: .4rem; }
 .heading span { font-size: .75rem; color: #b8c8b7; }
-.title { font: 400 1.65rem/1.05 'Instrument Serif', Georgia, serif; color: #f4e2c4; }
+.title { font: inherit; font-size: 1rem; line-height: 1.25; font-weight: 650; text-transform: uppercase; color: #b4e8c0; }
 .mainContent { flex: 1; display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(12.5rem, 1fr); gap: .65rem; min-height: 0; }
 .visualization { min-width: 0; min-height: 9rem; }
-.controlsAndFeedback { overflow-y: auto; padding: .65rem; background: #161d17; border: 1px solid #394638; }
+.controlsAndFeedback { overflow-y: auto; padding: .65rem; background: #101912; border: 1px solid #394638; }
 .control, .feedback { margin-top: .85rem; }
 .control:first-child { margin-top: 0; }
 .controls p, .controls label, .feedbackTitle { font-size: .8rem; font-weight: 500; }
@@ -24,9 +24,9 @@
 .control > span { margin-block: .65rem; }
 .waveformButtons { display: flex; flex-wrap: wrap; gap: .25rem; margin-top: .4rem; }
 .waveformButtons button { padding: .2rem .45rem; height: 2rem; font-size: .75rem; }
-.waveformButtons button[aria-pressed=true] { background: #e7bf8a; color: #241e14; }
+.waveformButtons button[aria-pressed=true] { background: #a4dfb3; color: #09150c; }
 .feedback { border-top: 1px solid #394638; padding-top: .65rem; }
-.feedbackTitle { color: #e3c697; }
+.feedbackTitle { color: #b1ddbf; }
 .effectList { margin-top: .4rem; }
 .effectList li { display: flex; justify-content: space-between; gap: .5rem; font-size: .75rem; line-height: 1.6; color: #c6d1c2; }
 @container (max-width: 28rem) {

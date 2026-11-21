@@ -48,7 +48,7 @@ export const ModeToolbar: React.FC<ModeToolbarProps> = React.memo(({
             disabled={!appConfig.features.enableAudioBiofeedback}
           >
             {audioEnabled ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-            <span>{audioEnabled ? 'Stop Audio' : 'Start Audio'}</span>
+            <span>{audioEnabled ? 'Stop microphone' : 'Start local audio'}</span>
           </Button>
         </TooltipTrigger>
         <TooltipContent>{bioLabel}</TooltipContent>

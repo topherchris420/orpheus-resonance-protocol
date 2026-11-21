@@ -1,7 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { CornerDownLeft, Cpu, KeyRound, Terminal } from "lucide-react";
-import { ProtocolMark } from "@/components/common/ProtocolMark";
-import { ResonancePlate } from "@/components/terminal/ResonancePlate";
+import { APP_VERSION } from "@/engine/version";
 import "./terminal/terminal.css";
 import { appConfig } from "@/config/appConfig";
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
@@ -50,8 +48,8 @@ export const AccessTerminal: React.FC<AccessTerminalProps> = ({ onAccess }) => {
   const [lockUntilMs, setLockUntilMs] = useState(0);
   const [now, setNow] = useState(Date.now());
   const [granted, setGranted] = useState(false);
-  const selfTests = useRef<SelfTestResult[] | null>(null);
-  const differential = useRef<Promise<SelfTestResult> | null>(null);
+  const [checking, setChecking] = useState(false);
+  const checks = useRef<Promise<SelfTestResult[]> | null>(null);
   const phraseRef = useRef<HTMLInputElement>(null);
   const outputRef = useRef<HTMLDivElement>(null);
 
@@ -64,14 +62,18 @@ export const AccessTerminal: React.FC<AccessTerminalProps> = ({ onAccess }) => {
   const secondsRemaining = Math.max(0, Math.ceil((lockUntilMs - now) / 1000));
   const lines = [...bootLines(typed), ...responses];
 
-  // Power-on self-tests run once, off the first paint, while the boot sequence types.
-  useEffect(() => {
-    const timer = window.setTimeout(() => {
-      selfTests.current = runSelfTests();
-      differential.current = runWebCryptoDifferential();
-    }, 0);
-    return () => window.clearTimeout(timer);
+  const readChecks = useCallback(() => {
+    if (!checks.current) {
+      const local = runSelfTests();
+      checks.current = runWebCryptoDifferential().then((webCrypto) => [...local, webCrypto]);
+    }
+    return checks.current;
   }, []);
+
+  useEffect(() => {
+    const timer = window.setTimeout(readChecks, 0);
+    return () => window.clearTimeout(timer);
+  }, [readChecks]);
 
   useEffect(() => {
     if (reducedMotion) setTyped(TERMINAL_SEQUENCE.length);
@@ -112,7 +114,7 @@ export const AccessTerminal: React.FC<AccessTerminalProps> = ({ onAccess }) => {
   const enter = useCallback(async () => {
     setGranted(true);
     respond({ text: "Access granted. Initializing Subprotocol Orpheus...", tone: "granted" }, { text: "POWER-ON SELF-TEST", tone: "boot" });
-    const results = [...(selfTests.current ?? runSelfTests()), await (differential.current ?? runWebCryptoDifferential())];
+    const results = await readChecks();
     const passed = allPassed(results);
     const report = [
       ...results.map(postLine),
@@ -123,11 +125,24 @@ export const AccessTerminal: React.FC<AccessTerminalProps> = ({ onAccess }) => {
     const pace = reducedMotion ? 0 : POST_LINE_INTERVAL_MS;
     report.forEach((line, index) => window.setTimeout(() => respond(line), pace * (index + 1)));
     window.setTimeout(() => onAccess(results), pace * (report.length + 1) + (reducedMotion ? 300 : passed ? 600 : 2400));
-  }, [onAccess, reducedMotion, respond]);
+  }, [onAccess, readChecks, reducedMotion, respond]);
+
+  const printChecks = async () => {
+    setTyped(TERMINAL_SEQUENCE.length);
+    setEntryError("");
+    setChecking(true);
+    respond({ text: "> SELFTEST", tone: "echo" });
+    try {
+      const results = await readChecks();
+      respond(...results.map(postLine));
+    } finally {
+      setChecking(false);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (isLocked || granted) {
+    if (isLocked || granted || checking) {
       return;
     }
 
@@ -147,6 +162,11 @@ export const AccessTerminal: React.FC<AccessTerminalProps> = ({ onAccess }) => {
           ? { text: `Activation phrase for this terminal: ${appConfig.accessPhrase}`, tone: "hint" }
           : { text: "Activation phrases are issued by the R.A.I.N. Research Division.", tone: "hint" },
       );
+      return;
+    }
+
+    if (normalizedInput === "selftest" && normalizedInput !== accessPhrase) {
+      void printChecks();
       return;
     }
 
@@ -182,78 +202,67 @@ export const AccessTerminal: React.FC<AccessTerminalProps> = ({ onAccess }) => {
     phraseRef.current?.focus({ preventScroll: true });
   };
 
-  return (
-    <div className="access-page">
-      <a className="skip-link" href="#access-input">Skip to activation phrase</a>
-      <header className="access-mast">
-        <div className="access-brand"><ProtocolMark /><span>Vers3Dynamics</span></div>
-        <span className="access-division">R.A.I.N. Research Division</span>
-        <span className="access-local"><Cpu size={15} aria-hidden="true" /> Runs locally</span>
-      </header>
+  const busy = isLocked || granted || checking;
+  const terminalState = isLocked ? "Locked" : granted || checking ? "Self-test" : booted ? "Ready" : "Booting";
 
-      <main className="access-main">
-        <div className="access-hero">
-          <div className="access-intro">
-            <h1><span>Orpheus</span><em>Resonance Protocol</em></h1>
-            <p>Enter a fictional command room. Weigh the evidence, make a decision, and replay what followed.</p>
-          </div>
-          <ResonancePlate />
+  return (
+    <main className="access-page">
+      <a className="skip-link" href="#access-input">Skip to activation phrase</a>
+      <section className="access-terminal" aria-labelledby="access-title">
+        <header className="terminal-heading">
+          <h1 id="access-title">ORPHEUS ACCESS TERMINAL</h1>
+          <span>v{APP_VERSION}</span>
+        </header>
+        <p className="terminal-byline">R.A.I.N. Research Division <span aria-hidden="true">/</span> Vers3Dynamics</p>
+
+        <div ref={outputRef} role="log" aria-live="polite" aria-label="Terminal output" tabIndex={0} className="terminal-output">
+          {lines.map((line, index) => line.text ? (
+            <div key={index} data-tone={line.tone}>{line.text}</div>
+          ) : <div key={index} className="terminal-break" aria-hidden="true" />)}
+          {!booted && <span aria-hidden="true" className="terminal-caret" />}
         </div>
 
-        <section className="access-deck" aria-labelledby="access-heading">
-          <div className="access-entry">
-            <h2 id="access-heading" aria-label="ORPHEUS ACCESS TERMINAL"><Terminal aria-hidden="true" size={20} /> Access terminal</h2>
-            <form onSubmit={handleSubmit}>
-              <label htmlFor="access-input">Activation phrase</label>
-              <div className="access-fields">
-                <input
-                  ref={phraseRef}
-                  id="access-input"
-                  value={input}
-                  onFocus={() => setTyped(TERMINAL_SEQUENCE.length)}
-                  onChange={(event) => { setInput(event.target.value); setEntryError(""); }}
-                  aria-invalid={Boolean(entryError) && !isLocked}
-                  aria-describedby={entryError && !isLocked ? "access-error" : undefined}
-                  placeholder="Phrase or HELP"
-                  autoComplete="off"
-                  autoCapitalize="off"
-                  spellCheck={false}
-                  enterKeyHint="go"
-                  required
-                  disabled={isLocked || granted}
-                />
-                <button type="submit" className="access-submit" disabled={isLocked || granted}>
-                  {granted ? "Opening…" : "EXECUTE"} <CornerDownLeft size={16} aria-hidden="true" />
-                </button>
-              </div>
-              {entryError && !isLocked && <p className="access-error" id="access-error" role="alert">{entryError}</p>}
-              <div className="access-footnotes">
-                <button type="button" className="access-hint" onClick={useHint} disabled={isLocked || granted}>
-                  <KeyRound size={14} aria-hidden="true" /> {appConfig.features.revealPhraseOnHelp ? "Use demo phrase" : "Request a hint"}
-                </button>
-                <p role="status">{isLocked ? `Terminal lockout active: retry in ${secondsRemaining}s` : granted ? "Clearance accepted" : `Attempts remaining: ${remainingAttempts}`}</p>
-              </div>
-            </form>
-          </div>
-          <div className="access-transcript">
-            <div className="transcript-head">
-              <h3>System transcript</h3>
-              {!booted ? (
-                <button type="button" onClick={() => { setTyped(TERMINAL_SEQUENCE.length); phraseRef.current?.focus({ preventScroll: true }); }}>Skip boot</button>
-              ) : (
-                <span className="transcript-state"><i aria-hidden="true" />{granted ? "Self-test" : isLocked ? "Locked" : "Ready"}</span>
-              )}
+        <div className="terminal-state">
+          <span>{terminalState}</span>
+          {!booted && (
+            <button type="button" onClick={() => { setTyped(TERMINAL_SEQUENCE.length); phraseRef.current?.focus({ preventScroll: true }); }}>
+              Skip boot
+            </button>
+          )}
+        </div>
+
+        <form onSubmit={handleSubmit} className="terminal-entry">
+          <label htmlFor="access-input">Activation phrase</label>
+          <div className="terminal-command">
+            <div className="terminal-field">
+              <span aria-hidden="true">&gt;</span>
+              <input
+                ref={phraseRef}
+                id="access-input"
+                value={input}
+                onFocus={() => setTyped(TERMINAL_SEQUENCE.length)}
+                onChange={(event) => { setInput(event.target.value); setEntryError(""); }}
+                aria-invalid={Boolean(entryError) && !isLocked}
+                aria-describedby={entryError && !isLocked ? "access-error" : undefined}
+                placeholder="Phrase or HELP"
+                autoComplete="off"
+                autoCapitalize="off"
+                spellCheck={false}
+                enterKeyHint="go"
+                disabled={busy}
+              />
             </div>
-            <div ref={outputRef} role="log" aria-live="polite" aria-label="Terminal output" tabIndex={0} className="transcript-output">
-              {lines.map((line, index) => (
-                line.text ? <div key={index} data-tone={line.tone}><span className="transcript-prefix" aria-hidden="true">›</span>{line.text}</div>
-                  : <div key={index} className="transcript-break" aria-hidden="true" />
-              ))}
-              {!booted && <span aria-hidden="true" className="terminal-caret" />}
-            </div>
+            <button type="submit" className="terminal-execute" disabled={busy}>{granted ? "OPENING…" : "EXECUTE"}</button>
           </div>
-        </section>
-      </main>
-    </div>
+          {entryError && !isLocked && <p className="terminal-error" id="access-error" role="alert">{entryError}</p>}
+          <div className="terminal-tools">
+            <button type="button" onClick={useHint} disabled={busy}>{appConfig.features.revealPhraseOnHelp ? "Use demo phrase" : "Request a hint"}</button>
+            <button type="button" onClick={() => void printChecks()} disabled={busy}>Run self-test</button>
+            <p role="status">{isLocked ? `Terminal lockout active: retry in ${secondsRemaining}s` : granted ? "Clearance accepted" : `Attempts remaining: ${remainingAttempts}`}</p>
+          </div>
+        </form>
+        <footer className="terminal-footer">The Orpheus Continuum <span aria-hidden="true">/</span> Fictional simulation</footer>
+      </section>
+    </main>
   );
 };

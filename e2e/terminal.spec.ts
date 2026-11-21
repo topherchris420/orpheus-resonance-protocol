@@ -234,6 +234,9 @@ test('with reduced motion the terminal prints at once and nothing breathes', asy
 test('the microphone starts only after consent, drives the breathing ring, and stops completely', async ({ page }) => {
   const errors = watchErrors(page);
   await enterCommandRoom(page);
+  const marker = page.getByRole('slider', { name: 'Harmonic frequency' });
+  await page.getByRole('button', { name: 'Focus', exact: true }).click();
+  await expect(marker).toHaveAttribute('aria-valuenow', '40');
   const follow = page.getByRole('button', { name: 'Manual' });
   await expect(follow).toBeDisabled();
   await page.getByRole('button', { name: 'Start local audio response' }).click();
@@ -244,6 +247,7 @@ test('the microphone starts only after consent, drives the breathing ring, and s
   await expect(page.getByRole('region', { name: 'Operator Event Timeline' })).toContainText('Microphone enabled');
   await page.getByRole('button', { name: 'Stop microphone and tones' }).click();
   await expect(page.getByRole('button', { name: 'Manual' })).toBeDisabled();
+  await expect(marker).toHaveAttribute('aria-valuenow', '40');
   expect(errors).toEqual([]);
 });
 
@@ -259,18 +263,21 @@ test('the research palette never leaks into the command room', async ({ page }) 
   expect(await page.evaluate(() => getComputedStyle(document.body).backgroundColor)).toBe('rgb(0, 0, 0)');
 });
 
-test('the plate viewer returns focus and the demo phrase enters through the usual self-tests', async ({ page }) => {
+test('the access prompt prints real diagnostics and the demo phrase passes the usual checks', async ({ page }) => {
   await page.goto('/');
-  const inspect = page.getByRole('button', { name: 'Inspect cymatic plate' });
-  await inspect.click();
-  await expect(page.getByRole('dialog', { name: 'Cymatic plate' })).toBeVisible();
-  await page.keyboard.press('Escape');
-  await expect(inspect).toBeFocused();
-  await page.getByRole('button', { name: 'Execute', exact: true }).click();
+  const execute = page.getByRole('button', { name: 'EXECUTE', exact: true });
+  const phrase = page.getByLabel('Activation phrase');
+  const output = page.getByRole('log', { name: 'Terminal output' });
+  await execute.click();
+  await expect(page.getByRole('alert')).toContainText('Enter a phrase');
+  await page.getByRole('button', { name: 'Run self-test' }).click();
+  await expect(output).toContainText('[ OK ] SHA-256 known-answer test (FIPS 180-4)');
+  await expect(output).toContainText('[ OK ] SHA-256 differential vs WebCrypto');
   await expect(page.getByRole('status')).toHaveText('Attempts remaining: 5');
   await page.getByRole('button', { name: 'Use demo phrase' }).click();
-  await expect(page.getByLabel('Activation phrase')).toHaveValue('1912');
-  await page.getByRole('button', { name: 'Execute', exact: true }).click();
+  await expect(phrase).toBeFocused();
+  await expect(phrase).toHaveValue('1912');
+  await execute.click();
   await expect(page.getByRole('contentinfo', { name: 'System status' })).toContainText('POST ✓ 8/8');
 });
 

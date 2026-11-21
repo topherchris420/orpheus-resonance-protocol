@@ -46,7 +46,7 @@ const Research = () => {
       <div className="mx-auto max-w-[1400px] space-y-6 px-4 py-8 sm:px-6">
         <header className="max-w-4xl">
           <p className="o-eyebrow text-o-teal">Research workbench</p>
-          <h1 className="research-title mt-2 text-3xl font-semibold text-o-text">Does knowing when to abstain make an assistant more useful?</h1>
+          <h1 className="mt-2 text-3xl font-semibold text-o-text">Does knowing when to abstain make an assistant more useful?</h1>
           <p className="mt-3 text-o-text2">
             Configure and run the preregistered human–AI teaming protocol with scripted baseline participants or with people, inspect every result down to the single trial,
             and reproduce any package exactly. Nothing here needs an AI service, an account or special hardware. Results from scripted participants are not evidence about

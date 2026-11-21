@@ -7,11 +7,11 @@ import { Button } from './ui/button';
 import styles from './NeuroEmSimulator.module.css';
 
 const brainRegions = {
-  'Frontal Lobe': { position: new THREE.Vector3(0, 0.3, 0.8), color: 0xeac68f },
+  'Frontal Lobe': { position: new THREE.Vector3(0, 0.3, 0.8), color: 0xb2f3bf },
   'Parietal Lobe': { position: new THREE.Vector3(0, 0.8, 0), color: 0xaad8a9 },
   'Temporal Lobe': { position: new THREE.Vector3(-0.8, 0, 0), color: 0x95ceef },
   'Occipital Lobe': { position: new THREE.Vector3(0, 0, -0.8), color: 0xceafe3 },
-  'Cerebellum': { position: new THREE.Vector3(0, -0.8, -0.5), color: 0xe9b087 },
+  'Cerebellum': { position: new THREE.Vector3(0, -0.8, -0.5), color: 0xa1d7b9 },
 };
 
 type BrainRegionName = keyof typeof brainRegions;

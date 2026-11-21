@@ -121,12 +121,10 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({ store, epo
     levelReportThreshold: ARCHIVE_AUDIO_THRESHOLD,
   });
 
-  useEffect(() => {
-    setDisplayMarker(audioFrequency);
-  }, [audioFrequency]);
+  const activeFrequency = microphoneConnected ? audioFrequency : displayMarker;
 
   const audioStatus = useMemo(() => ({ enabled: audioEnabled, connected: microphoneConnected, error: audioError }), [audioEnabled, microphoneConnected, audioError]);
-  const uxInput = useMission(store, (state) => missionUxInput(state, audioStatus, displayMarker));
+  const uxInput = useMission(store, (state) => missionUxInput(state, audioStatus, activeFrequency));
   const mission = useMemo(() => deriveMissionUx(uxInput), [uxInput]);
 
   useEffect(() => {
@@ -281,7 +279,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({ store, epo
 
   const renderNeuroEmSimulator = () => (
     <Suspense fallback={<NeuroSimFallback />}>
-      <NeuroEmSimulator bioResonanceFrequency={displayMarker} />
+      <NeuroEmSimulator bioResonanceFrequency={activeFrequency} />
     </Suspense>
   );
 
@@ -292,7 +290,7 @@ export const PegasusSimulation: React.FC<PegasusSimulationProps> = ({ store, epo
   const renderTimeline = () => <TimelinePanel store={store} onInspectChain={inspectChain} />;
   const renderMetricsPanel = () => <MetricsPanel store={store} note={note} />;
   const renderTouch = () => <TouchInterface frequency={displayMarker} phase={phase} onTouch={handleOperatorTouch} onFrequencyChange={setDisplayMarker} />;
-  const renderStrip = () => <MissionCommandStrip mission={mission} pulseRate={pulseRate} coherenceLevel={cohesion} activeFrequency={displayMarker} />;
+  const renderStrip = () => <MissionCommandStrip mission={mission} pulseRate={pulseRate} coherenceLevel={cohesion} activeFrequency={activeFrequency} />;
   const renderAlerts = () => <MissionAlertQueue alerts={mission.alerts} dismissedAlertIds={dismissedAlertIds} onDismiss={(id) => setDismissedAlertIds((previous) => [...new Set([...previous, id])])} />;
   const microphoneStatus = audioEnabled && (
     <p role="status" className="sr-only">

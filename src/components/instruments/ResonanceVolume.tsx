@@ -98,14 +98,31 @@ export const ResonanceVolume = ({ nodes, frequency, amplitude, waveform }: Volum
         });
       }
       ctx.lineWidth = .72;
-      ctx.strokeStyle = '#658f82';
+      ctx.strokeStyle = '#609487';
       ctx.globalAlpha = .45;
       ctx.stroke(back);
       ctx.lineWidth = 1;
-      ctx.strokeStyle = '#ebc38a';
+      ctx.strokeStyle = '#9de5ad';
       ctx.globalAlpha = .9;
       ctx.stroke(front);
       ctx.globalAlpha = 1;
+
+      const originX = 26;
+      const originY = height - 24;
+      ctx.font = '10px monospace';
+      ctx.fillStyle = '#a0bca7';
+      ctx.strokeStyle = '#719a7c';
+      ctx.lineWidth = 1;
+      for (const [index, label] of ['X', 'Y', 'Z'].entries()) {
+        rotated.set(0, 0, 0).setComponent(index, 1).applyMatrix4(rotation);
+        const dx = rotated.x * 12;
+        const dy = -rotated.y * 12;
+        ctx.beginPath();
+        ctx.moveTo(originX, originY);
+        ctx.lineTo(originX + dx, originY + dy);
+        ctx.stroke();
+        ctx.fillText(label, originX + dx * 1.45 - 3, originY + dy * 1.45 + 3);
+      }
 
       for (const node of coloredNodes) {
         projected.copy(node.position).applyMatrix4(projection);
@@ -117,7 +134,7 @@ export const ResonanceVolume = ({ nodes, frequency, amplitude, waveform }: Volum
         glow.addColorStop(1, node.ink + '00');
         ctx.fillStyle = glow;
         ctx.fillRect(x - radius * 3, y - radius * 3, radius * 6, radius * 6);
-        ctx.fillStyle = node.activity > .1 ? '#fff3ce' : node.ink;
+        ctx.fillStyle = node.activity > .1 ? '#e3ffed' : node.ink;
         ctx.beginPath();
         ctx.arc(x, y, Math.max(1.6, radius * .52), 0, Math.PI * 2);
         ctx.fill();

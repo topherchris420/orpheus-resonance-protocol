@@ -1,6 +1,5 @@
 import React, { useEffect, useRef } from 'react';
 import { SquareTerminal } from 'lucide-react';
-import { ProtocolMark } from '@/components/common/ProtocolMark';
 
 interface SessionBarProps {
   phase: number;
@@ -28,9 +27,8 @@ export const SessionBar: React.FC<SessionBarProps> = React.memo(
     return (
       <header className="room-head">
         <div className="room-brand">
-          <ProtocolMark />
           <div>
-            <h1 tabIndex={-1} ref={title}>Orpheus</h1>
+            <h1 tabIndex={-1} ref={title}>ORPHEUS</h1>
             <p>Command room</p>
           </div>
         </div>

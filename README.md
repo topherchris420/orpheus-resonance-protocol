@@ -32,7 +32,7 @@ Use these paths on the hosted app or append them to your local development URL. 
 
 ### Your first command-room session
 
-1. **Clear the access terminal.** Enter the activation phrase (`1912` by default), or select **Use demo phrase** and press **Execute**. You can type while the boot transcript prints. `HELP` still responds according to the deployment’s hint setting. Power-on self-tests then check the hash function, the seeded generator and the simulation engine before the room opens.
+1. **Clear the access terminal.** Enter the activation phrase (`1912` by default), or select **Use demo phrase** and press **Execute**. You can type during boot. Enter `SELFTEST` or select **Run self-test** to inspect the terminal’s integrity checks. `HELP` responds according to the deployment’s hint setting. Power-on self-tests then check the hash function, the seeded generator and the simulation engine before the room opens.
 2. **Read the room.** The tactical map, operator vitals, squad cohesion and the SITREP feed run on one seeded world. Every report carries a date-time group, a message precedence and an Admiralty grade.
 3. **Decide on evidence.** Open **Decisions**. Each decision point shows its intel basis, graded A1–F6, and the uncertainty-aware analyst's assessment in ICD 203 terms, or its reason for withholding one. **Commit course**, then **Confirm commit**: the course is recorded in the hash-chained log.
 4. **Advance deliberately.** **Advance phase** reveals later decision points and, from phase 2, the red-team simulation. **Auto advance** moves phases every 30 seconds.
