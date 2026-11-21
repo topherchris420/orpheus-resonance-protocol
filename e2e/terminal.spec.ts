@@ -16,6 +16,7 @@ test('the access terminal types the classic sequence, helps the lost, and runs i
   await expect(output).toContainText('Enter activation phrase to continue:', { timeout: 12_000 });
 
   const phrase = page.getByLabel('Activation phrase');
+  await expect(phrase).toBeFocused();
   await phrase.fill('0000');
   await phrase.press('Enter');
   await expect(output).toContainText('Access denied. Type HELP for assistance.');

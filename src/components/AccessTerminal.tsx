@@ -85,6 +85,13 @@ export const AccessTerminal: React.FC<AccessTerminalProps> = ({ onAccess }) => {
     return () => window.clearTimeout(timer);
   }, [booted, typed]);
 
+  useEffect(() => {
+    // A desktop terminal is ready for typing. Touch users choose when to open the keyboard.
+    if (booted && document.activeElement === document.body && window.matchMedia?.("(pointer: fine)").matches) {
+      phraseRef.current?.focus({ preventScroll: true });
+    }
+  }, [booted]);
+
   // Enter on the terminal background skips the transcript. Controls keep their native keys.
   useEffect(() => {
     if (booted) return;
@@ -244,7 +251,7 @@ export const AccessTerminal: React.FC<AccessTerminalProps> = ({ onAccess }) => {
                 onChange={(event) => { setInput(event.target.value); setEntryError(""); }}
                 aria-invalid={Boolean(entryError) && !isLocked}
                 aria-describedby={entryError && !isLocked ? "access-error" : undefined}
-                placeholder="Phrase or HELP"
+                placeholder="Try HELP"
                 autoComplete="off"
                 autoCapitalize="off"
                 spellCheck={false}
