@@ -66,7 +66,6 @@
 .plate-view:hover img, .plate-view:focus-visible img { transform: scale(1.025); }
 .plate-view:hover .plate-expand { border-color: var(--brass); color: var(--brass); }
 .plate-figure figcaption { display: flex; align-items: center; justify-content: center; gap: .65rem; margin-top: .55rem; color: var(--ink); }
-.plate-figure figcaption > span:not(.plate-rule) { color: #888777; }
 .plate-rule { width: 1.6rem; height: 1px; background: var(--brass); }
 .plate-dialog { width: min(94vw, 66rem); max-width: none; max-height: 94dvh; overflow: auto; border-color: #585546; border-radius: .35rem; background: #11130f; color: #f2ebdc; }
 .plate-dialog h2 { padding-right: 2rem; font: 400 2.25rem/1 'Instrument Serif', Georgia, serif; }
@@ -93,6 +92,7 @@
 .access-page button:disabled { cursor: default; opacity: .65; }
 .access-footnotes { display: flex; align-items: center; justify-content: space-between; gap: .75rem; flex-wrap: wrap; color: var(--ink); }
 .access-hint { min-height: 2.75rem; display: inline-flex; align-items: center; gap: .45rem; color: var(--brass); }
+.access-error { margin-top: .6rem; color: #ffb4a9; font-size: .85rem; }
 .access-hint:hover { text-decoration: underline; text-underline-offset: .2em; }
 .access-transcript { align-self: center; min-width: 0; overflow: hidden; border: 1px solid var(--rule); border-radius: .25rem; background: #0c100d; }
 .transcript-head { display: flex; align-items: center; justify-content: space-between; gap: .8rem; padding: .25rem .95rem; min-height: 2.5rem; border-bottom: 1px solid #343b32; background: #191d17; }

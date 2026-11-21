@@ -39,7 +39,7 @@ Use these paths on the hosted app or append them to your local development URL. 
 5. **Review and verify.** **After-action** compares what each course assumed with what was actually true. **Download session record**, or **Verify in replay**: the record re-executes from its seed and must match every checkpoint.
 6. **Work from the console.** Press `` ` `` (backtick) for the operator console: `help`, `status`, `sitrep`, `brief 1`, `commit 1 3`, `verify`, `seal`, `egress`, `selftest`.
 
-Open **Show Sim** to explore the 3D resonance instrument. Frequency, amplitude and waveform change the contours. You can pause rotation or turn the model in 30-degree steps. On the resonance pad, drag or use the arrow keys to reshape the trace.
+Select **NeuroSim** to explore the 3D resonance instrument. Frequency, amplitude and waveform change the contours. You can pause rotation or turn the model in 30-degree steps. On the resonance pad, drag or use the arrow keys to reshape the trace.
 
 Open `/?seed=7F3A-91C2` (any seed) to rebuild the same world exactly, for a second operator or a rerun. Reduced-motion preferences print the terminal at once and stop the interface's breathing and overlays.
 

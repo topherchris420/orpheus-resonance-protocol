@@ -27,6 +27,6 @@ export const ResonancePlate = () => (
         <DialogDescription>Concept illustration of a Chladni plate. Sand traces the still regions of a vibrating surface.</DialogDescription>
       </DialogContent>
     </Dialog>
-    <figcaption><span className="plate-rule" aria-hidden="true" />Cymatic plate <span aria-hidden="true">/</span> Standing-wave illustration</figcaption>
+    <figcaption><span className="plate-rule" aria-hidden="true" />Cymatic plate · Concept illustration</figcaption>
   </figure>
 );

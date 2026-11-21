@@ -46,6 +46,7 @@ export const AccessTerminal: React.FC<AccessTerminalProps> = ({ onAccess }) => {
   const [responses, setResponses] = useState<TerminalLine[]>([]);
   const [input, setInput] = useState("");
   const [failedAttempts, setFailedAttempts] = useState(0);
+  const [entryError, setEntryError] = useState("");
   const [lockUntilMs, setLockUntilMs] = useState(0);
   const [now, setNow] = useState(Date.now());
   const [granted, setGranted] = useState(false);
@@ -131,7 +132,11 @@ export const AccessTerminal: React.FC<AccessTerminalProps> = ({ onAccess }) => {
     }
 
     const normalizedInput = input.trim().toLowerCase();
-    if (!normalizedInput) return;
+    if (!normalizedInput) {
+      setEntryError("Enter a phrase or type HELP.");
+      return;
+    }
+    setEntryError("");
     setTyped(TERMINAL_SEQUENCE.length);
     setInput("");
 
@@ -151,6 +156,7 @@ export const AccessTerminal: React.FC<AccessTerminalProps> = ({ onAccess }) => {
       return;
     }
 
+    setEntryError("Phrase unrecognized. Type HELP for assistance.");
     const nextAttempts = failedAttempts + 1;
 
     if (nextAttempts >= maxAttempts) {
@@ -166,6 +172,7 @@ export const AccessTerminal: React.FC<AccessTerminalProps> = ({ onAccess }) => {
   };
 
   const useHint = () => {
+    setEntryError("");
     setTyped(TERMINAL_SEQUENCE.length);
     if (appConfig.features.revealPhraseOnHelp) {
       setInput(appConfig.accessPhrase);
@@ -181,7 +188,7 @@ export const AccessTerminal: React.FC<AccessTerminalProps> = ({ onAccess }) => {
       <header className="access-mast">
         <div className="access-brand"><ProtocolMark /><span>Vers3Dynamics</span></div>
         <span className="access-division">R.A.I.N. Research Division</span>
-        <span className="access-local"><Cpu size={15} aria-hidden="true" /> Local simulation</span>
+        <span className="access-local"><Cpu size={15} aria-hidden="true" /> Runs locally</span>
       </header>
 
       <main className="access-main">
@@ -204,8 +211,10 @@ export const AccessTerminal: React.FC<AccessTerminalProps> = ({ onAccess }) => {
                   id="access-input"
                   value={input}
                   onFocus={() => setTyped(TERMINAL_SEQUENCE.length)}
-                  onChange={(event) => setInput(event.target.value)}
-                  placeholder="Type a phrase or HELP"
+                  onChange={(event) => { setInput(event.target.value); setEntryError(""); }}
+                  aria-invalid={Boolean(entryError) && !isLocked}
+                  aria-describedby={entryError && !isLocked ? "access-error" : undefined}
+                  placeholder="Phrase or HELP"
                   autoComplete="off"
                   autoCapitalize="off"
                   spellCheck={false}
@@ -217,6 +226,7 @@ export const AccessTerminal: React.FC<AccessTerminalProps> = ({ onAccess }) => {
                   {granted ? "Opening…" : "EXECUTE"} <CornerDownLeft size={16} aria-hidden="true" />
                 </button>
               </div>
+              {entryError && !isLocked && <p className="access-error" id="access-error" role="alert">{entryError}</p>}
               <div className="access-footnotes">
                 <button type="button" className="access-hint" onClick={useHint} disabled={isLocked || granted}>
                   <KeyRound size={14} aria-hidden="true" /> {appConfig.features.revealPhraseOnHelp ? "Use demo phrase" : "Request a hint"}

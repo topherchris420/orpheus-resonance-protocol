@@ -71,7 +71,7 @@ export const ModeToolbar: React.FC<ModeToolbarProps> = React.memo(({
             aria-label={showNeuroSim ? 'Hide NeuroSim' : 'Show NeuroSim'}
           >
             <BrainCircuit className="h-4 w-4" />
-            <span>{showNeuroSim ? 'Hide Sim' : 'Show Sim'}</span>
+            <span>NeuroSim</span>
           </Button>
         </TooltipTrigger>
         <TooltipContent>{showNeuroSim ? 'Hide NeuroSim' : 'Show NeuroSim'}</TooltipContent>
