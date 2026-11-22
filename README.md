@@ -1,6 +1,6 @@
 # Orpheus Resonance Protocol
 
-**Make uncertainty visible. Make decisions inspectable.**
+**Make a decision in a fictional command room, then inspect the evidence you had when you made it.**
 
 [![CI](https://github.com/topherchris420/orpheus-resonance-protocol/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/topherchris420/orpheus-resonance-protocol/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-3fbfa8.svg)](LICENSE)
